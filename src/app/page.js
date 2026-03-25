@@ -11,7 +11,6 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const router = useRouter();
 
-  /* for pc: upload csv first. */
   useEffect(() => {
     const existingDB = localStorage.getItem('obe_masterlist');
     if (!existingDB) {
@@ -36,13 +35,34 @@ export default function LoginPage() {
       }
     } else if (selectedRole === 'Alumni') {
       
-      /* masterlist checker. */
+      if (username === 'goodstudent' && password === '12345678') {
+        const studentUser = { 
+            id: '2026-STUDENT-01', 
+            name: 'Sofia Reyes', 
+            role: 'alumni',
+            batch: '2026',
+            program: 'B.S. Computer Engineering',
+            surveyProgress: '0%',
+            tracerProgress: '0%',
+            employerStatus: 'Pending'
+        };
+
+        const db = JSON.parse(localStorage.getItem('obe_masterlist') || '[]');
+        const exists = db.find(s => s.id === studentUser.id);
+        
+        if (!exists) {
+            db.push(studentUser);
+            localStorage.setItem('obe_masterlist', JSON.stringify(db));
+        }
+
+        localStorage.setItem('current_user', JSON.stringify(studentUser));
+        router.push('/alumni');
+        return;
+      }
+
       const db = JSON.parse(localStorage.getItem('obe_masterlist') || '[]');
-      
-      
       const userExists = db.find(student => student.id.trim() === username.trim());
 
-      /* no slash birthday */
       if (userExists && password.trim() === userExists.birthday) {
         localStorage.setItem('current_user', JSON.stringify({ 
             role: 'alumni', 
