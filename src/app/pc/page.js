@@ -2087,7 +2087,7 @@ export default function ProgramChairDashboard() {
                                 style={{ padding: '10px 24px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', flex: 1, border: 'none' }}
                             >
                                 Save Evaluated Grades
-                            </button>
+                            </button>    
                         </div>
                     </div>
                 </div>

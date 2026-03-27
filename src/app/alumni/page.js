@@ -670,7 +670,7 @@ export default function AlumniDashboard() {
                 <div className="modal-overlay">
                     <div className="modal-box portal-card" style={{ maxWidth: '450px' }}>
                         <h2 style={{ margin: '0 0 10px 0', color: 'var(--gold)' }}>Data Correction Request</h2>
-                        <p style={{ margin: '0 0 20px 0', fontSize: '0.85rem', color: 'var(--text-sub)' }}>Is there an error in your name, batch year, or contact info? Send a direct correction request to your Program Chair.</p>
+                        <p style={{ margin: '0 0 20px 0', fontSize: '0.85rem', color: 'var(--text-sub)' }}>Is there an error in your name, batch year, or contact info? Send a correction request to your Program Chair.</p>
                         <textarea className="correction-textbox" placeholder="Halimbawa: Ang batch year ko po dapat ay 2026, hindi 2025..." style={{ height: '100px', padding: '15px', resize: 'none', marginBottom: '20px' }}></textarea>
                         <div style={{ display: 'flex', gap: '10px' }}>
                             <button className="outline-btn cancel-btn" onClick={() => setActiveModal(null)} style={{ padding: '10px', borderRadius: '8px', flex: 1 }}>Cancel</button>
