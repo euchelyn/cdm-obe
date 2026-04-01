@@ -142,35 +142,6 @@ export default function ProgramChairDashboard() {
     const [selectedSurveyView, setSelectedSurveyView] = useState(null); 
     const [surveyDetailBatch, setSurveyDetailBatch] = useState('All');
 
-    const [yearlySelectedYear, setYearlySelectedYear] = useState('2026');
-    const [yearlyActiveTab, setYearlyActiveTab] = useState('respondents');
-
-    const yearlyQuestionnaires = {
-        '2026': [
-            "1. Did you get a promotion or salary increase this year?",
-            "2. Have you attended any new professional training or certifications?",
-            "3. What is your current salary bracket?",
-            "4. How relevant is your current job to your Computer Engineering degree?"
-        ],
-        '2025': [
-            "1. Are you currently employed?",
-            "2. Did you change jobs in the past 12 months?",
-            "3. Are you pursuing further academic studies?",
-            "4. What programming languages do you currently use at work?"
-        ],
-        '2024': [
-            "1. Employment Status",
-            "2. Current Job Title",
-            "3. Industry Sector",
-            "4. Suggestions for the CpE curriculum"
-        ],
-        '2023': [
-            "1. Are you employed?",
-            "2. Current Job Title",
-            "3. Company Name"
-        ]
-    };
-
     useEffect(() => {
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'light') {
@@ -220,17 +191,13 @@ export default function ProgramChairDashboard() {
                 setQuestions(parsed.questions || []);
             } else {
                 if (surveyFormType === 'po') {
-                    setFormTitle('1st Year PO Survey');
+                    setFormTitle('SO Survey (Yearly Update)');
                     setFormDesc('Evaluate your proficiency based on the scale: 1 (Lowest) to 5 (Highest).');
                     setQuestions(DEFAULT_PO_QUESTIONS);
                 } else if (surveyFormType === 'peo') {
                     setFormTitle('3-5 Year PEO Survey');
                     setFormDesc('Evaluate your attainment of the Program Educational Objectives.');
                     setQuestions([{ id: 'q1', type: 'likert', text: 'How effectively are you leading complex engineering projects?' }]);
-                } else if (surveyFormType === 'yearly') {
-                    setFormTitle('Yearly Alumni Update Survey');
-                    setFormDesc('Please update your employment status and professional progress.');
-                    setQuestions([{ id: 'q1', type: 'yesno', text: 'Are you currently employed in a field related to Computer Engineering?' }]);
                 } else {
                     setFormTitle('Graduate Tracer Study');
                     setFormDesc('In compliance with the Commission on Higher Education (CHED) Memorandum Order. Please complete this questionnaire as accurately and frankly as possible.');
@@ -442,8 +409,7 @@ export default function ProgramChairDashboard() {
 
     const saveFormToDatabase = () => {
         const dbKey = surveyFormType === 'po' ? 'obe_form_po' :
-                      surveyFormType === 'peo' ? 'obe_form_peo' :
-                      surveyFormType === 'yearly' ? 'obe_form_yearly' : 'obe_form_gts';
+                      surveyFormType === 'peo' ? 'obe_form_peo' : 'obe_form_gts';
         const payload = { title: formTitle, desc: formDesc, questions: questions };
         localStorage.setItem(dbKey, JSON.stringify(payload));
         alert('Success! The survey has been published.');
@@ -863,16 +829,16 @@ export default function ProgramChairDashboard() {
                                 {!selectedSurveyView ? (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
                                         <div>
-                                            <h2 style={{ color: 'var(--gold)', fontSize: '1.2rem', marginBottom: '15px', paddingLeft: '5px', borderLeft: '4px solid var(--gold)' }}>PO & PEO Surveys</h2>
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+                                            <h2 style={{ color: 'var(--gold)', fontSize: '1.2rem', marginBottom: '15px', paddingLeft: '5px', borderLeft: '4px solid var(--gold)' }}>Indirect Assessment Surveys</h2>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
                                                 
                                                 <div className="portal-card hover-card" onClick={() => setSelectedSurveyView('1stYear')} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer', transition: 'all 0.2s', border: '1px solid rgba(255,255,255,0.05)' }}>
                                                     <div>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                                            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', margin: 0 }}>1st Year Graduate Survey</h3>
+                                                            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', margin: 0 }}>SO Survey (Yearly Update)</h3>
                                                             <span style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>Active 🟢</span>
                                                         </div>
-                                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '20px' }}>Assesses early career alignment and basic PO attainment. Click to view respondents.</p>
+                                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '20px' }}>Assesses early career alignment and basic SO attainment. Click to view respondents.</p>
                                                     </div>
                                                     <div>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '0.85rem' }}>
@@ -900,46 +866,25 @@ export default function ProgramChairDashboard() {
                                                     </div>
                                                 </div>
 
-                                                <div className="portal-card hover-card" onClick={() => setSelectedSurveyView('yearly')} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer', transition: 'all 0.2s', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                <div className="portal-card hover-card" onClick={() => setSelectedSurveyView('gts')} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer', transition: 'all 0.2s', border: '1px solid rgba(255,255,255,0.05)' }}>
                                                     <div>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                                            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', margin: 0 }}>Yearly Alumni Survey [A.Y. 2025-2026]</h3>
-                                                            <span style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>Active 🟢</span>
+                                                            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', margin: 0 }}>Graduate Tracer Study</h3>
+                                                            <span style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>Deployed 🟢</span>
                                                         </div>
-                                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '20px' }}>General updates on employment and continued learning.</p>
+                                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '20px' }}>Institutional tracer questionnaire. Click to view respondent tracker.</p>
                                                     </div>
                                                     <div>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '0.85rem' }}>
-                                                            <span>Completion Rate</span>
-                                                            <span style={{ color: '#10b981', fontWeight: 'bold' }}>42%</span>
+                                                            <span>Overall Completion</span>
+                                                            <span style={{ color: 'var(--gold)', fontWeight: 'bold' }}>{tracerRate}%</span>
                                                         </div>
                                                         <div style={{ width: '100%', height: '6px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '3px' }}>
-                                                            <div style={{ width: '42%', height: '100%', backgroundColor: '#10b981', borderRadius: '3px' }}></div>
+                                                            <div style={{ width: `${tracerRate}%`, height: '100%', backgroundColor: 'var(--gold)', borderRadius: '3px' }}></div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </div>
 
-                                        <div>
-                                            <h2 style={{ color: 'var(--gold)', fontSize: '1.2rem', marginBottom: '15px', paddingLeft: '5px', borderLeft: '4px solid var(--gold)' }}>Graduate Tracer Study (GTS)</h2>
-                                            <div className="portal-card hover-card" onClick={() => setSelectedSurveyView('gts')} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', transition: 'all 0.2s' }}>
-                                                <div style={{ flex: 1 }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '5px' }}>
-                                                        <h3 style={{ fontSize: '1.2rem', color: 'var(--text-main)', margin: 0 }}>Institutional Tracer Questionnaire</h3>
-                                                        <span style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>Deployed 🟢</span>
-                                                    </div>
-                                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-sub)', margin: 0 }}>Fully dynamic questionnaire. Click to view respondent tracker.</p>
-                                                </div>
-                                                <div style={{ width: '250px', borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '20px' }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '0.85rem' }}>
-                                                        <span>Overall Completion</span>
-                                                        <span style={{ color: 'var(--gold)', fontWeight: 'bold' }}>{tracerRate}%</span>
-                                                    </div>
-                                                    <div style={{ width: '100%', height: '8px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '4px' }}>
-                                                        <div style={{ width: `${tracerRate}%`, height: '100%', backgroundColor: 'var(--gold)', borderRadius: '4px' }}></div>
-                                                    </div>
-                                                </div>
                                             </div>
                                         </div>
                                         <style jsx>{`
@@ -951,123 +896,6 @@ export default function ProgramChairDashboard() {
                                         `}</style>
                                     </div>
                                 ) : (
-                                    selectedSurveyView === 'yearly' ? (
-                                        <div className="portal-card" style={{ animation: 'fadeIn 0.3s ease' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px' }}>
-                                                <div>
-                                                    <button 
-                                                        onClick={() => setSelectedSurveyView(null)} 
-                                                        style={{ background: 'none', border: 'none', color: 'var(--gold)', padding: '6px 0', fontSize: '0.9rem', marginBottom: '10px', cursor: 'pointer', fontWeight: '500', transition: 'opacity 0.2s', display: 'flex', alignItems: 'center', gap: '5px' }}
-                                                        onMouseEnter={(e) => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.textDecoration = 'underline'; }}
-                                                        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--gold)'; e.currentTarget.style.textDecoration = 'none'; }}
-                                                    >
-                                                        ← Back to Surveys
-                                                    </button>
-                                                    <h3 style={{ color: 'var(--text-main)', fontSize: '1.4rem', margin: 0 }}>Yearly Alumni Survey Records</h3>
-                                                    <p style={{ color: 'var(--text-sub)', fontSize: '0.85rem', marginTop: '5px', margin: '5px 0 0 0' }}>View historical respondents and questionnaires per academic year.</p>
-                                                </div>
-                                            </div>
-
-                                            <div style={{ display: 'flex', gap: '10px', marginBottom: '25px', overflowX: 'auto', paddingBottom: '5px' }}>
-                                                {['2023', '2024', '2025', '2026'].map(year => (
-                                                    <button 
-                                                        key={year}
-                                                        onClick={() => setYearlySelectedYear(year)}
-                                                        style={{ 
-                                                            padding: '8px 20px', borderRadius: '20px', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap',
-                                                            border: yearlySelectedYear === year ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', 
-                                                            backgroundColor: yearlySelectedYear === year ? 'rgba(234, 179, 8, 0.1)' : 'rgba(0,0,0,0.2)', 
-                                                            color: yearlySelectedYear === year ? 'var(--gold)' : 'var(--text-main)', 
-                                                            fontWeight: yearlySelectedYear === year ? 'bold' : 'normal'
-                                                        }}
-                                                    >
-                                                        {year} {year === '2026' ? '(Active)' : ''}
-                                                    </button>
-                                                ))}
-                                            </div>
-
-                                            <div style={{ backgroundColor: 'rgba(0,0,0,0.2)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <div>
-                                                    <h4 style={{ margin: 0, color: 'var(--gold)', fontSize: '1.1rem' }}>A.Y. {yearlySelectedYear} - General Update Survey</h4>
-                                                </div>
-                                                <div style={{ display: 'flex', gap: '30px' }}>
-                                                    <div style={{ textAlign: 'right' }}>
-                                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-sub)' }}>Total Respondents</span>
-                                                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-main)' }}>{yearlySelectedYear === '2026' ? '120' : (yearlySelectedYear === '2025' ? '85' : '60')}</div>
-                                                    </div>
-                                                    <div style={{ textAlign: 'right' }}>
-                                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-sub)' }}>Completion Rate</span>
-                                                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#10b981' }}>{yearlySelectedYear === '2026' ? '42%' : '75%'}</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div style={{ display: 'flex', gap: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '20px' }}>
-                                                <button 
-                                                    onClick={() => setYearlyActiveTab('respondents')} 
-                                                    style={{ background: 'none', border: 'none', cursor: 'pointer', transition: 'all 0.2s', padding: '10px 0', fontSize: '1rem',
-                                                        borderBottom: yearlyActiveTab === 'respondents' ? '2px solid var(--gold)' : '2px solid transparent', 
-                                                        color: yearlyActiveTab === 'respondents' ? 'var(--gold)' : 'var(--text-sub)', 
-                                                        fontWeight: yearlyActiveTab === 'respondents' ? 'bold' : 'normal'
-                                                    }}
-                                                >
-                                                    👥 Respondents List
-                                                </button>
-                                                <button 
-                                                    onClick={() => setYearlyActiveTab('questionnaire')} 
-                                                    style={{ background: 'none', border: 'none', cursor: 'pointer', transition: 'all 0.2s', padding: '10px 0', fontSize: '1rem',
-                                                        borderBottom: yearlyActiveTab === 'questionnaire' ? '2px solid var(--gold)' : '2px solid transparent', 
-                                                        color: yearlyActiveTab === 'questionnaire' ? 'var(--gold)' : 'var(--text-sub)', 
-                                                        fontWeight: yearlyActiveTab === 'questionnaire' ? 'bold' : 'normal'
-                                                    }}
-                                                >
-                                                    📝 Survey Questionnaire
-                                                </button>
-                                            </div>
-
-                                            {yearlyActiveTab === 'respondents' ? (
-                                                <div style={{ overflowX: 'auto' }}>
-                                                    <table className="data-table">
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Student ID</th>
-                                                                <th>Name</th>
-                                                                <th>Batch</th>
-                                                                <th>Survey Status</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {activeStudents.map((student, idx) => (
-                                                                <tr key={idx}>
-                                                                    <td style={{ color: 'var(--text-sub)' }}>{student.id}</td>
-                                                                    <td style={{ fontWeight: '600' }}>{student.name}</td>
-                                                                    <td>{student.batch}</td>
-                                                                    <td>
-                                                                        <span className="status-badge badge-pending">Pending</span>
-                                                                    </td>
-                                                                </tr>
-                                                            ))}
-                                                            {activeStudents.length === 0 && (
-                                                                <tr>
-                                                                    <td colSpan="4" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-sub)' }}>
-                                                                        No records found.
-                                                                    </td>
-                                                                </tr>
-                                                            )}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            ) : (
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                                    {yearlyQuestionnaires[yearlySelectedYear]?.map((q, idx) => (
-                                                        <div key={idx} style={{ backgroundColor: 'rgba(0,0,0,0.2)', padding: '20px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                                            <p style={{ margin: 0, color: 'var(--text-main)', fontSize: '1.05rem' }}>{q}</p>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    ) : (
                                         <div className="portal-card" style={{ animation: 'fadeIn 0.3s ease' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px' }}>
                                                 <div>
@@ -1080,7 +908,7 @@ export default function ProgramChairDashboard() {
                                                         ← Back to Surveys
                                                     </button>
                                                     <h3 style={{ color: 'var(--text-main)', fontSize: '1.4rem', margin: 0 }}>
-                                                        {selectedSurveyView === '1stYear' && '1st Year Graduate Survey Respondents'}
+                                                        {selectedSurveyView === '1stYear' && 'SO Survey (Yearly Update) Respondents'}
                                                         {selectedSurveyView === '3to5Year' && '3-5 Year Graduate Survey Respondents'}
                                                         {selectedSurveyView === 'gts' && 'Graduate Tracer Study Respondents'}
                                                     </h3>
@@ -1139,7 +967,6 @@ export default function ProgramChairDashboard() {
                                                 </table>
                                             </div>
                                         </div>
-                                    )
                                 )}
                             </div>
                         )}
@@ -1157,9 +984,8 @@ export default function ProgramChairDashboard() {
                                             value={surveyFormType}
                                             onChange={(e) => setSurveyFormType(e.target.value)}
                                         >
-                                            <option value="po">📊 1st Year (PO Survey)</option>
+                                            <option value="po">📊 SO Survey (Yearly Update)</option>
                                             <option value="peo">📈 3-5 Year (PEO Survey)</option>
-                                            <option value="yearly">📅 Yearly Update Survey</option>
                                             <option value="gts">🎓 Graduate Tracer Study (GTS)</option>
                                         </select>
 
@@ -1236,8 +1062,7 @@ export default function ProgramChairDashboard() {
                                                                     const isActive = activeQuestionId === q.id;
                                                                     const isHovered = hoveredQuestionId === q.id;
                                                                     return (
-                                                                        <div 
-                                                                            key={q.id} 
+                                                                        <div key={q.id} 
                                                                             className="portal-card" 
                                                                             onMouseEnter={() => setHoveredQuestionId(q.id)}
                                                                             onMouseLeave={() => setHoveredQuestionId(null)}
@@ -1749,7 +1574,7 @@ export default function ProgramChairDashboard() {
                                                 fontWeight: indirectReportTab === '1stYear' ? 'bold' : 'normal'
                                             }}
                                         >
-                                            1st Year (PO Survey)
+                                            SO Survey (Yearly Update)
                                         </button>
                                         <button 
                                             onClick={() => setIndirectReportTab('3to5Year')} 
@@ -1763,26 +1588,14 @@ export default function ProgramChairDashboard() {
                                         >
                                             3-5 Year (PEO Survey)
                                         </button>
-                                        <button 
-                                            onClick={() => setIndirectReportTab('yearly')} 
-                                            style={{ 
-                                                padding: '8px 20px', borderRadius: '20px', cursor: 'pointer', transition: 'all 0.2s',
-                                                border: indirectReportTab === 'yearly' ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', 
-                                                backgroundColor: indirectReportTab === 'yearly' ? 'rgba(234, 179, 8, 0.1)' : 'rgba(0,0,0,0.2)', 
-                                                color: indirectReportTab === 'yearly' ? 'var(--gold)' : 'var(--text-main)', 
-                                                fontWeight: indirectReportTab === 'yearly' ? 'bold' : 'normal'
-                                            }}
-                                        >
-                                            Yearly Update Survey
-                                        </button>
                                     </div>
 
                                     {indirectReportTab === '1stYear' && (
                                         <div style={{ animation: 'fadeIn 0.3s ease' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                                                 <div>
-                                                    <h3 style={{ color: 'var(--text-main)', fontSize: '1.4rem', margin: 0 }}>PO Survey Compliance</h3>
-                                                    <p style={{ color: 'var(--text-sub)', fontSize: '0.9rem', marginTop: '5px' }}>1st Year Graduate respondents tracking.</p>
+                                                                    <h3 style={{ color: 'var(--text-main)', fontSize: '1.4rem', margin: 0 }}>SO Survey Compliance</h3>
+                                                                    <p style={{ color: 'var(--text-sub)', fontSize: '0.9rem', marginTop: '5px' }}>Yearly update respondents tracking.</p>
                                                 </div>
                                                 <select className="correction-textbox" style={{ height: '35px', padding: '0 10px', width: '150px', backgroundColor: 'var(--bg-card)' }} value={checklistBatch} onChange={(e) => setChecklistBatch(e.target.value)}>
                                                     <option value="All">All Batches</option>
@@ -1798,7 +1611,7 @@ export default function ProgramChairDashboard() {
                                                     <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--text-main)' }}>{totalChecklist}</div>
                                                 </div>
                                                 <div style={{ backgroundColor: 'rgba(0,0,0,0.2)', padding: '20px', borderRadius: '8px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                                    <h4 style={{ color: 'var(--text-sub)', fontSize: '0.85rem', marginBottom: '10px' }}>PO Survey Completion Rate</h4>
+                                                    <h4 style={{ color: 'var(--text-sub)', fontSize: '0.85rem', marginBottom: '10px' }}>SO Survey Completion Rate</h4>
                                                     <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#3b82f6' }}>{c_poRate}%</div>
                                                 </div>
                                             </div>
@@ -1810,7 +1623,7 @@ export default function ProgramChairDashboard() {
                                                             <th>Student ID</th>
                                                             <th>Name</th>
                                                             <th>Batch</th>
-                                                            <th>PO Survey Status</th>
+                                                            <th>SO Survey Status</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -1880,56 +1693,6 @@ export default function ProgramChairDashboard() {
                                         </div>
                                     )}
 
-                                    {indirectReportTab === 'yearly' && (
-                                        <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                                                <div>
-                                                    <h3 style={{ color: 'var(--text-main)', fontSize: '1.4rem', margin: 0 }}>Yearly Update Survey</h3>
-                                                    <p style={{ color: 'var(--text-sub)', fontSize: '0.9rem', marginTop: '5px' }}>General updates and employment status of alumni.</p>
-                                                </div>
-                                                <div style={{ display: 'flex', gap: '10px' }}>
-                                                    {['2023', '2024', '2025', '2026'].map(year => (
-                                                        <button 
-                                                            key={year}
-                                                            onClick={() => setYearlySelectedYear(year)}
-                                                            style={{ 
-                                                                padding: '6px 15px', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.85rem',
-                                                                border: yearlySelectedYear === year ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', 
-                                                                backgroundColor: yearlySelectedYear === year ? 'rgba(234, 179, 8, 0.1)' : 'rgba(0,0,0,0.2)', 
-                                                                color: yearlySelectedYear === year ? 'var(--gold)' : 'var(--text-main)', 
-                                                            }}
-                                                        >
-                                                            {year}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            <div style={{ overflowX: 'auto' }}>
-                                                <table className="data-table">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Student ID</th>
-                                                            <th>Name</th>
-                                                            <th>Batch</th>
-                                                            <th>Update Status ({yearlySelectedYear})</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {activeStudents.map((student, idx) => (
-                                                            <tr key={idx}>
-                                                                <td style={{ color: 'var(--text-sub)' }}>{student.id}</td>
-                                                                <td style={{ fontWeight: '600' }}>{student.name}</td>
-                                                                <td>{student.batch}</td>
-                                                                <td>
-                                                                    <span className="status-badge badge-pending">Pending</span>
-                                                                </td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    )}
                                 </>
                             )}
 
