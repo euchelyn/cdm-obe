@@ -1,9 +1,5 @@
-/* variable declarations and dark and light mode*/
-* { margin: 0; 
-    padding: 0; 
-    box-sizing: border-box; 
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-}
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
 
 :root {
     --white: #ffffff;
@@ -28,27 +24,17 @@
     --body-blur-brightness: brightness(0.3);
 }
 
-/* dark light theme button */
 .floating-theme-btn {
-    position: absolute;
-    top: 25px;
-    right: 35px;
-    padding: 10px 20px;
-    border-radius: 20px;
-    border: 1px solid var(--grey-medium);
-    background: var(--card-bg);
-    color: var(--text-dark);
-    font-weight: bold; cursor: pointer;
-    z-index: 10;
+    position: absolute; top: 25px; right: 35px; padding: 10px 20px;
+    border-radius: 20px; border: 1px solid var(--grey-medium);
+    background: var(--card-bg); color: var(--text-dark);
+    font-weight: bold; cursor: pointer; z-index: 10;
     transition: all 0.3s ease;
 }
-.floating-theme-btn:hover {
-    transform: translateY(-2px); 
-    box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+.floating-theme-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
 
-/* login layout and bg */
 body {
-    background-color: #020617; /* blurred edges */
+    background-color: #020617;
 }
 
 .login-body {
@@ -71,7 +57,6 @@ body {
     transition: filter 0.5s ease;
 }
 
-/* wrap */
 .login-wrapper {
     flex-grow: 1;
     display: flex;
@@ -89,7 +74,6 @@ body {
     align-items: center;
 }
 
-/* info sa left side */
 .info-section {
     flex: 1;
     color: #ffffff;
@@ -99,36 +83,11 @@ body {
     justify-content: center;
 }
 
-.brand-header { 
-    margin-bottom: 30px; }
-.school-logo-large { 
-    height: 90px; 
-    width: auto; 
-    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4)); 
-}
-
-.welcome-title { 
-    font-size: 3.5rem; 
-    font-weight: 700; 
-    line-height: 1.1; 
-    margin-bottom: 20px; 
-    letter-spacing: -1px; 
-}
-
-.accent-line { 
-    width: 60px; 
-    height: 4px; 
-    background-color: #ffd700;
-    margin-bottom: 25px; 
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3); 
-}
-
-.system-description { 
-    font-size: 1.1rem; 
-    line-height: 1.6; 
-    margin-bottom: 35px; 
-    max-width: 90%; 
-}
+.brand-header { margin-bottom: 30px; }
+.school-logo-large { height: 90px; width: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4)); }
+.welcome-title { font-size: 3.5rem; font-weight: 700; line-height: 1.1; margin-bottom: 20px; letter-spacing: -1px; }
+.accent-line { width: 60px; height: 4px; background-color: #ffd700; margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+.system-description { font-size: 1.1rem; line-height: 1.6; margin-bottom: 35px; max-width: 90%; }
 
 .learn-more-btn {
     background-color: transparent;
@@ -139,14 +98,8 @@ body {
     box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     margin-bottom: 35px; align-self: flex-start; 
 }
-.learn-more-btn:hover { 
-    background-color: #ffd700; 
-    color: #0a192f; 
-    transform: translateY(-2px); 
-    box-shadow: 0 6px 12px rgba(0,0,0,0.3); 
-}
+.learn-more-btn:hover { background-color: #ffd700; color: #0a192f; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.3); }
 
-/* pythons logo spacing */
 .powered-by-logo-container {
     display: flex;
     align-items: center;
@@ -155,184 +108,43 @@ body {
     opacity: 0.6;
     transition: opacity 0.3s ease;
 }
-
-.powered-by-logo-container:hover { 
-    opacity: 1; 
-}
+.powered-by-logo-container:hover { opacity: 1; }
 
 .pythons-credit {
-    font-size: 0.85rem; 
-    font-weight: 600; 
-    letter-spacing: 0.5px; 
-    color: #ffffff; 
-    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    font-size: 0.85rem; font-weight: 600; letter-spacing: 0.5px; 
+    color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
-
 .cpe-logo-small {
-    height: 35px; 
-    width: auto; filter: 
-    drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    height: 35px; width: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
 }
 
-/* login card right side */
+.login-section { flex: 1; display: flex; justify-content: flex-end; }
+.login-card { background-color: var(--card-bg); padding: 40px; border-radius: 12px; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3); width: 100%; max-width: 420px; border-top: 5px solid var(--navy-deep); transition: 0.4s ease; }
+.login-card:hover { transform: translateY(-5px); box-shadow: 0 20px 45px rgba(0, 0, 0, 0.4); }
 
-.login-section { 
-    flex: 1; 
-    display: flex; 
-    justify-content: flex-end; 
-}
+.card-header { text-align: center; margin-bottom: 30px; }
+.card-header h2 { color: var(--navy-deep); font-size: 2rem; margin-bottom: 8px; }
+.card-header p { font-size: 0.9rem; color: var(--text-dark); opacity: 0.8; }
 
-.login-card { 
-    background-color: var(--card-bg); 
-    padding: 40px; 
-    border-radius: 12px; 
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3); 
-    width: 100%; 
-    max-width: 420px; 
-    border-top: 5px solid var(--navy-deep);
-    transition: 0.4s ease; 
-}
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-dark); font-size: 0.95rem; }
+.form-group input { width: 100%; padding: 12px 15px; border: 1px solid var(--grey-medium); border-radius: 8px; font-size: 1rem; background-color: var(--input-bg); color: var(--text-dark); transition: 0.3s; outline: none; }
+.form-group input:focus { border-color: var(--navy-medium); box-shadow: 0 0 0 4px rgba(23, 42, 69, 0.1); background-color: var(--card-bg); }
 
-.login-card:hover { 
-    transform: translateY(-5px); 
-    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.4); 
-}
+.role-selection p { color: var(--text-dark); font-weight: 600; margin-bottom: 8px; font-size: 0.95rem;}
+.role-btns { display: flex; gap: 12px; margin-top: 8px; margin-bottom: 20px; }
+.role-btn { flex: 1; text-align: center; padding: 12px 10px; border: 2px solid var(--grey-medium); border-radius: 8px; color: var(--text-dark); font-size: 0.95rem; font-weight: 600; cursor: pointer; background-color: var(--input-bg); transition: 0.3s; }
+.role-btn:hover { border-color: var(--navy-deep); background-color: var(--gold-logo); color: #0a192f; transform: translateY(-2px); }
+.role-btn.active { background-color: var(--gold-logo); color: #0a192f; border-color: var(--navy-deep); box-shadow: 0 6px 15px rgba(255, 215, 0, 0.3); transform: translateY(-2px) scale(1.03); }
 
-.card-header { 
-    text-align: center; 
-    margin-bottom: 30px; 
-}
-
-.card-header h2 { 
-    color: var(--navy-deep);
-    font-size: 2rem;
-    margin-bottom: 8px;
-}
-
-.card-header p { font-size: 0.9rem;
-    color: var(--text-dark);
-    opacity: 0.8;
-}
-
-.form-group { 
-    margin-bottom: 20px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: var(--text-dark);
-    font-size: 0.95rem;
-}
-
-.form-group input {
-    width: 100%;
-    padding: 12px 15px;
-    border: 1px solid var(--grey-medium);
-    border-radius: 8px;
-    font-size: 1rem;
-    background-color: var(--input-bg);
-    color: var(--text-dark);
-    transition: 0.3s; outline: none;
-}
-
-.form-group input:focus {
-    border-color: var(--navy-medium);
-    box-shadow: 0 0 0 4px rgba(23, 42, 69, 0.1);
-    background-color: var(--card-bg);
-}
-
-/* program alumni button design */
-
-.role-selection p {
-    color: var(--text-dark);
-    font-weight: 600;
-    margin-bottom: 8px;
-    font-size: 0.95rem;
-}
-
-.role-btns {
-    display: flex;
-    gap: 12px;
-    margin-top: 8px;
-    margin-bottom: 20px;
-}
-
-.role-btn {
-    flex: 1;
-    text-align: center;
-    padding: 12px 10px;
-    border: 2px solid var(--grey-medium);
-    border-radius: 8px;
-    color: var(--text-dark);
-    font-size: 0.95rem;
-    font-weight: 600;
-    cursor: pointer;
-    background-color: var(--input-bg);
-    transition: 0.3s;
-}
-
-.role-btn:hover {
-    border-color: var(--navy-deep);
-    background-color: var(--gold-logo);
-    color: #0a192f;
-    transform: translateY(-2px);
-}
-
-.role-btn.active {
-    background-color: var(--gold-logo);
-    color: #0a192f;
-    border-color: var(--navy-deep);
-    box-shadow: 0 6px 15px rgba(255, 215, 0, 0.3);
-    transform: translateY(-2px) scale(1.03);
-}
-
-/* login button */
-.login-btn {
-    background-color: var(--navy-deep);
-    color: var(--white);
-    border: none;
-    padding: 15px;
-    width: 100%;
-    border-radius: 8px;
-    font-size: 1.1rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-[data-theme="dark"]
-.login-btn {
-    color: #0a192f;
-}
-
-.login-btn:hover {
-    background-color: var(--navy-medium);
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(10, 25, 47, 0.3);
-}
+.login-btn { background-color: var(--navy-deep); color: var(--white); border: none; padding: 15px; width: 100%; border-radius: 8px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: 0.3s; }
+[data-theme="dark"] .login-btn { color: #0a192f; }
+.login-btn:hover { background-color: var(--navy-medium); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(10, 25, 47, 0.3); }
 
 @media (max-width: 850px) {
-    .split-layout-container {
-        flex-direction: column;
-        text-align: center;
-}
-
-.accent-line {
-        margin: 0 auto 25px auto;
-}
-
-.system-description {
-        margin: 0 auto 35px auto;
-}
-
-.login-section {
-        justify-content: center;
-        width: 100%;
-}
-    .learn-more-btn { 
-        align-self: center;
-        margin-bottom: 20px;
-}
+    .split-layout-container { flex-direction: column; text-align: center; }
+    .accent-line { margin: 0 auto 25px auto; }
+    .system-description { margin: 0 auto 35px auto; }
+    .login-section { justify-content: center; width: 100%; }
+    .learn-more-btn { align-self: center; margin-bottom: 20px; }
 }
