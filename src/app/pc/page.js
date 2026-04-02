@@ -2000,7 +2000,7 @@ export default function ProgramChairDashboard() {
 
             {surveyModalStudent && (
                 <div className="modal-overlay">
-                    <div className="modal-box portal-card" style={{ maxWidth: '800px', width: '90%', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+                    <div className="modal-box portal-card" style={{ maxWidth: '650px', width: '90%', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
                             <h2 style={{ color: 'var(--gold)', margin: 0 }}>Respondent Answers</h2>
                             {!isEditingSurvey && respondentTab === 'answers' && (
@@ -2117,6 +2117,23 @@ export default function ProgramChairDashboard() {
                         </div>
                     </div>
                 )}
+
+            <style dangerouslySetInnerHTML={{ __html: `
+                ::-webkit-scrollbar {
+                    width: 8px;
+                    height: 8px;
+                }
+                ::-webkit-scrollbar-track {
+                    background: var(--bg-main);
+                }
+                ::-webkit-scrollbar-thumb {
+                    background: rgba(255, 255, 255, 0.2);
+                    border-radius: 4px;
+                }
+                ::-webkit-scrollbar-thumb:hover {
+                    background: var(--gold);
+                }
+            `}} />
             </div>
         );
 }
