@@ -107,6 +107,47 @@ const DEFAULT_PO_QUESTIONS = [
     { id: 'qL2', poId: 'L', type: 'likert', text: 'As a Leader', weight: 60, options: ['Knowledge and understanding of engineering and management principles', 'Apply engineering and management principles', 'Achieve project objective'] }
 ];
 
+    const DEFAULT_PEO_QUESTIONS = [
+    { id: 'q1', type: 'likert', text: 'How effectively are you leading complex engineering projects?' }
+];
+
+const DEFAULT_GTS_QUESTIONS = [
+    { id: 'q1', type: 'text', text: 'Name' },
+    { id: 'q2', type: 'textarea', text: 'Permanent Address' },
+    { id: 'q3', type: 'email', text: 'E-mail Address' },
+    { id: 'q4', type: 'text', text: 'Telephone or Contact Number(s)' },
+    { id: 'q5', type: 'text', text: 'Mobile Number' },
+    { id: 'q6', type: 'radio', text: 'Civil Status', options: ['Single', 'Married', 'Separated', 'Widow/Widower', 'Single Parent'] },
+    { id: 'q7', type: 'radio', text: 'Sex', options: ['Male', 'Female'] },
+    { id: 'q8', type: 'date', text: 'Birthday' },
+    { id: 'q9', type: 'dropdown', text: 'Region of Origin', options: ['Region 1', 'Region 2', 'Region 3', 'Region 4A', 'Region 4B', 'Region 5', 'Region 6', 'Region 7', 'Region 8', 'Region 9', 'Region 10', 'Region 11', 'Region 12', 'NCR', 'CAR', 'ARMM', 'CARAGA'] },
+    { id: 'q10', type: 'text', text: 'Province' },
+    { id: 'q11', type: 'radio', text: 'Location of Residence', options: ['City', 'Municipality'] },
+    { id: 'q12', type: 'text', text: 'Educational Attainment (Degree & Specialization)' },
+    { id: 'q13', type: 'textarea', text: 'Professional examination(s) Passed (with Rating & Date)' },
+    { id: 'q14', type: 'checkbox', text: 'Reason(s) for taking the course(s) or pursuing degree(s)', options: ['High grades in course/subject area', 'Good grades in high school', 'Influence of parents or relatives', 'Peer Influence', 'Inspired by a role model', 'Strong passion for the profession', 'Prospect for immediate employment', 'Status or prestige of the profession', 'Availability of course offering', 'Prospect of career advancement', 'Affordable for the family', 'Prospect of attractive compensation', 'Opportunity for employment abroad', 'No particular choice', 'Other reason(s)'] },
+    { id: 'q15', type: 'textarea', text: 'Training(s) / Advance Studies Attended After College & Reasons' },
+    { id: 'q16', type: 'yesno', text: 'Are you presently employed?' },
+    { id: 'q17', type: 'checkbox', text: 'If not employed, please state reason(s) why.', options: ['Advance or further study', 'Family concern and decided not to find a job', 'Health-related reason(s)', 'Lack of work experience', 'No job opportunity', 'Did not look for a job', 'Other reason(s)'] },
+    { id: 'q18', type: 'dropdown', text: 'Present Employment Status', options: ['Regular', 'Temporary', 'Casual', 'Contractual', 'Self-employed'] },
+    { id: 'q19', type: 'text', text: 'Present occupation / Job Title' },
+    { id: 'q20', type: 'textarea', text: 'Name of Company/Organization and Major line of business' },
+    { id: 'q21', type: 'radio', text: 'Place of Work', options: ['Local', 'Abroad'] },
+    { id: 'q22', type: 'yesno', text: 'Is this your first job after college?' },
+    { id: 'q23', type: 'checkbox', text: 'What are your reason(s) for staying on the job?', options: ['Salaries and benefits', 'Career challenge', 'Related to special skills', 'Related to course or program of study', 'Proximity to residence', 'Peer influence', 'Family influence', 'Other reason(s)'] },
+    { id: 'q24', type: 'checkbox', text: 'What were your reasons for accepting the job?', options: ['Salaries & benefits', 'Career challenge', 'Related to special skills', 'Proximity to residence', 'Other reason(s)'] },
+    { id: 'q25', type: 'checkbox', text: 'What were your reason(s) for changing job?', options: ['Salaries & benefits', 'Career challenge', 'Related to special skills', 'Proximity to residence', 'Other reason(s)'] },
+    { id: 'q26', type: 'textarea', text: 'Additional reasons for changing job (if applicable)' },
+    { id: 'q27', type: 'dropdown', text: 'How long did you stay in your first job?', options: ['Less than a month', '1 to 6 months', '7 to 11 months', '1 year to less than 2 years', '2 years to less than 3 years', '3 years to less than 4 years', 'Others'] },
+    { id: 'q28', type: 'dropdown', text: 'How did you find your first job?', options: ['Response to an advertisement', 'As walk-in applicant', 'Recommended by someone', 'Information from friends', 'Arranged by placement officer', 'Family business', 'Job Fair / PESO', 'Others'] },
+    { id: 'q29', type: 'dropdown', text: 'How long did it take you to land your first job?', options: ['Less than a month', '1 to 6 months', '7 to 11 months', '1 year to less than 2 years', '2 years to less than 3 years', '3 years to less than 4 years', 'Others'] },
+    { id: 'q30', type: 'dropdown', text: 'Job Level Position', options: ['Rank or Clerical', 'Professional, Technical or Supervisory', 'Managerial or Executive', 'Self-employed'] },
+    { id: 'q31', type: 'dropdown', text: 'What is your initial gross monthly earning in your first job after college?', options: ['Below P5,000.00', 'P5,000.00 to less than P10,000.00', 'P10,000.00 to less than P15,000.00', 'P15,000.00 to less than P20,000.00', 'P20,000.00 to less than P25,000.00', 'P25,000.00 and above'] },
+    { id: 'q32', type: 'yesno', text: 'Was the curriculum you had in college relevant to your first job?' },
+    { id: 'q33', type: 'checkbox', text: 'If YES, what competencies learned in college did you find very useful in your first job?', options: ['Communication skills', 'Human Relations skills', 'Entrepreneurial skills', 'Information Technology skills', 'Problem-solving skills', 'Critical Thinking skills', 'Other skills'] },
+    { id: 'q34', type: 'textarea', text: 'List down suggestions to further improve your course curriculum' }
+];
+
 export default function ProgramChairDashboard() {
     const router = useRouter();
     const [isDarkMode, setIsDarkMode] = useState(true);
@@ -133,6 +174,13 @@ export default function ProgramChairDashboard() {
     const [questions, setQuestions] = useState([]);
     const [activeQuestionId, setActiveQuestionId] = useState(null);
     const [hoveredQuestionId, setHoveredQuestionId] = useState(null);
+
+    const [surveyModalStudent, setSurveyModalStudent] = useState(null);
+    const [surveyModalType, setSurveyModalType] = useState(null);
+    const [surveyModalAnswers, setSurveyModalAnswers] = useState({});
+    const [surveyModalQuestions, setSurveyModalQuestions] = useState([]);
+    const [respondentTab, setRespondentTab] = useState('answers');
+    const [isEditingSurvey, setIsEditingSurvey] = useState(false);
 
     const [reportType, setReportType] = useState('direct');
     const [indirectReportTab, setIndirectReportTab] = useState('1stYear');
@@ -198,6 +246,7 @@ export default function ProgramChairDashboard() {
                     setFormTitle('3-5 Year PEO Survey');
                     setFormDesc('Evaluate your attainment of the Program Educational Objectives.');
                     setQuestions([{ id: 'q1', type: 'likert', text: 'How effectively are you leading complex engineering projects?' }]);
+                    setQuestions(DEFAULT_PEO_QUESTIONS);
                 } else {
                     setFormTitle('Graduate Tracer Study');
                     setFormDesc('In compliance with the Commission on Higher Education (CHED) Memorandum Order. Please complete this questionnaire as accurately and frankly as possible.');
@@ -237,6 +286,7 @@ export default function ProgramChairDashboard() {
                         { id: 'q33', type: 'checkbox', text: 'If YES, what competencies learned in college did you find very useful in your first job?', options: ['Communication skills', 'Human Relations skills', 'Entrepreneurial skills', 'Information Technology skills', 'Problem-solving skills', 'Critical Thinking skills', 'Other skills'] },
                         { id: 'q34', type: 'textarea', text: 'List down suggestions to further improve your course curriculum' }
                     ]);
+                    setQuestions(DEFAULT_GTS_QUESTIONS);
                 }
             }
             setActiveQuestionId(null);
@@ -344,6 +394,56 @@ export default function ProgramChairDashboard() {
     const showToast = (msg, type = 'success') => {
         setToastMessage({ text: msg, type });
         setTimeout(() => setToastMessage(null), 5000);
+    };
+
+    const openSurveyModal = (student, surveyTypeView) => {
+        let dbKey = '';
+        let sType = '';
+        if (surveyTypeView === '1stYear') { dbKey = 'obe_form_po'; sType = 'po'; }
+        else if (surveyTypeView === '3to5Year') { dbKey = 'obe_form_peo'; sType = 'peo'; }
+        else if (surveyTypeView === 'gts') { dbKey = 'obe_form_gts'; sType = 'gts'; }
+        
+        const savedData = localStorage.getItem(dbKey);
+        let parsedQuestions = [];
+        if (savedData) {
+            parsedQuestions = JSON.parse(savedData).questions || [];
+        } else {
+            if (sType === 'po') parsedQuestions = DEFAULT_PO_QUESTIONS;
+            else if (sType === 'peo') parsedQuestions = DEFAULT_PEO_QUESTIONS;
+            else if (sType === 'gts') parsedQuestions = DEFAULT_GTS_QUESTIONS;
+        }
+        
+        setSurveyModalQuestions(parsedQuestions);
+        setSurveyModalAnswers(student.surveyAnswers?.[sType] || {});
+        setSurveyModalType(sType);
+        setSurveyModalStudent(student);
+        setRespondentTab('answers');
+        setIsEditingSurvey(false);
+    };
+
+    const handleSurveyAnswerChange = (qId, val) => {
+        setSurveyModalAnswers(prev => ({ ...prev, [qId]: val }));
+    };
+
+    const saveSurveyAnswers = () => {
+        if (!surveyModalStudent) return;
+        const updatedStudents = students.map(s => {
+            if (s.id === surveyModalStudent.id) {
+                const currentAnswers = s.surveyAnswers || {};
+                return {
+                    ...s,
+                    surveyAnswers: { ...currentAnswers, [surveyModalType]: surveyModalAnswers },
+                    surveyProgress: surveyModalType === 'po' ? '100%' : s.surveyProgress,
+                    peoProgress: surveyModalType === 'peo' ? '100%' : (s.peoProgress || '0%'),
+                    tracerProgress: surveyModalType === 'gts' ? '100%' : s.tracerProgress,
+                };
+            }
+            return s;
+        });
+        setStudents(updatedStudents);
+        localStorage.setItem('obe_masterlist', JSON.stringify(updatedStudents));
+        showToast(`Survey responses for ${surveyModalStudent.name} updated!`, 'success');
+        setSurveyModalStudent(null);
     };
 
     const addQuestion = () => {
@@ -941,10 +1041,16 @@ export default function ProgramChairDashboard() {
                                                             let s_status = 'Pending';
                                                             if (selectedSurveyView === '1stYear') s_status = student.surveyProgress === '100%' ? 'Completed' : 'Pending';
                                                             else if (selectedSurveyView === 'gts') s_status = student.tracerProgress === '100%' ? 'Completed' : 'Pending';
-                                                            else if (selectedSurveyView === '3to5Year') s_status = 'Pending'; 
+                                                            else if (selectedSurveyView === '3to5Year') s_status = student.peoProgress === '100%' ? 'Completed' : 'Pending'; 
 
                                                             return (
-                                                                <tr key={idx}>
+                                                                <tr key={idx} 
+                                                                    onClick={() => openSurveyModal(student, selectedSurveyView)}
+                                                                    style={{ cursor: 'pointer', transition: 'background-color 0.2s' }}
+                                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                    title="Click to view/edit responses"
+                                                                >
                                                                     <td style={{ color: 'var(--text-sub)' }}>{student.id}</td>
                                                                     <td style={{ fontWeight: '600' }}>{student.name}</td>
                                                                     <td>{student.batch}</td>
@@ -1864,6 +1970,126 @@ export default function ProgramChairDashboard() {
                     </div>
                 </div>
             )}
-        </div>
-    );
+
+            {surveyModalStudent && (
+                <div className="modal-overlay">
+                    <div className="modal-box portal-card" style={{ maxWidth: '800px', width: '90%', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                            <h2 style={{ color: 'var(--gold)', margin: 0 }}>Respondent Answers</h2>
+                            {!isEditingSurvey && respondentTab === 'answers' && (
+                                <button
+                                    className="outline-btn"
+                                    onClick={() => setIsEditingSurvey(true)}
+                                    style={{ padding: '6px 12px', fontSize: '0.85rem', borderRadius: '6px' }}
+                                >
+                                    ✏️ Edit
+                                </button>
+                            )}
+                        </div>
+                        <div style={{ marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px' }}>
+                            <h3 style={{ fontSize: '1.4rem', margin: 0 }}>{surveyModalStudent.name}</h3>
+                            <p style={{ color: 'var(--text-sub)', fontSize: '0.9rem', margin: '5px 0' }}>
+                                {surveyModalStudent.id} | Batch {surveyModalStudent.batch}
+                            </p>
+                        </div>
+
+                        <div className="tab-container" style={{ marginBottom: '20px', marginTop: '15px' }}>
+                            <button className={`tab-btn ${respondentTab === 'answers' ? 'active' : ''}`} onClick={() => setRespondentTab('answers')}>
+                                📝 Respondent Answers
+                            </button>
+                            <button className={`tab-btn ${respondentTab === 'info' ? 'active' : ''}`} onClick={() => setRespondentTab('info')}>
+                                👤 Respondent Information
+                            </button>
+                        </div>
+
+                        {respondentTab === 'answers' ? (
+                            <div style={{ overflowY: 'auto', paddingRight: '10px', flex: 1, marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                {surveyModalQuestions.length === 0 ? (
+                                    <p style={{ color: 'var(--text-sub)' }}>No questions found in this survey schema.</p>
+                                ) : (
+                                    surveyModalQuestions.map((q, idx) => (
+                                        <div key={q.id} style={{ backgroundColor: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <p style={{ margin: '0 0 10px 0', color: 'var(--text-main)', fontSize: '1rem' }}>{idx + 1}. {q.text}</p>
+                                            
+                                            {q.type === 'text' || q.type === 'email' || q.type === 'date' ? (
+                                                <input type={q.type === 'date' ? 'date' : 'text'} className="correction-textbox" style={{ width: '100%', padding: '10px', backgroundColor: 'var(--bg-main)', opacity: isEditingSurvey ? 1 : 0.7 }} disabled={!isEditingSurvey} value={surveyModalAnswers[q.id] || ''} onChange={e => handleSurveyAnswerChange(q.id, e.target.value)} />
+                                            ) : q.type === 'textarea' ? (
+                                                <textarea className="correction-textbox" style={{ width: '100%', padding: '10px', backgroundColor: 'var(--bg-main)', height: '80px', resize: 'vertical', opacity: isEditingSurvey ? 1 : 0.7 }} disabled={!isEditingSurvey} value={surveyModalAnswers[q.id] || ''} onChange={e => handleSurveyAnswerChange(q.id, e.target.value)} />
+                                            ) : q.type === 'likert' ? (
+                                                <select className="correction-textbox" style={{ width: '100%', padding: '10px', backgroundColor: 'var(--bg-main)', opacity: isEditingSurvey ? 1 : 0.7 }} disabled={!isEditingSurvey} value={surveyModalAnswers[q.id] || ''} onChange={e => handleSurveyAnswerChange(q.id, e.target.value)}>
+                                                    <option value="">Select rating...</option>
+                                                    {[1,2,3,4,5].map(v => <option key={v} value={v}>{v}</option>)}
+                                                </select>
+                                            ) : q.type === 'yesno' ? (
+                                                <select className="correction-textbox" style={{ width: '100%', padding: '10px', backgroundColor: 'var(--bg-main)', opacity: isEditingSurvey ? 1 : 0.7 }} disabled={!isEditingSurvey} value={surveyModalAnswers[q.id] || ''} onChange={e => handleSurveyAnswerChange(q.id, e.target.value)}>
+                                                    <option value="">Select option...</option>
+                                                    <option value="Yes">Yes</option>
+                                                    <option value="No">No</option>
+                                                </select>
+                                            ) : (q.type === 'radio' || q.type === 'dropdown') ? (
+                                                <select className="correction-textbox" style={{ width: '100%', padding: '10px', backgroundColor: 'var(--bg-main)', opacity: isEditingSurvey ? 1 : 0.7 }} disabled={!isEditingSurvey} value={surveyModalAnswers[q.id] || ''} onChange={e => handleSurveyAnswerChange(q.id, e.target.value)}>
+                                                    <option value="">Select option...</option>
+                                                    {q.options?.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
+                                                </select>
+                                            ) : q.type === 'checkbox' ? (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                    {q.options?.map((opt, i) => {
+                                                        const currentAns = Array.isArray(surveyModalAnswers[q.id]) ? surveyModalAnswers[q.id] : [];
+                                                        return (
+                                                            <label key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)', cursor: isEditingSurvey ? 'pointer' : 'default', opacity: isEditingSurvey ? 1 : 0.7 }}>
+                                                                <input type="checkbox" style={{ width: '16px', height: '16px', accentColor: 'var(--gold)' }} disabled={!isEditingSurvey} checked={currentAns.includes(opt)} onChange={(e) => {
+                                                                    let newArr = [...currentAns];
+                                                                    if (e.target.checked) newArr.push(opt);
+                                                                    else newArr = newArr.filter(v => v !== opt);
+                                                                    handleSurveyAnswerChange(q.id, newArr);
+                                                                }} />
+                                                                {opt}
+                                                            </label>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        ) : (
+                            <div style={{ overflowY: 'auto', paddingRight: '10px', flex: 1, marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                <div style={{ backgroundColor: 'rgba(0,0,0,0.2)', padding: '20px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <h3 style={{ color: 'var(--gold)', marginBottom: '15px', marginTop: 0 }}>Student Profile</h3>
+                                    <p><strong>Name:</strong> {surveyModalStudent.name}</p>
+                                    <p><strong>Student ID:</strong> {surveyModalStudent.id}</p>
+                                    <p><strong>Batch Year:</strong> {surveyModalStudent.batch}</p>
+                                    <p><strong>Program:</strong> {surveyModalStudent.program || 'B.S. Computer Engineering'}</p>
+                                    
+                                    <h3 style={{ color: 'var(--gold)', marginBottom: '15px', marginTop: '25px' }}>Compliance Status</h3>
+                                    <p><strong>SO Survey (Yearly Update):</strong> <span className={`status-badge ${surveyModalStudent.surveyProgress === '100%' ? 'badge-passed' : 'badge-pending'}`} style={{ marginLeft: '10px' }}>{surveyModalStudent.surveyProgress === '100%' ? 'Completed' : 'Pending'}</span></p>
+                                    <p style={{ marginTop: '10px' }}><strong>Graduate Tracer Study:</strong> <span className={`status-badge ${surveyModalStudent.tracerProgress === '100%' ? 'badge-passed' : 'badge-pending'}`} style={{ marginLeft: '10px' }}>{surveyModalStudent.tracerProgress === '100%' ? 'Completed' : 'Pending'}</span></p>
+                                    <p style={{ marginTop: '10px' }}><strong>PEO Survey (3-5 Years):</strong> <span className={`status-badge ${surveyModalStudent.peoProgress === '100%' ? 'badge-passed' : 'badge-pending'}`} style={{ marginLeft: '10px' }}>{surveyModalStudent.peoProgress === '100%' ? 'Completed' : 'Pending'}</span></p>
+
+                                    <h3 style={{ color: 'var(--gold)', marginBottom: '15px', marginTop: '25px' }}>Employment Details</h3>
+                                    <p><strong>Current Status:</strong> <span style={{ textTransform: 'capitalize' }}>{surveyModalStudent.employmentStatus || 'Not Updated'}</span></p>
+                                    {surveyModalStudent.employmentStatus === 'employed' && (
+                                        <>
+                                            <p style={{ marginTop: '5px' }}><strong>Job Title:</strong> {surveyModalStudent.jobTitle || 'N/A'}</p>
+                                            <p style={{ marginTop: '5px' }}><strong>Company:</strong> {surveyModalStudent.companyName || 'N/A'}</p>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                            <div style={{ display: 'flex', gap: '15px' }}>
+                                <button className="cancel-btn outline-btn" onClick={() => setSurveyModalStudent(null)} style={{ padding: '10px 24px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', flex: 1 }}>
+                                    {isEditingSurvey ? 'Cancel' : 'Close'}
+                                </button>
+                                {isEditingSurvey && (
+                                    <button className="primary-btn" onClick={saveSurveyAnswers} style={{ padding: '10px 24px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', flex: 1, border: 'none' }}>Save Changes</button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
 }

@@ -25,6 +25,10 @@ export default function AlumniDashboard() {
     
     const [activeTab, setActiveTab] = useState('dashboard');
     const [surveyTab, setSurveyTab] = useState('po'); 
+
+    const [surveyModalType, setSurveyModalType] = useState(null);
+    const [surveyModalQuestions, setSurveyModalQuestions] = useState([]);
+    const [surveyModalAnswers, setSurveyModalAnswers] = useState({});
     
     const [activeModal, setActiveModal] = useState(null);
     const [isInviteOpen, setIsInviteOpen] = useState(false);
@@ -166,6 +170,37 @@ export default function AlumniDashboard() {
         showToast('Official Invitation Sent!');
     };
 
+    const openReviewModal = (sType) => {
+        let dbKey = '';
+        if (sType === 'po') dbKey = 'obe_form_po';
+        else if (sType === 'peo') dbKey = 'obe_form_peo';
+        else if (sType === 'gts') dbKey = 'obe_form_gts';
+        else if (sType === 'yearly') dbKey = 'obe_form_yearly';
+
+        const savedData = localStorage.getItem(dbKey);
+        let parsedQuestions = [];
+        if (savedData) {
+            parsedQuestions = JSON.parse(savedData).questions || [];
+        } else {
+            if (sType === 'po') {
+                parsedQuestions = [
+                    { id: 'q1', type: 'likert', text: '1. How well can you apply mathematics to engineering problems?' },
+                    { id: 'q2', type: 'yesno', text: '2. Did the curriculum prepare you for industrial standards?' },
+                    { id: 'q3', type: 'text', text: '3. What specific skills learned were most useful in your first job?' }
+                ];
+            } else if (sType === 'gts') {
+                parsedQuestions = [
+                    { id: 'q1', type: 'yesno', text: 'Are you currently employed?' },
+                    { id: 'q2', type: 'text', text: 'What is your current job title?' }
+                ];
+            }
+        }
+
+        setSurveyModalQuestions(parsedQuestions);
+        setSurveyModalAnswers(dbUser?.surveyAnswers?.[sType] || {});
+        setSurveyModalType(sType);
+    };
+
     const currentYear = 2026;
     const gradYear = parseInt(userData.batch) || 2026;
     const yearsSinceGrad = currentYear - gradYear;
@@ -248,7 +283,7 @@ export default function AlumniDashboard() {
                             <li>Your responses are kept strictly confidential.</li>
                         </ul>
                     </div>
-                    <button className={isPOCompleted ? 'outline-btn' : 'primary-btn'} onClick={() => router.push('/alumni/survey')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.95rem', border: isPOCompleted ? '1px solid rgba(255,255,255,0.2)' : 'none', cursor: 'pointer', marginTop: '20px' }}>
+                    <button className={isPOCompleted ? 'outline-btn' : 'primary-btn'} onClick={() => isPOCompleted ? openReviewModal('po') : router.push('/alumni/survey')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.95rem', border: isPOCompleted ? '1px solid rgba(255,255,255,0.2)' : 'none', cursor: 'pointer', marginTop: '20px' }}>
                         {isPOCompleted ? 'Review Responses' : 'Start PO Survey'}
                     </button>
                 </div>
@@ -283,7 +318,7 @@ export default function AlumniDashboard() {
                                     <li>Coordinates directly with Employer feedback.</li>
                                 </ul>
                             </div>
-                            <button className={isPEOCompleted ? 'outline-btn' : 'primary-btn'} onClick={() => router.push('/alumni/survey')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.95rem', border: isPEOCompleted ? '1px solid rgba(255,255,255,0.2)' : 'none', cursor: 'pointer', marginTop: '20px' }}>
+                            <button className={isPEOCompleted ? 'outline-btn' : 'primary-btn'} onClick={() => isPEOCompleted ? openReviewModal('peo') : router.push('/alumni/survey')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.95rem', border: isPEOCompleted ? '1px solid rgba(255,255,255,0.2)' : 'none', cursor: 'pointer', marginTop: '20px' }}>
                                 {isPEOCompleted ? 'Review Responses' : 'Start PEO Survey'}
                             </button>
                         </>
@@ -312,7 +347,7 @@ export default function AlumniDashboard() {
                             <li>Takes less than 3 minutes.</li>
                         </ul>
                     </div>
-                    <button className={isYearlyCompleted ? 'outline-btn' : 'primary-btn'} onClick={() => router.push('/alumni/survey')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.95rem', border: isYearlyCompleted ? '1px solid rgba(255,255,255,0.2)' : 'none', cursor: 'pointer', marginTop: '20px' }}>
+                    <button className={isYearlyCompleted ? 'outline-btn' : 'primary-btn'} onClick={() => isYearlyCompleted ? openReviewModal('yearly') : router.push('/alumni/survey')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.95rem', border: isYearlyCompleted ? '1px solid rgba(255,255,255,0.2)' : 'none', cursor: 'pointer', marginTop: '20px' }}>
                         {isYearlyCompleted ? 'Review Responses' : 'Start Yearly Survey'}
                     </button>
                 </div>
@@ -339,7 +374,7 @@ export default function AlumniDashboard() {
                             <li>Takes roughly 10-15 minutes.</li>
                         </ul>
                     </div>
-                    <button className={isGTSCompleted ? 'outline-btn' : 'primary-btn'} onClick={() => router.push('/alumni/tracer')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.95rem', border: isGTSCompleted ? '1px solid rgba(255,255,255,0.2)' : 'none', cursor: 'pointer', marginTop: '20px' }}>
+                    <button className={isGTSCompleted ? 'outline-btn' : 'primary-btn'} onClick={() => isGTSCompleted ? openReviewModal('gts') : router.push('/alumni/tracer')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.95rem', border: isGTSCompleted ? '1px solid rgba(255,255,255,0.2)' : 'none', cursor: 'pointer', marginTop: '20px' }}>
                         {isGTSCompleted ? 'Review Responses' : 'Start Tracer Study'}
                     </button>
                 </div>
@@ -649,6 +684,72 @@ export default function AlumniDashboard() {
                     </div>
                 )}
             </main>
+
+            {surveyModalType && (
+                <div className="modal-overlay">
+                    <div className="modal-box portal-card" style={{ maxWidth: '800px', width: '90%', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                            <h2 style={{ color: 'var(--gold)', margin: 0 }}>Your Responses</h2>
+                        </div>
+                        <div style={{ marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px' }}>
+                            <h3 style={{ fontSize: '1.4rem', margin: 0 }}>{userData.name}</h3>
+                            <p style={{ color: 'var(--text-sub)', fontSize: '0.9rem', margin: '5px 0' }}>
+                                {dbUser?.id} | Batch {userData.batch}
+                            </p>
+                        </div>
+                        <div style={{ overflowY: 'auto', paddingRight: '10px', flex: 1, marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                            {surveyModalQuestions.length === 0 ? (
+                                <p style={{ color: 'var(--text-sub)' }}>No questions found in this survey schema.</p>
+                            ) : (
+                                surveyModalQuestions.map((q, idx) => (
+                                    <div key={q.id} style={{ backgroundColor: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <p style={{ margin: '0 0 10px 0', color: 'var(--text-main)', fontSize: '1rem' }}>{idx + 1}. {q.text}</p>
+                                        
+                                        {q.type === 'text' || q.type === 'email' || q.type === 'date' ? (
+                                            <input type={q.type === 'date' ? 'date' : 'text'} className="correction-textbox" style={{ width: '100%', padding: '10px', backgroundColor: 'var(--bg-main)', opacity: 0.7 }} disabled value={surveyModalAnswers[q.id] || ''} />
+                                        ) : q.type === 'textarea' ? (
+                                            <textarea className="correction-textbox" style={{ width: '100%', padding: '10px', backgroundColor: 'var(--bg-main)', height: '80px', resize: 'vertical', opacity: 0.7 }} disabled value={surveyModalAnswers[q.id] || ''} />
+                                        ) : q.type === 'likert' ? (
+                                            <select className="correction-textbox" style={{ width: '100%', padding: '10px', backgroundColor: 'var(--bg-main)', opacity: 0.7 }} disabled value={surveyModalAnswers[q.id] || ''}>
+                                                <option value="">Select rating...</option>
+                                                {[1,2,3,4,5].map(v => <option key={v} value={v}>{v}</option>)}
+                                            </select>
+                                        ) : q.type === 'yesno' ? (
+                                            <select className="correction-textbox" style={{ width: '100%', padding: '10px', backgroundColor: 'var(--bg-main)', opacity: 0.7 }} disabled value={surveyModalAnswers[q.id] || ''}>
+                                                <option value="">Select option...</option>
+                                                <option value="Yes">Yes</option>
+                                                <option value="No">No</option>
+                                            </select>
+                                        ) : (q.type === 'radio' || q.type === 'dropdown') ? (
+                                            <select className="correction-textbox" style={{ width: '100%', padding: '10px', backgroundColor: 'var(--bg-main)', opacity: 0.7 }} disabled value={surveyModalAnswers[q.id] || ''}>
+                                                <option value="">Select option...</option>
+                                                {q.options?.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
+                                            </select>
+                                        ) : q.type === 'checkbox' ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                {q.options?.map((opt, i) => {
+                                                    const currentAns = Array.isArray(surveyModalAnswers[q.id]) ? surveyModalAnswers[q.id] : [];
+                                                    return (
+                                                        <label key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)', cursor: 'default', opacity: 0.7 }}>
+                                                            <input type="checkbox" style={{ width: '16px', height: '16px', accentColor: 'var(--gold)' }} disabled checked={currentAns.includes(opt)} />
+                                                            {opt}
+                                                        </label>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                        <div style={{ display: 'flex', gap: '15px' }}>
+                            <button className="cancel-btn outline-btn" onClick={() => setSurveyModalType(null)} style={{ padding: '10px 24px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', flex: 1 }}>
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {activeModal === 'guide' && (
                 <div className="modal-overlay">

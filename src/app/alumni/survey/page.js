@@ -77,7 +77,8 @@ export default function DynamicPOSurvey() {
         if (session && session.id) {
             const updatedDb = db.map(student => {
                 if (student.id === session.id) {
-                    return { ...student, surveyProgress: '100%' };
+                    const currentAnswers = student.surveyAnswers || {};
+                    return { ...student, surveyAnswers: { ...currentAnswers, po: answers }, surveyProgress: '100%' };
                 }
                 return student;
             });

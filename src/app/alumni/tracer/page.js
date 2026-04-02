@@ -100,7 +100,8 @@ export default function DynamicTracerStudy() {
         if (session && session.id) {
             const updatedDb = db.map(student => {
                 if (student.id === session.id) {
-                    return { ...student, tracerProgress: '100%', jobTitle: answers['q19'] || answers['q3'] || student.jobTitle };
+                    const currentAnswers = student.surveyAnswers || {};
+                    return { ...student, surveyAnswers: { ...currentAnswers, gts: answers }, tracerProgress: '100%', jobTitle: answers['q19'] || answers['q3'] || student.jobTitle };
                 }
                 return student;
             });
