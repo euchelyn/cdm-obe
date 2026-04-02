@@ -301,7 +301,7 @@ export default function ProgramChairDashboard() {
             }
             setStudents(newStudents);
             localStorage.setItem('obe_masterlist', JSON.stringify(newStudents));
-            alert('Alumni Masterlist uploaded successfully. System updated.');
+            showToast('Alumni Masterlist uploaded successfully. System updated.', 'success');
         };
         reader.readAsText(file);
     };
@@ -313,7 +313,7 @@ export default function ProgramChairDashboard() {
         const updatedStudents = students.map(s => s.id === selectedStudent.id ? finalStudentData : s);
         setStudents(updatedStudents);
         localStorage.setItem('obe_masterlist', JSON.stringify(updatedStudents));
-        alert(`Grade evaluation for ${selectedStudent.name} saved successfully!`);
+        showToast(`Grade evaluation for ${selectedStudent.name} saved successfully!`, 'success');
         setSelectedStudent(null);
     };
 
@@ -322,7 +322,7 @@ export default function ProgramChairDashboard() {
             const updated = students.map(s => s.id === studentId ? { ...s, isDeleted: true } : s);
             setStudents(updated);
             localStorage.setItem('obe_masterlist', JSON.stringify(updated));
-            showToast(`Moved ${studentName} to trash bin.`);
+            showToast(`Moved ${studentName} to trash bin.`, 'trash');
         }
     };
 
@@ -330,7 +330,7 @@ export default function ProgramChairDashboard() {
         const updated = students.map(s => s.id === studentId ? { ...s, isDeleted: false } : s);
         setStudents(updated);
         localStorage.setItem('obe_masterlist', JSON.stringify(updated));
-        alert('Student restored successfully!');
+        showToast('Student restored successfully!', 'success');
     };
 
     const handlePermanentDelete = (studentId) => {
@@ -341,8 +341,8 @@ export default function ProgramChairDashboard() {
         }
     };
 
-    const showToast = (msg) => {
-        setToastMessage(msg);
+    const showToast = (msg, type = 'success') => {
+        setToastMessage({ text: msg, type });
         setTimeout(() => setToastMessage(null), 5000);
     };
 
@@ -412,7 +412,7 @@ export default function ProgramChairDashboard() {
                       surveyFormType === 'peo' ? 'obe_form_peo' : 'obe_form_gts';
         const payload = { title: formTitle, desc: formDesc, questions: questions };
         localStorage.setItem(dbKey, JSON.stringify(payload));
-        alert('Success! The survey has been published.');
+        showToast('Success! The survey has been published.', 'success');
     };
 
     const togglePOMapping = (courseName, poId) => {
@@ -427,7 +427,7 @@ export default function ProgramChairDashboard() {
 
     const saveOverallMapping = () => {
         localStorage.setItem('obe_course_mappings', JSON.stringify(courseMappings));
-        alert('Curriculum mapping saved successfully! Changes are now applied system-wide.');
+        showToast('Curriculum mapping saved successfully! Changes are now applied system-wide.', 'success');
     };
 
     const handleWeightChange = (poId, courseName, value) => {
@@ -442,7 +442,7 @@ export default function ProgramChairDashboard() {
 
     const saveAllWeights = () => {
         localStorage.setItem('obe_course_weights', JSON.stringify(courseWeights));
-        alert('Direct Assessment weights have been saved successfully!');
+        showToast('Direct Assessment weights have been saved successfully!', 'success');
     };
 
     const calculateTotalWeight = (poId) => {
@@ -1745,14 +1745,23 @@ export default function ProgramChairDashboard() {
 
                 {toastMessage && (
                     <div style={{
-                        position: 'fixed', bottom: '30px', right: '30px', backgroundColor: '#3b82f6', color: 'white', padding: '15px 25px',
+                        position: 'fixed', bottom: '30px', right: '30px', 
+                        backgroundColor: toastMessage.type === 'success' ? '#10b981' : '#3b82f6', 
+                        color: 'white', padding: '15px 25px',
                         borderRadius: '8px', boxShadow: '0 10px 25px rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', gap: '15px',
-                        zIndex: 1000
+                        zIndex: 1000, animation: 'fadeIn 0.3s ease'
                     }}>
-                        <span style={{ fontWeight: '500' }}>{toastMessage}</span>
-                        <button onClick={() => {setToastMessage(null); setActiveMenu('masterlist'); setShowTrashBin(true);}} style={{ background: 'rgba(0,0,0,0.2)', border: 'none', color: 'white', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}>
-                            View Trash
-                        </button>
+                        <span style={{ fontWeight: '500' }}>
+                            {toastMessage.type === 'success' && '✅ '}
+                            {toastMessage.type === 'trash' && '🗑️ '}
+                            {toastMessage.text}
+                        </span>
+                        {toastMessage.type === 'trash' && (
+                            <button onClick={() => {setToastMessage(null); setActiveMenu('masterlist'); setShowTrashBin(true);}} style={{ background: 'rgba(0,0,0,0.2)', border: 'none', color: 'white', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                                View Trash
+                            </button>
+                        )}
+                        <button onClick={() => setToastMessage(null)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '1.2rem', padding: '0 0 0 10px', marginLeft: 'auto' }}>×</button>
                     </div>
                 )}
 
