@@ -190,6 +190,9 @@ export default function ProgramChairDashboard() {
     const [selectedSurveyView, setSelectedSurveyView] = useState(null); 
     const [surveySubTab, setSurveySubTab] = useState('respondents');
     const [surveyDetailBatch, setSurveyDetailBatch] = useState('All');
+    
+    const [gtsReportTab, setGtsReportTab] = useState('raw');
+    const [selectedGtsCols, setSelectedGtsCols] = useState(['q9', 'q10', 'q11']); // Pre-select Region, Province, and Location
 
     useEffect(() => {
         const savedTheme = localStorage.getItem('theme');
@@ -865,7 +868,7 @@ export default function ProgramChairDashboard() {
                                 return (
                                     <div key={po.id} className="portal-card" style={{ padding: '25px', borderTop: `4px solid ${barColor}`, display: 'flex', flexDirection: 'column' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
-                                            <span style={{ backgroundColor: barColor, color: '#fff', padding: '4px 10px', borderRadius: '6px', fontWeight: 'bold', fontSize: '0.9rem' }}>PO-{po.id}</span>
+                                            <span style={{ backgroundColor: barColor, color: barColor === 'var(--gold)' ? '#111827' : '#fff', padding: '4px 10px', borderRadius: '6px', fontWeight: 'bold', fontSize: '0.9rem' }}>PO-{po.id}</span>
                                             <h3 style={{ margin: 0, color: 'var(--text-main)', fontSize: '1.1rem' }}>{po.title}</h3>
                                         </div>
                                         
@@ -992,13 +995,6 @@ export default function ProgramChairDashboard() {
 
                                             </div>
                                         </div>
-                                        <style jsx>{`
-                                            .hover-card:hover {
-                                                transform: translateY(-3px);
-                                                border-color: var(--gold) !important;
-                                                box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-                                            }
-                                        `}</style>
                             </div>
                         ) : (
                             <div style={{ animation: 'fadeIn 0.3s ease' }}>
@@ -1464,10 +1460,13 @@ export default function ProgramChairDashboard() {
                                     )}
                                 </div>
                                     </div>
-                                )}
-                            </div>
+                )}
+
+                        </div>
                         )}
+
                     </div>
+
                 )}
 
                 {activeMenu === 'determinants' && (
@@ -1509,6 +1508,7 @@ export default function ProgramChairDashboard() {
                                                         const mappedCount = Object.keys(courseMappings[course] || {}).filter(k => courseMappings[course][k]).length;
                                                         return (
                                                             <div 
+                                                                className="mapping-card"
                                                                 key={cIdx} 
                                                                 onClick={() => setSelectedMappingCourse(course)}
                                                                 style={{ 
@@ -1568,6 +1568,7 @@ export default function ProgramChairDashboard() {
                                                 const isChecked = courseMappings[selectedMappingCourse]?.[po.id] || false;
                                                 return (
                                                     <div 
+                                                        className="po-mapping-card"
                                                         key={po.id} 
                                                         onClick={() => togglePOMapping(selectedMappingCourse, po.id)}
                                                         style={{ 
@@ -1836,33 +1837,64 @@ export default function ProgramChairDashboard() {
                                             <h3 style={{ color: 'var(--text-main)', fontSize: '1.4rem', margin: 0 }}>Graduate Tracer Study Responses</h3>
                                             <p style={{ color: 'var(--text-sub)', fontSize: '0.9rem', marginTop: '5px' }}>Individual answers mapped from the dynamic questionnaire.</p>
                                         </div>
+                                        <div style={{ display: 'flex', gap: '10px' }}>
+                                            <button className={`outline-btn ${gtsReportTab === 'raw' ? 'active' : ''}`} onClick={() => setGtsReportTab('raw')} style={{ padding: '8px 16px', backgroundColor: gtsReportTab === 'raw' ? 'rgba(255,255,255,0.1)' : 'transparent', borderColor: gtsReportTab === 'raw' ? 'var(--gold)' : '' }}>Full Data</button>
+                                            <button className={`outline-btn ${gtsReportTab === 'custom' ? 'active' : ''}`} onClick={() => setGtsReportTab('custom')} style={{ padding: '8px 16px', backgroundColor: gtsReportTab === 'custom' ? 'rgba(255,255,255,0.1)' : 'transparent', borderColor: gtsReportTab === 'custom' ? 'var(--gold)' : '' }}>Custom Builder</button>
+                                        </div>
                                     </div>
-                                    <div style={{ overflowX: 'auto' }}>
+
+                                    {gtsReportTab === 'custom' && (
+                                        <div style={{ marginBottom: '20px', backgroundColor: 'rgba(0,0,0,0.2)', padding: '20px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', animation: 'fadeIn 0.3s ease' }}>
+                                            <h4 style={{ margin: '0 0 15px 0', color: 'var(--gold)', fontSize: '1.1rem' }}>Select Columns to Display</h4>
+                                            <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', maxHeight: '200px', overflowY: 'auto', paddingRight: '10px' }}>
+                                                {tracerSchema.map(q => (
+                                                    <label key={q.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text-main)', cursor: 'pointer', backgroundColor: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: '6px', border: selectedGtsCols.includes(q.id) ? '1px solid var(--gold)' : '1px solid transparent' }}>
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={selectedGtsCols.includes(q.id)}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) setSelectedGtsCols([...selectedGtsCols, q.id]);
+                                                                else setSelectedGtsCols(selectedGtsCols.filter(id => id !== q.id));
+                                                            }}
+                                                            style={{ accentColor: 'var(--gold)', width: '16px', height: '16px' }}
+                                                        />
+                                                        {q.text.length > 40 ? q.text.substring(0, 40) + '...' : q.text}
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div style={{ overflowX: 'auto', maxHeight: '65vh' }}>
                                         <table className="data-table">
                                             <thead>
                                                 <tr>
-                                                    <th style={{ minWidth: '150px' }}>Alumni Name</th>
-                                                    <th style={{ minWidth: '100px' }}>Batch</th>
-                                                    {tracerSchema.map(q => (
-                                                        <th key={q.id} style={{ minWidth: '200px' }}>{q.text}</th>
+                                                    <th style={{ minWidth: '150px', position: 'sticky', top: 0, backgroundColor: 'var(--bg-main)', zIndex: 2 }}>Alumni Name</th>
+                                                    <th style={{ minWidth: '100px', position: 'sticky', top: 0, backgroundColor: 'var(--bg-main)', zIndex: 2 }}>Batch</th>
+                                                    {(gtsReportTab === 'custom' ? tracerSchema.filter(q => selectedGtsCols.includes(q.id)) : tracerSchema).map(q => (
+                                                        <th key={q.id} style={{ minWidth: '200px', position: 'sticky', top: 0, backgroundColor: 'var(--bg-main)', zIndex: 2 }}>{q.text}</th>
                                                     ))}
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {filteredChecklist.slice(0, 5).map((student, idx) => (
+                                                {filteredChecklist.map((student, idx) => (
                                                     <tr key={idx}>
                                                         <td style={{ fontWeight: 'bold' }}>{student.name}</td>
                                                         <td>{student.batch}</td>
-                                                        {tracerSchema.map(q => (
-                                                            <td key={q.id} style={{ color: 'var(--text-sub)' }}>
-                                                                {q.type === 'yesno' ? 'Yes' : q.type === 'likert' ? '4' : (student.jobTitle || 'Software Engineer')}
-                                                            </td>
-                                                        ))}
+                                                        {(gtsReportTab === 'custom' ? tracerSchema.filter(q => selectedGtsCols.includes(q.id)) : tracerSchema).map(q => {
+                                                            const ans = student.surveyAnswers?.gts?.[q.id];
+                                                            const displayAns = Array.isArray(ans) ? ans.join(', ') : (ans || '-');
+                                                            return (
+                                                                <td key={q.id} style={{ color: 'var(--text-sub)' }}>
+                                                                    {displayAns}
+                                                                </td>
+                                                            );
+                                                        })}
                                                     </tr>
                                                 ))}
                                                 {filteredChecklist.length === 0 && (
                                                     <tr>
-                                                        <td colSpan={tracerSchema.length + 2} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-sub)' }}>
+                                                        <td colSpan={(gtsReportTab === 'custom' ? selectedGtsCols.length : tracerSchema.length) + 2} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-sub)' }}>
                                                             No data available. Upload masterlist first.
                                                         </td>
                                                     </tr>
@@ -2113,10 +2145,10 @@ export default function ProgramChairDashboard() {
                                 {isEditingSurvey && (
                                     <button className="primary-btn" onClick={saveSurveyAnswers} style={{ padding: '10px 24px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', flex: 1, border: 'none' }}>Save Changes</button>
                                 )}
-                            </div>
                         </div>
                     </div>
-                )}
+                </div>
+            )}
 
             <style dangerouslySetInnerHTML={{ __html: `
                 ::-webkit-scrollbar {
@@ -2134,6 +2166,6 @@ export default function ProgramChairDashboard() {
                     background: var(--gold);
                 }
             `}} />
-            </div>
-        );
+        </div>
+    );
 }
