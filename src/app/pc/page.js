@@ -168,7 +168,7 @@ export default function ProgramChairDashboard() {
     const [courseMappings, setCourseMappings] = useState({}); 
     const [courseWeights, setCourseWeights] = useState({}); 
 
-    const [surveyFormType, setSurveyFormType] = useState('po'); 
+    const [formBatchYear, setFormBatchYear] = useState('2026');
     const [formTitle, setFormTitle] = useState('');
     const [formDesc, setFormDesc] = useState('');
     const [questions, setQuestions] = useState([]);
@@ -188,6 +188,7 @@ export default function ProgramChairDashboard() {
     const [checklistBatch, setChecklistBatch] = useState('All');
 
     const [selectedSurveyView, setSelectedSurveyView] = useState(null); 
+    const [surveySubTab, setSurveySubTab] = useState('respondents');
     const [surveyDetailBatch, setSurveyDetailBatch] = useState('All');
 
     useEffect(() => {
@@ -226,26 +227,32 @@ export default function ProgramChairDashboard() {
     }, []);
 
     useEffect(() => {
-        if (activeMenu === 'indirect' && indirectTab === 'builder') {
-            const dbKey = surveyFormType === 'po' ? 'obe_form_po' :
-                          surveyFormType === 'peo' ? 'obe_form_peo' :
-                          surveyFormType === 'yearly' ? 'obe_form_yearly' : 'obe_form_gts';
+        if (activeMenu === 'indirect' && surveySubTab === 'builder' && selectedSurveyView) {
+            const sType = selectedSurveyView === '1stYear' ? 'po' :
+                          selectedSurveyView === '3to5Year' ? 'peo' : 'gts';
+            const baseKey = sType === 'po' ? 'obe_form_po' :
+                            sType === 'peo' ? 'obe_form_peo' : 'obe_form_gts';
             
-            const savedData = localStorage.getItem(dbKey);
+            const dbKey = `${baseKey}_${formBatchYear}`;
+            let savedData = localStorage.getItem(dbKey);
+            
+            if (!savedData) {
+                savedData = localStorage.getItem(baseKey);
+            }
+
             if (savedData) {
                 const parsed = JSON.parse(savedData);
                 setFormTitle(parsed.title);
                 setFormDesc(parsed.desc);
                 setQuestions(parsed.questions || []);
             } else {
-                if (surveyFormType === 'po') {
+                if (sType === 'po') {
                     setFormTitle('SO Survey (Yearly Update)');
                     setFormDesc('Evaluate your proficiency based on the scale: 1 (Lowest) to 5 (Highest).');
                     setQuestions(DEFAULT_PO_QUESTIONS);
-                } else if (surveyFormType === 'peo') {
+                } else if (sType === 'peo') {
                     setFormTitle('3-5 Year PEO Survey');
                     setFormDesc('Evaluate your attainment of the Program Educational Objectives.');
-                    setQuestions([{ id: 'q1', type: 'likert', text: 'How effectively are you leading complex engineering projects?' }]);
                     setQuestions(DEFAULT_PEO_QUESTIONS);
                 } else {
                     setFormTitle('Graduate Tracer Study');
@@ -292,7 +299,7 @@ export default function ProgramChairDashboard() {
             setActiveQuestionId(null);
             setHoveredQuestionId(null);
         }
-
+        
         if (activeMenu === 'analytics') {
             const existingGts = localStorage.getItem('obe_form_gts');
             if (existingGts) {
@@ -306,7 +313,7 @@ export default function ProgramChairDashboard() {
                 ]);
             }
         }
-    }, [surveyFormType, activeMenu, indirectTab]);
+    }, [activeMenu, selectedSurveyView, surveySubTab, formBatchYear]);
 
     const toggleTheme = () => {
         const newTheme = !isDarkMode;
@@ -397,13 +404,18 @@ export default function ProgramChairDashboard() {
     };
 
     const openSurveyModal = (student, surveyTypeView) => {
-        let dbKey = '';
+        let baseKey = '';
         let sType = '';
-        if (surveyTypeView === '1stYear') { dbKey = 'obe_form_po'; sType = 'po'; }
-        else if (surveyTypeView === '3to5Year') { dbKey = 'obe_form_peo'; sType = 'peo'; }
-        else if (surveyTypeView === 'gts') { dbKey = 'obe_form_gts'; sType = 'gts'; }
+        if (surveyTypeView === '1stYear') { baseKey = 'obe_form_po'; sType = 'po'; }
+        else if (surveyTypeView === '3to5Year') { baseKey = 'obe_form_peo'; sType = 'peo'; }
+        else if (surveyTypeView === 'gts') { baseKey = 'obe_form_gts'; sType = 'gts'; }
         
-        const savedData = localStorage.getItem(dbKey);
+        const dbKey = `${baseKey}_${student.batch}`;
+        let savedData = localStorage.getItem(dbKey);
+        if (!savedData) {
+            savedData = localStorage.getItem(baseKey);
+        }
+
         let parsedQuestions = [];
         if (savedData) {
             parsedQuestions = JSON.parse(savedData).questions || [];
@@ -508,11 +520,15 @@ export default function ProgramChairDashboard() {
     };
 
     const saveFormToDatabase = () => {
-        const dbKey = surveyFormType === 'po' ? 'obe_form_po' :
-                      surveyFormType === 'peo' ? 'obe_form_peo' : 'obe_form_gts';
+        const sType = selectedSurveyView === '1stYear' ? 'po' :
+                      selectedSurveyView === '3to5Year' ? 'peo' : 'gts';
+        const baseKey = sType === 'po' ? 'obe_form_po' :
+                        sType === 'peo' ? 'obe_form_peo' : 'obe_form_gts';
+        const dbKey = `${baseKey}_${formBatchYear}`;
         const payload = { title: formTitle, desc: formDesc, questions: questions };
         localStorage.setItem(dbKey, JSON.stringify(payload));
-        showToast('Success! The survey has been published.', 'success');
+        localStorage.setItem(baseKey, JSON.stringify(payload));
+        showToast(`Success! The survey template (Version ${formBatchYear}) has been published.`, 'success');
     };
 
     const togglePOMapping = (courseName, poId) => {
@@ -684,7 +700,7 @@ export default function ProgramChairDashboard() {
                                     <button className="outline-btn" onClick={() => {setActiveMenu('masterlist'); setTimeout(() => fileInputRef.current.click(), 100);}} style={{ textAlign: 'left', padding: '12px 15px', borderRadius: '8px' }}>
                                         ➕ Upload New Masterlist
                                     </button>
-                                    <button className="outline-btn" onClick={() => {setActiveMenu('indirect'); setIndirectTab('builder'); setSurveyFormType('gts');}} style={{ textAlign: 'left', padding: '12px 15px', borderRadius: '8px' }}>
+                                    <button className="outline-btn" onClick={() => {setActiveMenu('indirect'); setSelectedSurveyView('gts'); setSurveySubTab('builder');}} style={{ textAlign: 'left', padding: '12px 15px', borderRadius: '8px' }}>
                                         📝 Edit Tracer Survey
                                     </button>
                                     <button className="outline-btn" onClick={() => setActiveMenu('analytics')} style={{ textAlign: 'left', padding: '12px 15px', borderRadius: '8px' }}>
@@ -705,7 +721,7 @@ export default function ProgramChairDashboard() {
                                         <h3 style={{ margin: 0 }}>Batch Roster</h3>
                                         <select 
                                             className="correction-textbox" 
-                                            style={{ minWidth: '150px', backgroundColor: 'var(--bg-card)' }}
+                                            style={{ width: 'max-content', minWidth: '150px', backgroundColor: 'var(--bg-card)' }}
                                             value={selectedBatch}
                                             onChange={(e) => setSelectedBatch(e.target.value)}
                                         >
@@ -713,6 +729,7 @@ export default function ProgramChairDashboard() {
                                             <option value="2024">Batch 2024</option>
                                             <option value="2025">Batch 2025</option>
                                             <option value="2026">Batch 2026</option>
+                                            <option value="2027">Batch 2027</option>
                                             <option value="2028">Batch 2028</option>
                                         </select>
                                     </div>
@@ -914,25 +931,13 @@ export default function ProgramChairDashboard() {
                             </div>
                         </div>
 
-                        <div className="tab-container" style={{ marginBottom: '30px' }}>
-                            <button className={`tab-btn ${indirectTab === 'status' ? 'active' : ''}`} onClick={() => {setIndirectTab('status'); setSelectedSurveyView(null);}}>
-                                📊 Survey Deployment Status
-                            </button>
-                            <button className={`tab-btn ${indirectTab === 'builder' ? 'active' : ''}`} onClick={() => setIndirectTab('builder')}>
-                                📝 Forms Builder
-                            </button>
-                        </div>
-
-                        {indirectTab === 'status' && (
-                            <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                                
-                                {!selectedSurveyView ? (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                        {!selectedSurveyView ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '30px', animation: 'fadeIn 0.3s ease' }}>
                                         <div>
                                             <h2 style={{ color: 'var(--gold)', fontSize: '1.2rem', marginBottom: '15px', paddingLeft: '5px', borderLeft: '4px solid var(--gold)' }}>Indirect Assessment Surveys</h2>
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
                                                 
-                                                <div className="portal-card hover-card" onClick={() => setSelectedSurveyView('1stYear')} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer', transition: 'all 0.2s', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                <div className="portal-card hover-card" onClick={() => {setSelectedSurveyView('1stYear'); setSurveySubTab('respondents');}} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer', transition: 'all 0.2s', border: '1px solid rgba(255,255,255,0.05)' }}>
                                                     <div>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                                                             <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', margin: 0 }}>SO Survey (Yearly Update)</h3>
@@ -951,7 +956,7 @@ export default function ProgramChairDashboard() {
                                                     </div>
                                                 </div>
 
-                                                <div className="portal-card hover-card" onClick={() => setSelectedSurveyView('3to5Year')} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer', opacity: 0.8, transition: 'all 0.2s', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                <div className="portal-card hover-card" onClick={() => {setSelectedSurveyView('3to5Year'); setSurveySubTab('respondents');}} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer', opacity: 0.8, transition: 'all 0.2s', border: '1px solid rgba(255,255,255,0.05)' }}>
                                                     <div>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                                                             <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', margin: 0 }}>3-5 Year Graduate Survey</h3>
@@ -960,13 +965,13 @@ export default function ProgramChairDashboard() {
                                                         <p style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '20px' }}>Assesses career progression and advanced PEO attainment. Click to view list.</p>
                                                     </div>
                                                     <div>
-                                                        <button className="outline-btn" style={{ width: '100%', padding: '8px', fontSize: '0.85rem', borderRadius: '6px' }} onClick={(e) => { e.stopPropagation(); setIndirectTab('builder'); }}>
+                                                        <button className="outline-btn" style={{ width: '100%', padding: '8px', fontSize: '0.85rem', borderRadius: '6px' }} onClick={(e) => { e.stopPropagation(); setSelectedSurveyView('3to5Year'); setSurveySubTab('builder'); }}>
                                                             Configure Form
                                                         </button>
                                                     </div>
                                                 </div>
 
-                                                <div className="portal-card hover-card" onClick={() => setSelectedSurveyView('gts')} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer', transition: 'all 0.2s', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                <div className="portal-card hover-card" onClick={() => {setSelectedSurveyView('gts'); setSurveySubTab('respondents');}} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer', transition: 'all 0.2s', border: '1px solid rgba(255,255,255,0.05)' }}>
                                                     <div>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                                                             <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', margin: 0 }}>Graduate Tracer Study</h3>
@@ -994,28 +999,41 @@ export default function ProgramChairDashboard() {
                                                 box-shadow: 0 10px 20px rgba(0,0,0,0.2);
                                             }
                                         `}</style>
-                                    </div>
-                                ) : (
-                                        <div className="portal-card" style={{ animation: 'fadeIn 0.3s ease' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px' }}>
-                                                <div>
-                                                    <button 
-                                                        onClick={() => setSelectedSurveyView(null)} 
-                                                        style={{ background: 'none', border: 'none', color: 'var(--gold)', padding: '6px 0', fontSize: '0.9rem', marginBottom: '10px', cursor: 'pointer', fontWeight: '500', transition: 'opacity 0.2s', display: 'flex', alignItems: 'center', gap: '5px' }}
-                                                        onMouseEnter={(e) => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.textDecoration = 'underline'; }}
-                                                        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--gold)'; e.currentTarget.style.textDecoration = 'none'; }}
-                                                    >
-                                                        ← Back to Surveys
-                                                    </button>
-                                                    <h3 style={{ color: 'var(--text-main)', fontSize: '1.4rem', margin: 0 }}>
-                                                        {selectedSurveyView === '1stYear' && 'SO Survey (Yearly Update) Respondents'}
-                                                        {selectedSurveyView === '3to5Year' && '3-5 Year Graduate Survey Respondents'}
-                                                        {selectedSurveyView === 'gts' && 'Graduate Tracer Study Respondents'}
-                                                    </h3>
-                                                </div>
+                            </div>
+                        ) : (
+                            <div style={{ animation: 'fadeIn 0.3s ease' }}>
+                                <div style={{ marginBottom: '20px' }}>
+                                    <button 
+                                        onClick={() => setSelectedSurveyView(null)} 
+                                        style={{ background: 'none', border: 'none', color: 'var(--gold)', padding: '6px 0', fontSize: '0.9rem', marginBottom: '10px', cursor: 'pointer', fontWeight: '500', transition: 'opacity 0.2s', display: 'flex', alignItems: 'center', gap: '5px' }}
+                                        onMouseEnter={(e) => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.textDecoration = 'underline'; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--gold)'; e.currentTarget.style.textDecoration = 'none'; }}
+                                    >
+                                        ← Back to Surveys
+                                    </button>
+                                    <h2 style={{ color: 'var(--text-main)', fontSize: '1.8rem', margin: 0 }}>
+                                        {selectedSurveyView === '1stYear' && 'SO Survey (Yearly Update)'}
+                                        {selectedSurveyView === '3to5Year' && '3-5 Year Graduate Survey'}
+                                        {selectedSurveyView === 'gts' && 'Graduate Tracer Study'}
+                                    </h2>
+                                </div>
+
+                                <div className="tab-container" style={{ marginBottom: '20px' }}>
+                                    <button className={`tab-btn ${surveySubTab === 'respondents' ? 'active' : ''}`} onClick={() => setSurveySubTab('respondents')}>
+                                        👥 Respondents Tracker
+                                    </button>
+                                    <button className={`tab-btn ${surveySubTab === 'builder' ? 'active' : ''}`} onClick={() => setSurveySubTab('builder')}>
+                                        📝 Survey Questions
+                                    </button>
+                                </div>
+
+                                {surveySubTab === 'respondents' && (
+                                    <div className="portal-card" style={{ animation: 'fadeIn 0.3s ease' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px' }}>
+                                            <h3 style={{ color: 'var(--text-main)', fontSize: '1.3rem', margin: 0 }}>Respondents Data</h3>
                                                 <select 
                                                     className="correction-textbox" 
-                                                    style={{ minWidth: '150px', backgroundColor: 'var(--bg-card)' }}
+                                                    style={{ width: 'max-content', minWidth: '150px', backgroundColor: 'var(--bg-card)' }}
                                                     value={surveyDetailBatch} 
                                                     onChange={(e) => setSurveyDetailBatch(e.target.value)}
                                                 >
@@ -1023,6 +1041,8 @@ export default function ProgramChairDashboard() {
                                                     <option value="2024">Batch 2024</option>
                                                     <option value="2025">Batch 2025</option>
                                                     <option value="2026">Batch 2026</option>
+                                                    <option value="2027">Batch 2027</option>
+                                                    <option value="2028">Batch 2028</option>
                                                 </select>
                                             </div>
 
@@ -1074,25 +1094,25 @@ export default function ProgramChairDashboard() {
                                             </div>
                                         </div>
                                 )}
-                            </div>
-                        )}
 
-                        {indirectTab === 'builder' && (
-                            <div style={{ animation: 'fadeIn 0.3s ease', display: 'flex', gap: '30px', alignItems: 'flex-start' }}>
+                                {surveySubTab === 'builder' && (
+                                    <div style={{ animation: 'fadeIn 0.3s ease', display: 'flex', gap: '30px', alignItems: 'flex-start' }}>
                                 <div style={{ width: '35%', position: 'sticky', top: '0', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                                     <div className="portal-card" style={{ borderTop: '8px solid var(--gold)', padding: '30px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
                                         <h2 style={{ color: 'var(--gold)', marginBottom: '20px', fontSize: '1.4rem' }}>Form Settings</h2>
                                         
-                                        <label style={{ color: 'var(--text-sub)', fontSize: '0.85rem', marginBottom: '8px', display: 'block' }}>Select Form to Edit:</label>
+                                        <label style={{ color: 'var(--text-sub)', fontSize: '0.85rem', marginBottom: '8px', display: 'block' }}>Survey Version Year:</label>
                                         <select 
                                             className="correction-textbox" 
-                                            style={{ width: '100%', marginBottom: '25px', fontWeight: 'bold' }}
-                                            value={surveyFormType}
-                                            onChange={(e) => setSurveyFormType(e.target.value)}
+                                            style={{ width: 'max-content', minWidth: '150px', marginBottom: '25px', fontWeight: 'bold' }}
+                                            value={formBatchYear}
+                                            onChange={(e) => setFormBatchYear(e.target.value)}
                                         >
-                                            <option value="po">📊 SO Survey (Yearly Update)</option>
-                                            <option value="peo">📈 3-5 Year (PEO Survey)</option>
-                                            <option value="gts">🎓 Graduate Tracer Study (GTS)</option>
+                                            <option value="2024">2024 Version</option>
+                                            <option value="2025">2025 Version</option>
+                                            <option value="2026">2026 Version</option>
+                                            <option value="2027">2027 Version</option>
+                                            <option value="2028">2028 Version</option>
                                         </select>
 
                                         <label style={{ color: 'var(--text-sub)', fontSize: '0.85rem', marginBottom: '8px', display: 'block' }}>Form Title:</label>
@@ -1128,7 +1148,7 @@ export default function ProgramChairDashboard() {
                                         <span style={{ color: 'var(--text-sub)', fontSize: '0.9rem' }}>{questions.length} Items</span>
                                     </div>
 
-                                    {surveyFormType === 'po' ? (
+                                    {selectedSurveyView === '1stYear' ? (
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
                                             {PO_DEFINITIONS.map((po) => {
                                                 const poQuestions = questions.filter(q => q.poId === po.id);
@@ -1384,7 +1404,7 @@ export default function ProgramChairDashboard() {
                                                                 className="correction-textbox" 
                                                                 value={q.type} 
                                                                 onChange={(e) => updateQuestion(q.id, 'type', e.target.value)} 
-                                                                style={{ width: '220px', margin: 0 }}
+                                                                style={{ width: 'max-content', minWidth: '220px', margin: 0 }}
                                                             >
                                                                 <option value="text">📝 Short answer</option>
                                                                 <option value="textarea">📄 Paragraph</option>
@@ -1443,6 +1463,8 @@ export default function ProgramChairDashboard() {
                                         </>
                                     )}
                                 </div>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
@@ -1617,11 +1639,12 @@ export default function ProgramChairDashboard() {
                                             <h3 style={{ color: 'var(--text-main)', fontSize: '1.4rem', margin: 0 }}>Direct Assessment Grades</h3>
                                             <p style={{ color: 'var(--text-sub)', fontSize: '0.9rem', marginTop: '5px' }}>Evaluated outcomes based on mapped courses.</p>
                                         </div>
-                                        <select className="correction-textbox" style={{ height: '35px', padding: '0 10px', width: '150px', backgroundColor: 'var(--bg-card)' }} value={checklistBatch} onChange={(e) => setChecklistBatch(e.target.value)}>
+                                        <select className="correction-textbox" style={{ height: '35px', padding: '0 10px', width: 'max-content', minWidth: '150px', backgroundColor: 'var(--bg-card)' }} value={checklistBatch} onChange={(e) => setChecklistBatch(e.target.value)}>
                                             <option value="All">All Batches</option>
                                             <option value="2024">Batch 2024</option>
                                             <option value="2025">Batch 2025</option>
                                             <option value="2026">Batch 2026</option>
+                                            <option value="2027">Batch 2027</option>
                                             <option value="2028">Batch 2028</option>
                                         </select>
                                     </div>
@@ -1703,11 +1726,13 @@ export default function ProgramChairDashboard() {
                                                                     <h3 style={{ color: 'var(--text-main)', fontSize: '1.4rem', margin: 0 }}>SO Survey Compliance</h3>
                                                                     <p style={{ color: 'var(--text-sub)', fontSize: '0.9rem', marginTop: '5px' }}>Yearly update respondents tracking.</p>
                                                 </div>
-                                                <select className="correction-textbox" style={{ height: '35px', padding: '0 10px', width: '150px', backgroundColor: 'var(--bg-card)' }} value={checklistBatch} onChange={(e) => setChecklistBatch(e.target.value)}>
+                                                <select className="correction-textbox" style={{ height: '35px', padding: '0 10px', width: 'max-content', minWidth: '150px', backgroundColor: 'var(--bg-card)' }} value={checklistBatch} onChange={(e) => setChecklistBatch(e.target.value)}>
                                                     <option value="All">All Batches</option>
                                                     <option value="2024">Batch 2024</option>
                                                     <option value="2025">Batch 2025</option>
                                                     <option value="2026">Batch 2026</option>
+                                                    <option value="2027">Batch 2027</option>
+                                                    <option value="2028">Batch 2028</option>
                                                 </select>
                                             </div>
 
@@ -1765,11 +1790,13 @@ export default function ProgramChairDashboard() {
                                                     <h3 style={{ color: 'var(--text-main)', fontSize: '1.4rem', margin: 0 }}>PEO Survey Compliance</h3>
                                                     <p style={{ color: 'var(--text-sub)', fontSize: '0.9rem', marginTop: '5px' }}>3-5 Year Graduate respondents tracking.</p>
                                                 </div>
-                                                <select className="correction-textbox" style={{ height: '35px', padding: '0 10px', width: '150px', backgroundColor: 'var(--bg-card)' }} value={checklistBatch} onChange={(e) => setChecklistBatch(e.target.value)}>
+                                                <select className="correction-textbox" style={{ height: '35px', padding: '0 10px', width: 'max-content', minWidth: '150px', backgroundColor: 'var(--bg-card)' }} value={checklistBatch} onChange={(e) => setChecklistBatch(e.target.value)}>
                                                     <option value="All">All Batches</option>
                                                     <option value="2024">Batch 2024</option>
                                                     <option value="2025">Batch 2025</option>
                                                     <option value="2026">Batch 2026</option>
+                                                    <option value="2027">Batch 2027</option>
+                                                    <option value="2028">Batch 2028</option>
                                                 </select>
                                             </div>
                                             <div style={{ overflowX: 'auto' }}>
