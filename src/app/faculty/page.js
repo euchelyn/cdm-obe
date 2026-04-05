@@ -231,6 +231,7 @@ export default function FacultyPage() {
       setIsDarkMode(false);
       document.documentElement.removeAttribute('data-theme');
     } else {
+      setIsDarkMode(true);
       document.documentElement.setAttribute('data-theme', 'dark');
     }
 
@@ -554,7 +555,7 @@ export default function FacultyPage() {
   };
 
   return (
-    <div className="portal-layout faculty-page">
+    <div className={`portal-layout faculty-page${isDarkMode ? ' dark' : ' light'}`}> 
       <div className="sidebar">
         <div className="brand">
           <img src="/cpe-logo.png" alt="Logo" className="school-logo-side" />
