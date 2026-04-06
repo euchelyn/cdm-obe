@@ -65,7 +65,7 @@ export default function LoginPage() {
         }
 
         localStorage.setItem('current_user', JSON.stringify(studentUser));
-        router.push('/student');
+        router.push('/alumni');
         return;
       }
 
