@@ -2107,6 +2107,86 @@ export default function ProgramChairDashboard() {
                 ::-webkit-scrollbar-thumb:hover {
                     background: var(--gold);
                 }
+
+                @media print {
+                    @page {
+                        margin: 20mm;
+                    }
+                    body {
+                        background-color: #ffffff !important;
+                        color: #000000 !important;
+                    }
+                    body * {
+                        visibility: hidden;
+                    }
+                    #printable-report, #printable-report * {
+                        visibility: visible;
+                    }
+                    #printable-report {
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        width: 100%;
+                        margin: 0;
+                        padding: 0;
+                    }
+                    .sidebar, .primary-btn, .outline-btn, .tab-btn {
+                        display: none !important;
+                    }
+                    .portal-card, div[style*="overflow"], div[style*="maxHeight"] {
+                        box-shadow: none !important;
+                        border: none !important;
+                        background: transparent !important;
+                        overflow: visible !important;
+                        max-height: none !important;
+                        height: auto !important;
+                    }
+                    table {
+                        width: 100% !important;
+                        border-collapse: collapse !important;
+                        margin-top: 20px;
+                        table-layout: fixed !important; /* Pinipigilan ang table na lumagpas sa papel */
+                    }
+                    th, td {
+                        border: 1px solid #000000 !important;
+                        padding: 12px 10px !important;
+                        color: #000000 !important;
+                        background-color: transparent !important;
+                        white-space: normal !important;
+                        word-wrap: break-word;
+                    }
+                    th {
+                        background-color: #f2f2f2 !important;
+                        -webkit-print-color-adjust: exact;
+                        font-weight: bold !important;
+                    }
+                    thead {
+                        display: table-header-group;
+                    }
+                    tr {
+                        page-break-inside: avoid;
+                    }
+                    
+                    div[style*="justify-content: flex-end"] {
+                        justify-content: flex-start !important;
+                        margin-bottom: 5px !important;
+                    }
+                    select.control-select {
+                        appearance: none;
+                        -webkit-appearance: none;
+                        border: none !important;
+                        background: transparent !important;
+                        color: #000000 !important;
+                        font-size: 1.4rem !important;
+                        font-weight: bold !important;
+                        padding: 0 !important;
+                        width: 100% !important;
+                        text-align: left !important;
+                        white-space: normal !important;
+                        word-wrap: break-word !important;
+                        pointer-events: none;
+                    }
+                }
             `}} />
         </div>
     );
