@@ -1,349 +1,467 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import "../alumni/alumni-globals.css";
 import "./registrar.css";
 
 export default function RegistrarPage() {
-	const router = useRouter();
-	const [masterlist, setMasterlist] = useState([]);
-	const [name, setName] = useState("");
-	const [studentId, setStudentId] = useState("");
-	const [batch, setBatch] = useState("");
-	const [program, setProgram] = useState("");
-	const [birthday, setBirthday] = useState("");
-	const [toast, setToast] = useState(null);
-	const [selectedBatch, setSelectedBatch] = useState("All");
-	const [search, setSearch] = useState("");
-	const [isDarkMode, setIsDarkMode] = useState(true);
-	const [activeTab, setActiveTab] = useState("masterlist");
-	const fileInputRef = React.useRef(null);
+    const router = useRouter();
+    const [masterlist, setMasterlist] = useState([]);
+    const [name, setName] = useState("");
+    const [studentId, setStudentId] = useState("");
+    const [batch, setBatch] = useState("");
+    const [program, setProgram] = useState("");
+    const [birthday, setBirthday] = useState("");
+    const [toast, setToast] = useState(null);
+    const [selectedBatch, setSelectedBatch] = useState("All");
+    const [search, setSearch] = useState("");
+    const [isDarkMode, setIsDarkMode] = useState(true);
+    const [activeTab, setActiveTab] = useState("masterlist");
+    const [showAddForm, setShowAddForm] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [activeDropdown, setActiveDropdown] = useState(null);
+    const [editingStudent, setEditingStudent] = useState(null);
+    const fileInputRef = useRef(null);
 
-	useEffect(() => {
-		const saved = localStorage.getItem("obe_masterlist") || "[]";
-		try {
-			setMasterlist(JSON.parse(saved));
-		} catch (e) {
-			setMasterlist([]);
-		}
-		// Theme sync
-		const savedTheme = localStorage.getItem('theme');
-		if (savedTheme === 'light') {
-			setIsDarkMode(false);
-			document.documentElement.removeAttribute('data-theme');
-		} else {
-			setIsDarkMode(true);
-			document.documentElement.setAttribute('data-theme', 'dark');
-		}
-	}, []);
+    useEffect(() => {
+        const saved = localStorage.getItem("obe_masterlist") || "[]";
+        try {
+            const parsed = JSON.parse(saved);
+            const withStatus = parsed.map(s => ({
+                ...s,
+                status: s.status || ["Active", "Pending", "Inactive"][Math.floor(Math.random() * 3)]
+            }));
+            setMasterlist(withStatus);
+        } catch (e) {
+            setMasterlist([]);
+        }
+        
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+            setIsDarkMode(false);
+            document.documentElement.removeAttribute('data-theme');
+        } else {
+            setIsDarkMode(true);
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    }, []);
 
-	useEffect(() => {
-		localStorage.setItem("obe_masterlist", JSON.stringify(masterlist));
-	}, [masterlist]);
+    useEffect(() => {
+        localStorage.setItem("obe_masterlist", JSON.stringify(masterlist));
+    }, [masterlist]);
 
-	const showToast = (msg) => {
-		setToast(msg);
-		setTimeout(() => setToast(null), 3000);
-	};
+    const showToast = (msg) => {
+        setToast(msg);
+        setTimeout(() => setToast(null), 3000);
+    };
 
-	const toggleTheme = () => {
-		const newMode = !isDarkMode;
-		setIsDarkMode(newMode);
-		if (newMode) {
-			document.documentElement.setAttribute('data-theme', 'dark');
-			localStorage.setItem('theme', 'dark');
-		} else {
-			document.documentElement.removeAttribute('data-theme');
-			localStorage.setItem('theme', 'light');
-		}
-	};
+    const toggleTheme = () => {
+        const newMode = !isDarkMode;
+        setIsDarkMode(newMode);
+        if (newMode) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+            localStorage.setItem('theme', 'light');
+        }
+    };
 
-	const handleLogout = () => {
-		if (confirm("Are you sure you want to log out?")) {
-			localStorage.removeItem("current_user");
-			router.push("/");
-		}
-	};
+    const handleLogout = () => {
+        if (confirm("Are you sure you want to log out?")) {
+            localStorage.removeItem("current_user");
+            router.push("/");
+        }
+    };
 
-	const formatBirthday = (val) => {
-		if (!val) return '';
-		// If already DD/MM/YYYY
-		if (/^\d{2}\/\d{2}\/\d{4}$/.test(val)) return val;
-		// If YYYY-MM-DD
-		if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
-			const [y, m, d] = val.split('-');
-			return `${d}/${m}/${y}`;
-		}
-		// If D/M/YYYY or similar
-		const parts = val.split(/[\/-]/);
-		if (parts.length === 3) {
-			let [a, b, c] = parts;
-			if (a.length === 4) return `${c.padStart(2, '0')}/${b.padStart(2, '0')}/${a}`;
-			return `${a.padStart(2, '0')}/${b.padStart(2, '0')}/${c}`;
-		}
-		return val;
-	};
+    const formatBirthday = (val) => {
+        if (!val) return '';
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(val)) return val;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+            const [y, m, d] = val.split('-');
+            return `${d}/${m}/${y}`;
+        }
+        const parts = val.split(/[\/-]/);
+        if (parts.length === 3) {
+            let [a, b, c] = parts;
+            if (a.length === 4) return `${c.padStart(2, '0')}/${b.padStart(2, '0')}/${a}`;
+            return `${a.padStart(2, '0')}/${b.padStart(2, '0')}/${c}`;
+        }
+        return val;
+    };
 
-	const handleAddStudent = () => {
-		if (!name.trim() || !studentId.trim() || !birthday.trim() || !batch.trim() || !program.trim()) {
-			showToast("Please provide all fields: Name, ID, Birthday, Batch, Program");
-			return;
-		}
-		if (masterlist.some((s) => s.id === studentId.trim())) {
-			showToast("Student ID already exists");
-			return;
-		}
-		const bday = formatBirthday(birthday.trim());
-		const newStudent = {
-			name: name.trim(),
-			id: studentId.trim(),
-			birthday: bday,
-			batch: batch.trim(),
-			program: program.trim()
-		};
-		setMasterlist((m) => [...m, newStudent]);
-		// Create alumni account (simulate, store in localStorage for demo)
-		const alumniAccounts = JSON.parse(localStorage.getItem('alumni_accounts') || '{}');
-		alumniAccounts[studentId.trim()] = { usn: studentId.trim(), password: bday };
-		localStorage.setItem('alumni_accounts', JSON.stringify(alumniAccounts));
-		setName("");
-		setStudentId("");
-		setBatch("");
-		setBirthday("");
-		setProgram("");
-		showToast("Student added and alumni account created");
-	};
+    const handleAddStudent = () => {
+        if (!name.trim() || !studentId.trim() || !birthday.trim() || !batch.trim() || !program.trim()) {
+            showToast("Please provide all fields.");
+            return;
+        }
+        if (masterlist.some((s) => s.id === studentId.trim())) {
+            showToast("Student ID already exists");
+            return;
+        }
+        const bday = formatBirthday(birthday.trim());
+        const newStudent = {
+            name: name.trim(),
+            id: studentId.trim(),
+            birthday: bday,
+            batch: batch.trim(),
+            program: program.trim(),
+            status: "Active"
+        };
+        setMasterlist((m) => [...m, newStudent]);
+        
+        const alumniAccounts = JSON.parse(localStorage.getItem('alumni_accounts') || '{}');
+        alumniAccounts[studentId.trim()] = { usn: studentId.trim(), password: bday };
+        localStorage.setItem('alumni_accounts', JSON.stringify(alumniAccounts));
+        
+        setName("");
+        setStudentId("");
+        setBatch("");
+        setBirthday("");
+        setProgram("");
+        setShowAddForm(false);
+        showToast("Student added successfully.");
+    };
 
-	const handleRemove = (id) => {
-		if (!window.confirm("Remove student from masterlist?")) return;
-		setMasterlist((m) => m.filter((s) => s.id !== id));
-		showToast("Student removed");
-	};
+    const handleRemove = (id) => {
+        if (!window.confirm("Remove student from masterlist?")) return;
+        setMasterlist((m) => m.filter((s) => s.id !== id));
+        setActiveDropdown(null);
+        showToast("Student removed");
+    };
 
-	const parseCSV = (text) => {
-		const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-		if (lines.length === 0) return [];
-		const rows = lines.map((line) => {
-			const cols = line.split(",").map((c) => c.trim());
-			// Format: name, id, birthday(day/month/year), batch, program
-			if (cols.length >= 5) {
-				return {
-					name: cols[0],
-					id: cols[1],
-					birthday: formatBirthday(cols[2]),
-					batch: cols[3],
-					program: cols[4]
-				};
-			}
-			return null;
-		}).filter(Boolean);
-		if (rows.length > 0) {
-			const first = rows[0];
-			const keys = Object.values(first).join(" ").toLowerCase();
-			if (keys.includes("name") || keys.includes("id") || keys.includes("batch")) {
-				rows.shift();
-			}
-		}
-		// Also create alumni accounts for each student
-		const alumniAccounts = JSON.parse(localStorage.getItem('alumni_accounts') || '{}');
-		rows.forEach(r => {
-			if (r && r.id && r.birthday) {
-				alumniAccounts[r.id] = { usn: r.id, password: r.birthday };
-			}
-		});
-		localStorage.setItem('alumni_accounts', JSON.stringify(alumniAccounts));
-		return rows.map(r => ({
-			name: r.name,
-			id: r.id,
-			birthday: r.birthday || "",
-			batch: r.batch,
-			program: r.program || ""
-		}));
-	};
+    const toggleDropdown = (id) => {
+        if (activeDropdown === id) setActiveDropdown(null);
+        else setActiveDropdown(id);
+    };
 
-	const handleUpload = (e) => {
-		const file = e.target.files && e.target.files[0];
-		if (!file) return;
-		const reader = new FileReader();
-		reader.onload = (ev) => {
-			const text = ev.target.result;
-			const rows = parseCSV(text);
-			let added = 0;
-			setMasterlist((current) => {
-				const byId = new Set(current.map(s => s.id));
-				const merged = [...current];
-				for (const r of rows) {
-					if (!r.id || !r.name) continue;
-					if (byId.has(r.id)) continue;
-					merged.push({ name: r.name, id: r.id, batch: r.batch || "" });
-					byId.add(r.id);
-					added++;
-				}
-				return merged;
-			});
-			showToast(`${added} student(s) uploaded`);
-			e.target.value = null;
-		};
-		reader.readAsText(file);
-	};
+    const openEditModal = (student) => {
+        setEditingStudent({ ...student });
+        setActiveDropdown(null);
+    };
 
-	// Get unique batches for filter dropdown
-	const batchOptions = Array.from(new Set(masterlist.map(s => s.batch).filter(Boolean)));
-	let filteredList = selectedBatch === "All" ? masterlist : masterlist.filter(s => s.batch === selectedBatch);
-	if (search.trim()) {
-		const q = search.trim().toLowerCase();
-		filteredList = filteredList.filter(s =>
-			s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q)
-		);
-	}
+    const handleSaveEdit = () => {
+        if (!editingStudent.name || !editingStudent.id) {
+            showToast("Name and ID are required.");
+            return;
+        }
+        
+        setMasterlist(current => 
+            current.map(s => s.id === editingStudent.id ? editingStudent : s)
+        );
+        
+        const alumniAccounts = JSON.parse(localStorage.getItem('alumni_accounts') || '{}');
+        if (alumniAccounts[editingStudent.id]) {
+            alumniAccounts[editingStudent.id].password = editingStudent.birthday;
+            localStorage.setItem('alumni_accounts', JSON.stringify(alumniAccounts));
+        }
 
-	return (
-		<div className="portal-layout">
-			<aside className="sidebar">
-				<div className="brand">
-					<img src="/cdm-logo.png" alt="CDM Logo" className="school-logo-side" />
-					<div className="brand-text">
-						<h3>CDM-OBE System</h3>
-						<span style={{ color: '#3b82f6', fontWeight: 'bold', letterSpacing: '1px' }}>REGISTRAR</span>
-					</div>
-				</div>
-				<nav className="nav-menu">
-					<button
-						className={`nav-btn ${activeTab === 'masterlist' ? 'active' : ''}`}
-						onClick={() => setActiveTab('masterlist')}
-					>
-						👥 Masterlist
-					</button>
-				</nav>
-				<div className="sidebar-bottom">
-					<button className="nav-btn theme-switch" onClick={toggleTheme}>
-						{isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
-					</button>
-					<button className="nav-btn logout" onClick={handleLogout}>Log Out</button>
-				</div>
-			</aside>
+        setEditingStudent(null);
+        showToast("Student updated successfully.");
+    };
 
-			<main className="main-content" style={{ overflowY: 'auto', padding: '40px', backgroundColor: 'var(--bg-main)', position: 'relative' }}>
-				{activeTab === 'masterlist' && (
-					<div style={{ animation: 'fadeIn 0.3s ease' }}>
-						<div className="pc-header" style={{ marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-							<div>
-								<h1 style={{ fontSize: '2.2rem', marginBottom: '5px' }}>Registrar Dashboard</h1>
-								<p style={{ color: 'var(--text-sub)' }}>Manage student masterlist and program enrollment.</p>
-							</div>
-							<div style={{ display: 'flex', gap: '10px' }}>
-								<button className="primary-btn" onClick={() => fileInputRef.current.click()} style={{ padding: '10px 20px', borderRadius: '8px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-									📥 Upload CSV
-								</button>
-								<input type="file" accept=".csv" ref={fileInputRef} onChange={handleUpload} style={{ display: 'none' }} />
-							</div>
-						</div>
+    const parseCSV = (text) => {
+        const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+        if (lines.length === 0) return [];
+        const rows = lines.map((line) => {
+            const cols = line.split(",").map((c) => c.trim());
+            if (cols.length >= 5) {
+                return {
+                    name: cols[0],
+                    id: cols[1],
+                    birthday: formatBirthday(cols[2]),
+                    batch: cols[3],
+                    program: cols[4]
+                };
+            }
+            return null;
+        }).filter(Boolean);
+        
+        if (rows.length > 0) {
+            const first = rows[0];
+            const keys = Object.values(first).join(" ").toLowerCase();
+            if (keys.includes("name") || keys.includes("id") || keys.includes("batch")) {
+                rows.shift();
+            }
+        }
+        
+        const alumniAccounts = JSON.parse(localStorage.getItem('alumni_accounts') || '{}');
+        rows.forEach(r => {
+            if (r && r.id && r.birthday) {
+                alumniAccounts[r.id] = { usn: r.id, password: r.birthday };
+            }
+        });
+        localStorage.setItem('alumni_accounts', JSON.stringify(alumniAccounts));
+        return rows.map(r => ({
+            name: r.name,
+            id: r.id,
+            birthday: r.birthday || "",
+            batch: r.batch,
+            program: r.program || "",
+            status: "Active"
+        }));
+    };
 
-						<div className="portal-card" style={{ padding: '25px', marginBottom: '25px' }}>
-							<h3 style={{ margin: '0 0 15px 0', color: 'var(--text-main)', fontSize: '1.2rem' }}>Add New Student</h3>
-							<div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
-								<div style={{ flex: 2, minWidth: '200px' }}>
-									<label style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '5px', display: 'block' }}>Full Name</label>
-									<input placeholder="e.g. Juan Dela Cruz" value={name} onChange={e => setName(e.target.value)} className="form-input" style={{ width: '100%' }} />
-								</div>
-								<div style={{ flex: 1, minWidth: '150px' }}>
-									<label style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '5px', display: 'block' }}>ID Number</label>
-									<input placeholder="e.g. 2021-0001" value={studentId} onChange={e => setStudentId(e.target.value)} className="form-input" style={{ width: '100%' }} />
-								</div>
-								<div style={{ flex: 1, minWidth: '120px' }}>
-									<label style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '5px', display: 'block' }}>Batch Year</label>
-									<input placeholder="e.g. 2026" value={batch} onChange={e => setBatch(e.target.value)} className="form-input" style={{ width: '100%' }} />
-								</div>
-								<div style={{ flex: 1, minWidth: '150px' }}>
-									<label style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '5px', display: 'block' }}>Program</label>
-									<input placeholder="e.g. B.S. CpE" value={program} onChange={e => setProgram(e.target.value)} className="form-input" style={{ width: '100%' }} />
-								</div>
-								<div style={{ flex: 1, minWidth: '150px' }}>
-									<label style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '5px', display: 'block' }}>Birthday</label>
-									<input type="date" value={birthday} onChange={e => setBirthday(e.target.value)} className="form-input" style={{ width: '100%', colorScheme: isDarkMode ? 'dark' : 'light' }} />
-								</div>
-								<div style={{ display: 'flex', alignItems: 'flex-end' }}>
-									<button className="primary-btn" onClick={handleAddStudent} style={{ height: '42px', padding: '0 20px', borderRadius: '8px', fontWeight: 'bold' }}>
-										Add Student
-									</button>
-								</div>
-							</div>
-						</div>
+    const handleUpload = (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const text = ev.target.result;
+            const rows = parseCSV(text);
+            let added = 0;
+            setMasterlist((current) => {
+                const byId = new Set(current.map(s => s.id));
+                const merged = [...current];
+                for (const r of rows) {
+                    if (!r.id || !r.name) continue;
+                    if (byId.has(r.id)) continue;
+                    merged.push({ name: r.name, id: r.id, batch: r.batch || "", program: r.program, birthday: r.birthday, status: "Active" });
+                    byId.add(r.id);
+                    added++;
+                }
+                return merged;
+            });
+            showToast(`${added} student(s) uploaded`);
+            e.target.value = null;
+        };
+        reader.readAsText(file);
+    };
 
-						<div className="portal-card" style={{ padding: '25px' }}>
-							<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
-								<h3 style={{ margin: 0, color: 'var(--text-main)', fontSize: '1.2rem' }}>Masterlist Directory</h3>
-								<div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
-									<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-										<label style={{ fontSize: '0.9rem', color: 'var(--text-sub)' }}>Filter Batch:</label>
-										<select className="form-input" style={{ width: 'auto', minWidth: '120px' }} value={selectedBatch} onChange={e => setSelectedBatch(e.target.value)}>
-											<option value="All">All Batches</option>
-											{batchOptions.map(b => (
-												<option key={b} value={b}>{b}</option>
-											))}
-										</select>
-									</div>
-									<input
-										className="form-input"
-										style={{ minWidth: '250px' }}
-										placeholder="🔍 Search by name or ID..."
-										value={search}
-										onChange={e => setSearch(e.target.value)}
-									/>
-								</div>
-							</div>
+    const getStatusStyle = (status) => {
+        const s = status ? status.toLowerCase() : "";
+        if (s === "active") return "status-active";
+        if (s === "pending") return "status-pending";
+        if (s === "inactive") return "status-inactive";
+        return "status-default";
+    };
 
-							<div style={{ overflowX: 'auto' }}>
-								<table className="data-table">
-									<thead>
-										<tr>
-											<th>ID Number</th>
-											<th>Name</th>
-											<th>Batch</th>
-											<th>Program</th>
-											<th>Birthday</th>
-											<th>Actions</th>
-										</tr>
-									</thead>
-									<tbody>
-										{filteredList.length > 0 ? filteredList.map(s => (
-											<tr key={s.id}>
-												<td style={{ color: 'var(--text-sub)' }}>{s.id}</td>
-												<td style={{ fontWeight: '600' }}>{s.name}</td>
-												<td>{s.batch || '-'}</td>
-												<td>{s.program || '-'}</td>
-												<td>{formatBirthday(s.birthday)}</td>
-												<td>
-													<button className="outline-btn" style={{ padding: '6px 12px', fontSize: '0.85rem', borderRadius: '6px', color: '#ef4444', borderColor: 'transparent' }} onClick={() => handleRemove(s.id)} title="Remove Student">
-														🗑️ Remove
-													</button>
-												</td>
-											</tr>
-										)) : (
-											<tr>
-												<td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-sub)' }}>
-													No students found matching your criteria.
-												</td>
-											</tr>
-										)}
-									</tbody>
-								</table>
-							</div>
-						</div>
-					</div>
-				)}
+    const getInitials = (fullName) => {
+        const parts = fullName.split(" ");
+        if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+        return fullName.substring(0, 2).toUpperCase();
+    };
 
-				{toast && (
-					<div style={{
-						position: 'fixed', bottom: '30px', right: '30px', backgroundColor: '#10b981', color: 'white', padding: '15px 25px',
-						borderRadius: '8px', boxShadow: '0 10px 25px rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', gap: '15px',
-						zIndex: 1000, fontWeight: 'bold', animation: 'fadeIn 0.3s ease'
-					}}>
-						✅ {toast}
-					</div>
-				)}
-			</main>
-		</div>
-	);
+    const batchOptions = Array.from(new Set(masterlist.map(s => s.batch).filter(Boolean)));
+    
+    let filteredList = selectedBatch === "All" ? masterlist : masterlist.filter(s => s.batch === selectedBatch);
+
+    const totalPages = Math.ceil(filteredList.length / itemsPerPage) || 1;
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const currentData = filteredList.slice(startIndex, startIndex + itemsPerPage);
+
+    return (
+        <div id="registrar-portal-layout" className="portal-layout">
+            <aside className="sidebar">
+                <div className="brand">
+                    <img src="/cdm-logo.png" alt="CDM Logo" className="school-logo-side" />
+                    <div className="brand-text">
+                        <h3>CDM-OBE System</h3>
+                        <span style={{ color: 'var(--primary)', fontWeight: 'bold', letterSpacing: '1px' }}>REGISTRAR</span>
+                    </div>
+                </div>
+                <nav className="nav-menu">
+                    <button
+                        className={`nav-btn ${activeTab === 'masterlist' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('masterlist')}
+                    >
+                        👥 Masterlist
+                    </button>
+                </nav>
+                <div className="sidebar-bottom">
+                    <button className="nav-btn theme-switch" onClick={toggleTheme}>
+                        {isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
+                    </button>
+                    <button className="nav-btn logout" onClick={handleLogout}>Log Out</button>
+                </div>
+            </aside>
+
+            <main className="main-content">
+                {activeTab === 'masterlist' && (
+                    <div className="content-wrapper">
+                        <div className="portal-card">
+                            <div className="table-header-controls">
+                                <div className="controls-left">
+                                    <h1 className="table-title">Masterlist</h1>
+                                </div>
+                                
+                                <div className="controls-right">
+                                    <div className="control-group">
+                                        <span className="control-label">Showing</span>
+                                        <select 
+                                            className="control-select custom-select-arrow" 
+                                            value={itemsPerPage} 
+                                            onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
+                                        >
+                                            <option value={5}>5</option>
+                                            <option value={10}>10</option>
+                                            <option value={20}>20</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="control-group">
+                                        <select 
+                                            className="control-btn outline custom-select-arrow" 
+                                            value={selectedBatch} 
+                                            onChange={e => { setSelectedBatch(e.target.value); setCurrentPage(1); }}
+                                        >
+                                            <option value="All">All Batches</option>
+                                            {batchOptions.map(b => (
+                                                <option key={b} value={b}>{b}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    
+                                    <button className="control-btn outline" onClick={() => fileInputRef.current.click()}>
+                                        <span className="icon">↑</span> Export / Upload
+                                    </button>
+                                    <input type="file" accept=".csv" ref={fileInputRef} onChange={handleUpload} style={{ display: 'none' }} />
+
+                                    <button className="control-btn primary" onClick={() => setShowAddForm(!showAddForm)}>
+                                        + Add New Student
+                                    </button>
+                                </div>
+                            </div>
+
+                            {showAddForm && (
+                                <div className="add-form-container">
+                                    <div className="form-grid">
+                                        <input placeholder="Full Name" value={name} onChange={e => setName(e.target.value)} className="form-input" />
+                                        <input placeholder="ID Number" value={studentId} onChange={e => setStudentId(e.target.value)} className="form-input" />
+                                        <input placeholder="Batch Year" value={batch} onChange={e => setBatch(e.target.value)} className="form-input" />
+                                        <input placeholder="Program" value={program} onChange={e => setProgram(e.target.value)} className="form-input" />
+                                        <input type="date" value={birthday} onChange={e => setBirthday(e.target.value)} className="form-input" style={{ colorScheme: isDarkMode ? 'dark' : 'light' }} />
+                                        <button className="control-btn primary" onClick={handleAddStudent}>Save Student</button>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="table-responsive">
+                                <table className="clean-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Student Name</th>
+                                            <th>ID Number</th>
+                                            <th>Batch</th>
+                                            <th>Program</th>
+                                            <th>Birthday</th>
+                                            <th>Status</th>
+                                            <th className="text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {currentData.length > 0 ? currentData.map(s => (
+                                            <tr key={s.id}>
+                                                <td>
+                                                    <div className="student-name-cell">
+                                                        <div className="avatar">{getInitials(s.name)}</div>
+                                                        <span className="fw-bold">{s.name}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="text-muted">{s.id}</td>
+                                                <td>{s.batch || '-'}</td>
+                                                <td>{s.program || '-'}</td>
+                                                <td>{formatBirthday(s.birthday)}</td>
+                                                <td>
+                                                    <span className={`status-pill ${getStatusStyle(s.status)}`}>
+                                                        {s.status || "Active"}
+                                                    </span>
+                                                </td>
+                                                <td style={{ position: 'relative', textAlign: 'center' }}>
+                                                    <button className="action-dots-btn" onClick={() => toggleDropdown(s.id)}>
+                                                        •••
+                                                    </button>
+                                                    
+                                                    {activeDropdown === s.id && (
+                                                        <div className="action-dropdown-menu">
+                                                            <button onClick={() => openEditModal(s)}>
+                                                                ✏️ Edit
+                                                            </button>
+                                                            <button className="delete-option" onClick={() => handleRemove(s.id)}>
+                                                                🗑️ Delete
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        )) : (
+                                            <tr>
+                                                <td colSpan={7} className="empty-state">No records found.</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="pagination-container">
+                                <button 
+                                    className="page-nav" 
+                                    disabled={currentPage === 1} 
+                                    onClick={() => setCurrentPage(p => p - 1)}
+                                >
+                                    &lt; Previous
+                                </button>
+                                <div className="page-numbers">
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(num => (
+                                        <button 
+                                            key={num} 
+                                            className={`page-num ${currentPage === num ? 'active' : ''}`}
+                                            onClick={() => setCurrentPage(num)}
+                                        >
+                                            {num.toString().padStart(2, '0')}
+                                        </button>
+                                    ))}
+                                </div>
+                                <button 
+                                    className="page-nav" 
+                                    disabled={currentPage === totalPages} 
+                                    onClick={() => setCurrentPage(p => p + 1)}
+                                >
+                                    Next &gt;
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {toast && (
+                    <div className="toast-notification">✅ {toast}</div>
+                )}
+
+                {editingStudent && (
+                    <div className="edit-modal-overlay">
+                        <div className="edit-modal-content">
+                            <h3 style={{ marginTop: 0, color: 'var(--text-main)', marginBottom: '20px' }}>Edit Student Details</h3>
+                            
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                <div>
+                                    <label style={{ fontSize: '0.85rem', color: 'var(--text-sub)' }}>Full Name</label>
+                                    <input className="form-input" style={{ width: '100%', marginTop: '5px' }} value={editingStudent.name} onChange={e => setEditingStudent({...editingStudent, name: e.target.value})} />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.85rem', color: 'var(--text-sub)' }}>Batch</label>
+                                    <input className="form-input" style={{ width: '100%', marginTop: '5px' }} value={editingStudent.batch} onChange={e => setEditingStudent({...editingStudent, batch: e.target.value})} />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.85rem', color: 'var(--text-sub)' }}>Program</label>
+                                    <input className="form-input" style={{ width: '100%', marginTop: '5px' }} value={editingStudent.program} onChange={e => setEditingStudent({...editingStudent, program: e.target.value})} />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.85rem', color: 'var(--text-sub)' }}>Birthday</label>
+                                    <input type="date" className="form-input" style={{ width: '100%', marginTop: '5px', colorScheme: isDarkMode ? 'dark' : 'light' }} value={editingStudent.birthday} onChange={e => setEditingStudent({...editingStudent, birthday: e.target.value})} />
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '25px' }}>
+                                <button className="outline-btn" style={{ padding: '8px 16px' }} onClick={() => setEditingStudent(null)}>Cancel</button>
+                                <button className="control-btn primary" style={{ padding: '8px 16px' }} onClick={handleSaveEdit}>Save Changes</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </main>
+        </div>
+    );
 }

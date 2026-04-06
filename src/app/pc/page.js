@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import './pc.css';
 import '../alumni/alumni-globals.css';
@@ -158,9 +158,6 @@ export default function ProgramChairDashboard() {
     const [selectedBatch, setSelectedBatch] = useState('All');
     const [students, setStudents] = useState([]);
     const [selectedStudent, setSelectedStudent] = useState(null);
-    const fileInputRef = useRef(null);
-
-    const [showTrashBin, setShowTrashBin] = useState(false);
     const [toastMessage, setToastMessage] = useState(null);
 
     const [mappingSearchQuery, setMappingSearchQuery] = useState('');
@@ -330,42 +327,6 @@ export default function ProgramChairDashboard() {
         }
     };
 
-    const handleFileUpload = (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const text = e.target.result;
-            const rows = text.split('\n').filter(row => row.trim() !== '');
-            const newStudents = [...students]; 
-            
-            for (let i = 1; i < rows.length; i++) {
-                const cols = rows[i].split(',');
-                if (cols.length >= 4) {
-                    newStudents.push({
-                        name: cols[0].trim(),
-                        id: cols[1].trim(),
-                        birthday: cols[2].trim().replace(/\//g, ''), 
-                        batch: cols[3].trim(), 
-                        program: cols[4] ? cols[4].trim() : 'B.S. Computer Engineering', 
-                        status: 'Graduate', 
-                        obeStatus: 'Pending',
-                        det1Grade: '', det2Grade: '', det3Grade: '',
-                        surveyProgress: '0%', tracerProgress: '0%',
-                        employerStatus: 'Pending', employmentStatus: 'Not Updated',
-                        jobTitle: '', companyName: '',
-                        isDeleted: false 
-                    });
-                }
-            }
-            setStudents(newStudents);
-            localStorage.setItem('obe_masterlist', JSON.stringify(newStudents));
-            showToast('Alumni Masterlist uploaded successfully. System updated.', 'success');
-        };
-        reader.readAsText(file);
-    };
-
     const saveEvaluation = () => {
         if (!selectedStudent) return;
         const isGraded = selectedStudent.det1Grade || selectedStudent.det2Grade || selectedStudent.det3Grade;
@@ -375,30 +336,6 @@ export default function ProgramChairDashboard() {
         localStorage.setItem('obe_masterlist', JSON.stringify(updatedStudents));
         showToast(`Grade evaluation for ${selectedStudent.name} saved successfully!`, 'success');
         setSelectedStudent(null);
-    };
-
-    const handleSoftDelete = (studentId, studentName) => {
-        if (confirm(`Move ${studentName} to Trash Bin?`)) {
-            const updated = students.map(s => s.id === studentId ? { ...s, isDeleted: true } : s);
-            setStudents(updated);
-            localStorage.setItem('obe_masterlist', JSON.stringify(updated));
-            showToast(`Moved ${studentName} to trash bin.`, 'trash');
-        }
-    };
-
-    const handleRestore = (studentId) => {
-        const updated = students.map(s => s.id === studentId ? { ...s, isDeleted: false } : s);
-        setStudents(updated);
-        localStorage.setItem('obe_masterlist', JSON.stringify(updated));
-        showToast('Student restored successfully!', 'success');
-    };
-
-    const handlePermanentDelete = (studentId) => {
-        if (confirm('Permanently delete this student? This cannot be undone.')) {
-            const updated = students.filter(s => s.id !== studentId);
-            setStudents(updated);
-            localStorage.setItem('obe_masterlist', JSON.stringify(updated));
-        }
     };
 
     const showToast = (msg, type = 'success') => {
@@ -575,10 +512,9 @@ export default function ProgramChairDashboard() {
     };
 
     const activeStudents = students.filter(s => !s.isDeleted);
-    const trashedStudents = students.filter(s => s.isDeleted);
     
-    let displayStudents = showTrashBin ? trashedStudents : activeStudents;
-    if (selectedBatch !== 'All' && !showTrashBin) {
+    let displayStudents = activeStudents;
+    if (selectedBatch !== 'All') {
         displayStudents = displayStudents.filter(s => s.batch === selectedBatch);
     }
 
@@ -611,10 +547,10 @@ export default function ProgramChairDashboard() {
                 </div>
 
                 <nav className="nav-menu">
-                    <button className={`nav-btn ${activeMenu === 'overview' ? 'active' : ''}`} onClick={() => {setActiveMenu('overview'); setShowTrashBin(false);}}>
+                <button className={`nav-btn ${activeMenu === 'overview' ? 'active' : ''}`} onClick={() => setActiveMenu('overview')}>
                         📊 Program Overview
                     </button>
-                    <button className={`nav-btn ${activeMenu === 'masterlist' ? 'active' : ''}`} onClick={() => {setActiveMenu('masterlist'); setShowTrashBin(false);}}>
+                <button className={`nav-btn ${activeMenu === 'masterlist' ? 'active' : ''}`} onClick={() => setActiveMenu('masterlist')}>
                         👥 Masterlist
                     </button>
                     <button className={`nav-btn ${activeMenu === 'direct' ? 'active' : ''}`} onClick={() => setActiveMenu('direct')}>
@@ -700,9 +636,6 @@ export default function ProgramChairDashboard() {
                             <div className="portal-card">
                                 <h2 style={{ fontSize: '1.2rem', color: 'var(--gold)', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>Quick Links</h2>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                    <button className="outline-btn" onClick={() => {setActiveMenu('masterlist'); setTimeout(() => fileInputRef.current.click(), 100);}} style={{ textAlign: 'left', padding: '12px 15px', borderRadius: '8px' }}>
-                                        ➕ Upload New Masterlist
-                                    </button>
                                     <button className="outline-btn" onClick={() => {setActiveMenu('indirect'); setSelectedSurveyView('gts'); setSurveySubTab('builder');}} style={{ textAlign: 'left', padding: '12px 15px', borderRadius: '8px' }}>
                                         📝 Edit Tracer Survey
                                     </button>
@@ -717,8 +650,6 @@ export default function ProgramChairDashboard() {
 
                 {activeMenu === 'masterlist' && (
                     <div className="portal-card" style={{ animation: 'fadeIn 0.3s ease' }}>
-                        {!showTrashBin ? (
-                            <>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                                     <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
                                         <h3 style={{ margin: 0 }}>Batch Roster</h3>
@@ -735,15 +666,6 @@ export default function ProgramChairDashboard() {
                                             <option value="2027">Batch 2027</option>
                                             <option value="2028">Batch 2028</option>
                                         </select>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '10px' }}>
-                                        <button className="outline-btn" onClick={() => setShowTrashBin(true)} style={{ padding: '8px 16px', fontSize: '0.85rem', color: '#ef4444', borderColor: 'transparent' }}>
-                                            🗑️ View Trash Bin ({trashedStudents.length})
-                                        </button>
-                                        <input type="file" accept=".csv" style={{ display: 'none' }} ref={fileInputRef} onChange={handleFileUpload} />
-                                        <button className="primary-btn" style={{ padding: '8px 16px', fontSize: '0.85rem' }} onClick={() => fileInputRef.current.click()}>
-                                            📥 Upload Masterlist (CSV)
-                                        </button>
                                     </div>
                                 </div>
                                 
@@ -780,9 +702,6 @@ export default function ProgramChairDashboard() {
                                                             <button className="outline-btn" style={{ padding: '6px 12px', fontSize: '0.75rem', borderRadius: '6px' }} onClick={() => setSelectedStudent(student)}>
                                                                 View Details
                                                             </button>
-                                                            <button className="outline-btn" style={{ padding: '6px', fontSize: '0.85rem', borderRadius: '6px', color: '#ef4444', borderColor: 'transparent' }} onClick={() => handleSoftDelete(student.id, student.name)} title="Move to Trash">
-                                                                🗑️
-                                                            </button>
                                                         </td>
                                                     </tr>
                                                 ))
@@ -790,57 +709,6 @@ export default function ProgramChairDashboard() {
                                         </tbody>
                                     </table>
                                 </div>
-                            </>
-                        ) : (
-                            <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                                    <div>
-                                        <h3 style={{ margin: 0, color: '#ef4444' }}>🗑️ Trash Bin</h3>
-                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-sub)', margin: '5px 0 0 0' }}>Students here are hidden from the active masterlist and reports.</p>
-                                    </div>
-                                    <button className="outline-btn" onClick={() => setShowTrashBin(false)} style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
-                                        ← Back to Masterlist
-                                    </button>
-                                </div>
-                                <div style={{ overflowX: 'auto' }}>
-                                    <table className="data-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Student ID</th>
-                                                <th>Name</th>
-                                                <th>Batch Year</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {displayStudents.length === 0 ? (
-                                                <tr>
-                                                    <td colSpan="4" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-sub)' }}>
-                                                        Trash bin is empty.
-                                                    </td>
-                                                </tr>
-                                            ) : (
-                                                displayStudents.map((student, idx) => (
-                                                    <tr key={idx} style={{ opacity: 0.7 }}>
-                                                        <td style={{ color: 'var(--text-sub)' }}>{student.id}</td>
-                                                        <td style={{ fontWeight: '600' }}>{student.name}</td>
-                                                        <td>{student.batch}</td>
-                                                        <td style={{ display: 'flex', gap: '10px' }}>
-                                                            <button className="primary-btn" style={{ padding: '6px 12px', fontSize: '0.75rem', borderRadius: '6px', backgroundColor: '#10b981', color: '#fff', border: 'none' }} onClick={() => handleRestore(student.id)}>
-                                                                ♻️ Restore
-                                                            </button>
-                                                            <button className="outline-btn" style={{ padding: '6px 12px', fontSize: '0.75rem', borderRadius: '6px', color: '#ef4444', borderColor: '#ef4444' }} onClick={() => handlePermanentDelete(student.id)}>
-                                                                Delete Permanently
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 )}
 
@@ -1921,11 +1789,6 @@ export default function ProgramChairDashboard() {
                             {toastMessage.type === 'trash' && '🗑️ '}
                             {toastMessage.text}
                         </span>
-                        {toastMessage.type === 'trash' && (
-                            <button onClick={() => {setToastMessage(null); setActiveMenu('masterlist'); setShowTrashBin(true);}} style={{ background: 'rgba(0,0,0,0.2)', border: 'none', color: 'white', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}>
-                                View Trash
-                            </button>
-                        )}
                         <button onClick={() => setToastMessage(null)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '1.2rem', padding: '0 0 0 10px', marginLeft: 'auto' }}>×</button>
                     </div>
                 )}
