@@ -606,7 +606,7 @@
 
 /* Faculty Page Header Override - Subtle Design */
 .faculty-page.portal-layout .profile-ring {
-  background: rgba(10, 25, 47, 0.08) !important;
+  background: rgba(10, 25, 47, 0.1) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
 }
 
@@ -614,6 +614,10 @@
   color: var(--text-main) !important;
   text-shadow: none !important;
   font-weight: 800 !important;
+  margin-bottom: 2px !important;
+}
+.faculty-page.portal-layout .header-text p.tab-desc {
+  margin-top: 0 !important;
 }
 
 .faculty-page.portal-layout .header-text p {
