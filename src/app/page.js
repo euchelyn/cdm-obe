@@ -79,7 +79,7 @@ export default function LoginPage() {
             name: userExists.name,
             batch: userExists.batch
         }));
-        router.push('/student');
+        router.push('/alumni');
       } else {
         setErrorMsg("Invalid Student ID or password.");
       }
