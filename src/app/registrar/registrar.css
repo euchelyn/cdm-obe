@@ -1,3 +1,46 @@
+/* Force all normal text to white in dark mode */
+[data-theme="dark"] .portal-card,
+[data-theme="dark"] .portal-card * {
+	color: #fff !important;
+}
+[data-theme="dark"] label {
+	color: #fff !important;
+}
+/* Interactive row hover */
+.student-row:hover {
+	background: var(--highlight, #ffd700) !important;
+	color: #23272b !important;
+	transition: background 0.18s, color 0.18s;
+}
+
+/* Student popup modal styles */
+.student-popup-modal {
+	position: fixed;
+	top: 0; left: 0; right: 0; bottom: 0;
+	background: rgba(16,24,42,0.65);
+	z-index: 2000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	animation: fadeInModal 0.25s;
+}
+.student-popup-content {
+	background: var(--bg-card);
+	border-radius: 16px;
+	box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+	padding: 32px 28px 24px 28px;
+	min-width: 320px;
+	max-width: 90vw;
+	animation: popInModal 0.22s;
+}
+@keyframes fadeInModal {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+@keyframes popInModal {
+	from { transform: scale(0.92); opacity: 0; }
+	to { transform: scale(1); opacity: 1; }
+}
 /* Force table text white in dark mode */
 [data-theme="dark"] .data-table th,
 [data-theme="dark"] .data-table td {
