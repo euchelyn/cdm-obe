@@ -1479,15 +1479,17 @@ export default function FacultyPage() {
                 </div>
               ) : (
                 <div className="empty-state">
-                  <div style={{ fontSize: '3rem', marginBottom: '20px' }}>📋</div>
-                  <p>No assessments saved yet. Create your first assessment from the Assessment Setup tab.</p>
-                  <button
-                    onClick={() => setActiveTab('assessment')}
-                    className="primary-btn"
-                    style={{ marginTop: '20px' }}
-                  >
-                    Start Assessment Setup →
-                  </button>
+                  <div className="assessment-empty-card">
+                    <div className="assessment-empty-icon">📝</div>
+                    <div className="assessment-empty-title">No Assessments Yet</div>
+                    <div className="assessment-empty-sub">Get started by setting up your first assessment for your course.<br/>Assessments help track student outcomes and progress!</div>
+                    <button
+                      onClick={() => setActiveTab('assessment')}
+                      className="primary-btn assessment-setup-btn"
+                    >
+                      <span className="assessment-btn-icon">➕</span> Start Assessment Setup
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
