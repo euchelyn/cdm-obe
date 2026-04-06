@@ -103,11 +103,11 @@ const DEFAULT_PO_QUESTIONS = [
     { id: 'qJ2', poId: 'J', type: 'likert', text: 'Application of contemporary issues in research and/or thesis', weight: 60, options: ['Relevance of the Study', 'Implementation of the Study', 'Understanding the impact of the research to the contemporary issues'] },
     { id: 'qK1', poId: 'K', type: 'likert', text: 'Knowledge of techniques, skills and engineering tools for engineering practice', weight: 30, options: ['Knowledge on different techniques for engineering practices', 'Skills possess to engineering practices', 'Modern engineering tools (BSCpE)'] },
     { id: 'qK2', poId: 'K', type: 'likert', text: 'Ability to apply techniques, skills and engineering tools for engineering practice', weight: 70, options: ['Able to apply different techniques for engineering practices', 'Able to apply different skills in engineering practices', 'Modern engineering tools (BSCpE)'] },
-    { id: 'qL1', poId: 'L', type: 'likert', text: 'As a member', weight: 40, options: ['Knowledge and understanding of engineering and management principles', 'Apply engineering and management principles', 'Participative/Contributor'] },
-    { id: 'qL2', poId: 'L', type: 'likert', text: 'As a Leader', weight: 60, options: ['Knowledge and understanding of engineering and management principles', 'Apply engineering and management principles', 'Achieve project objective'] }
+    { id: 'qL1', poId: 'L', type: 'likert', text: 'As a member', weight: 40, options: ['Knowledge and understanding of engineering management principles', 'Apply engineering and management principles', 'Participative/Contributor'] },
+    { id: 'qL2', poId: 'L', type: 'likert', text: 'As a Leader', weight: 60, options: ['Knowledge and understanding of engineering management principles', 'Apply engineering and management principles', 'Achieve project objective'] }
 ];
 
-    const DEFAULT_PEO_QUESTIONS = [
+const DEFAULT_PEO_QUESTIONS = [
     { id: 'q1', type: 'likert', text: 'How effectively are you leading complex engineering projects?' }
 ];
 
@@ -147,6 +147,68 @@ const DEFAULT_GTS_QUESTIONS = [
     { id: 'q33', type: 'checkbox', text: 'If YES, what competencies learned in college did you find very useful in your first job?', options: ['Communication skills', 'Human Relations skills', 'Entrepreneurial skills', 'Information Technology skills', 'Problem-solving skills', 'Critical Thinking skills', 'Other skills'] },
     { id: 'q34', type: 'textarea', text: 'List down suggestions to further improve your course curriculum' }
 ];
+
+const firstNames = ["Mark", "John", "Maria", "Ana", "Jose", "Paul", "Michelle", "Sarah", "Christian", "Kevin", "Dennis", "Grace", "Mary", "Peter", "Richard", "Erica", "Jason", "Jessica", "Michael", "Rachelle", "Jerome", "Alyssa", "Brian", "Nicole", "Kevin"];
+const lastNames = ["Santos", "Reyes", "Cruz", "Bautista", "Ocampo", "Garcia", "Mendoza", "Torres", "Tomas", "Aquino", "Ramos", "Castro", "Villanueva", "Diaz", "Navarro", "Fernandez", "Mercado", "Perez", "Tolentino", "Gomez", "Gammaru"];
+const cities = ["Muntinlupa City", "Las Pinas City", "Quezon City", "Manila", "Makati City", "Taguig City", "Paranaque City", "Pasig City", "Caloocan City", "Marikina City"];
+const streets = ["Rizal St.", "Mabini St.", "Quezon Ave.", "Bonifacio St.", "Aguinaldo St.", "Marcos Highway", "Taft Ave.", "Ayala Ave.", "Ortigas Ave.", "Shaw Blvd."];
+const companies = ["Accenture", "IBM", "Globe Telecom", "Smart Communications", "BDO", "Maya", "Samsung", "HP", "Oracle", "Microsoft", "Intel", "Cisco", "GCash", "Tencent", "Deloitte"];
+const jobTitles = ["Software Engineer", "Network Engineer", "Systems Analyst", "Web Developer", "IT Consultant", "Data Analyst", "Cybersecurity Analyst", "Quality Assurance Tester", "Backend Developer", "Frontend Developer", "DevOps Engineer", "Cloud Architect"];
+const regions = ["NCR", "Region 4A", "Region 3", "Region 1", "Region 7"];
+
+const MOCK_GTS_RESPONSES = Array(70).fill(null).map(() => {
+    const fName = firstNames[Math.floor(Math.random() * firstNames.length)];
+    const lName = lastNames[Math.floor(Math.random() * lastNames.length)];
+    const gender = ["Maria", "Ana", "Michelle", "Sarah", "Grace", "Mary", "Erica", "Jessica", "Rachelle", "Alyssa", "Nicole"].includes(fName) ? "Female" : "Male";
+    const city = cities[Math.floor(Math.random() * cities.length)];
+    const street = streets[Math.floor(Math.random() * streets.length)];
+    const company = companies[Math.floor(Math.random() * companies.length)];
+    const jobTitle = jobTitles[Math.floor(Math.random() * jobTitles.length)];
+    const region = regions[Math.floor(Math.random() * regions.length)];
+    const isEmployed = Math.random() > 0.15 ? "Yes" : "No";
+    const empStatus = isEmployed === "Yes" ? (Math.random() > 0.4 ? "Regular" : "Contractual") : "N/A";
+    const isFirstJob = Math.random() > 0.5 ? "Yes" : "No";
+
+    return {
+        q1: `${fName} ${lName}`,
+        q2: `${Math.floor(Math.random() * 900) + 100} ${street}, ${city}`,
+        q3: `${fName.toLowerCase()}.${lName.toLowerCase()}${Math.floor(Math.random() * 99)}@gmail.com`,
+        q4: `02-${Math.floor(Math.random() * 800) + 100}-${Math.floor(Math.random() * 8000) + 1000}`,
+        q5: `09${Math.floor(Math.random() * 900000000) + 100000000}`,
+        q6: Math.random() > 0.7 ? "Married" : "Single",
+        q7: gender,
+        q8: `200${Math.floor(Math.random() * 4)}-0${Math.floor(Math.random() * 9) + 1}-1${Math.floor(Math.random() * 9)}`,
+        q9: region,
+        q10: region === "NCR" ? "Metro Manila" : (region === "Region 4A" ? "Laguna" : "Bulacan"),
+        q11: "City",
+        q12: "B.S. Computer Engineering",
+        q13: "None",
+        q14: ["Prospect for immediate employment", "Strong passion for the profession"],
+        q15: Math.random() > 0.8 ? "Cisco Certified Network Associate (CCNA)" : "None",
+        q16: isEmployed,
+        q17: isEmployed === "No" ? ["Advance or further study"] : [],
+        q18: empStatus,
+        q19: isEmployed === "Yes" ? jobTitle : "N/A",
+        q20: isEmployed === "Yes" ? company : "N/A",
+        q21: isEmployed === "Yes" ? (Math.random() > 0.9 ? "Abroad" : "Local") : "N/A",
+        q22: isFirstJob,
+        q23: isEmployed === "Yes" ? ["Salaries and benefits", "Career challenge"] : [],
+        q24: ["Related to special skills"],
+        q25: isFirstJob === "No" ? ["Career challenge"] : [],
+        q26: "N/A",
+        q27: Math.random() > 0.5 ? "1 to 6 months" : "1 year to less than 2 years",
+        q28: Math.random() > 0.5 ? "Response to an advertisement" : "Information from friends",
+        q29: Math.random() > 0.4 ? "1 to 6 months" : "Less than a month",
+        q30: Math.random() > 0.2 ? "Professional, Technical or Supervisory" : "Managerial or Executive",
+        q31: Math.random() > 0.3 ? "P25,000.00 and above" : "P20,000.00 to less than P25,000.00",
+        q32: "Yes",
+        q33: ["Information Technology skills", "Problem-solving skills"],
+        q34: "Incorporate more industry-standard frameworks into the capstone project."
+    };
+});
+const GTS_ANALYTICS_VARIABLES = DEFAULT_GTS_QUESTIONS
+    .filter(q => ['radio', 'dropdown', 'yesno'].includes(q.type))
+    .map(q => ({ label: q.text, value: q.id }));
 
 export default function ProgramChairDashboard() {
     const router = useRouter();
@@ -189,7 +251,8 @@ export default function ProgramChairDashboard() {
     const [surveyDetailBatch, setSurveyDetailBatch] = useState('All');
     
     const [gtsReportTab, setGtsReportTab] = useState('raw');
-    const [selectedGtsCols, setSelectedGtsCols] = useState(['q9', 'q10', 'q11']); // Pre-select Region, Province, and Location
+    const [selectedGtsCols, setSelectedGtsCols] = useState(['q1', 'q16', 'q18', 'q19', 'q30']); 
+    const [gtsAnalyticsField, setGtsAnalyticsField] = useState('q18');
 
     useEffect(() => {
         const savedTheme = localStorage.getItem('theme');
@@ -197,6 +260,7 @@ export default function ProgramChairDashboard() {
             setIsDarkMode(false);
             document.documentElement.removeAttribute('data-theme');
         } else {
+            setIsDarkMode(true);
             document.documentElement.setAttribute('data-theme', 'dark');
         }
 
@@ -257,42 +321,6 @@ export default function ProgramChairDashboard() {
                 } else {
                     setFormTitle('Graduate Tracer Study');
                     setFormDesc('In compliance with the Commission on Higher Education (CHED) Memorandum Order. Please complete this questionnaire as accurately and frankly as possible.');
-                    setQuestions([
-                        { id: 'q1', type: 'text', text: 'Name' },
-                        { id: 'q2', type: 'textarea', text: 'Permanent Address' },
-                        { id: 'q3', type: 'email', text: 'E-mail Address' },
-                        { id: 'q4', type: 'text', text: 'Telephone or Contact Number(s)' },
-                        { id: 'q5', type: 'text', text: 'Mobile Number' },
-                        { id: 'q6', type: 'radio', text: 'Civil Status', options: ['Single', 'Married', 'Separated', 'Widow/Widower', 'Single Parent'] },
-                        { id: 'q7', type: 'radio', text: 'Sex', options: ['Male', 'Female'] },
-                        { id: 'q8', type: 'date', text: 'Birthday' },
-                        { id: 'q9', type: 'dropdown', text: 'Region of Origin', options: ['Region 1', 'Region 2', 'Region 3', 'Region 4A', 'Region 4B', 'Region 5', 'Region 6', 'Region 7', 'Region 8', 'Region 9', 'Region 10', 'Region 11', 'Region 12', 'NCR', 'CAR', 'ARMM', 'CARAGA'] },
-                        { id: 'q10', type: 'text', text: 'Province' },
-                        { id: 'q11', type: 'radio', text: 'Location of Residence', options: ['City', 'Municipality'] },
-                        { id: 'q12', type: 'text', text: 'Educational Attainment (Degree & Specialization)' },
-                        { id: 'q13', type: 'textarea', text: 'Professional examination(s) Passed (with Rating & Date)' },
-                        { id: 'q14', type: 'checkbox', text: 'Reason(s) for taking the course(s) or pursuing degree(s)', options: ['High grades in course/subject area', 'Good grades in high school', 'Influence of parents or relatives', 'Peer Influence', 'Inspired by a role model', 'Strong passion for the profession', 'Prospect for immediate employment', 'Status or prestige of the profession', 'Availability of course offering', 'Prospect of career advancement', 'Affordable for the family', 'Prospect of attractive compensation', 'Opportunity for employment abroad', 'No particular choice', 'Other reason(s)'] },
-                        { id: 'q15', type: 'textarea', text: 'Training(s) / Advance Studies Attended After College & Reasons' },
-                        { id: 'q16', type: 'yesno', text: 'Are you presently employed?' },
-                        { id: 'q17', type: 'checkbox', text: 'If not employed, please state reason(s) why.', options: ['Advance or further study', 'Family concern and decided not to find a job', 'Health-related reason(s)', 'Lack of work experience', 'No job opportunity', 'Did not look for a job', 'Other reason(s)'] },
-                        { id: 'q18', type: 'dropdown', text: 'Present Employment Status', options: ['Regular', 'Temporary', 'Casual', 'Contractual', 'Self-employed'] },
-                        { id: 'q19', type: 'text', text: 'Present occupation / Job Title' },
-                        { id: 'q20', type: 'textarea', text: 'Name of Company/Organization and Major line of business' },
-                        { id: 'q21', type: 'radio', text: 'Place of Work', options: ['Local', 'Abroad'] },
-                        { id: 'q22', type: 'yesno', text: 'Is this your first job after college?' },
-                        { id: 'q23', type: 'checkbox', text: 'What are your reason(s) for staying on the job?', options: ['Salaries and benefits', 'Career challenge', 'Related to special skills', 'Related to course or program of study', 'Proximity to residence', 'Peer influence', 'Family influence', 'Other reason(s)'] },
-                        { id: 'q24', type: 'checkbox', text: 'What were your reasons for accepting the job?', options: ['Salaries & benefits', 'Career challenge', 'Related to special skills', 'Proximity to residence', 'Other reason(s)'] },
-                        { id: 'q25', type: 'checkbox', text: 'What were your reason(s) for changing job?', options: ['Salaries & benefits', 'Career challenge', 'Related to special skills', 'Proximity to residence', 'Other reason(s)'] },
-                        { id: 'q26', type: 'textarea', text: 'Additional reasons for changing job (if applicable)' },
-                        { id: 'q27', type: 'dropdown', text: 'How long did you stay in your first job?', options: ['Less than a month', '1 to 6 months', '7 to 11 months', '1 year to less than 2 years', '2 years to less than 3 years', '3 years to less than 4 years', 'Others'] },
-                        { id: 'q28', type: 'dropdown', text: 'How did you find your first job?', options: ['Response to an advertisement', 'As walk-in applicant', 'Recommended by someone', 'Information from friends', 'Arranged by placement officer', 'Family business', 'Job Fair / PESO', 'Others'] },
-                        { id: 'q29', type: 'dropdown', text: 'How long did it take you to land your first job?', options: ['Less than a month', '1 to 6 months', '7 to 11 months', '1 year to less than 2 years', '2 years to less than 3 years', '3 years to less than 4 years', 'Others'] },
-                        { id: 'q30', type: 'dropdown', text: 'Job Level Position', options: ['Rank or Clerical', 'Professional, Technical or Supervisory', 'Managerial or Executive', 'Self-employed'] },
-                        { id: 'q31', type: 'dropdown', text: 'What is your initial gross monthly earning in your first job after college?', options: ['Below P5,000.00', 'P5,000.00 to less than P10,000.00', 'P10,000.00 to less than P15,000.00', 'P15,000.00 to less than P20,000.00', 'P20,000.00 to less than P25,000.00', 'P25,000.00 and above'] },
-                        { id: 'q32', type: 'yesno', text: 'Was the curriculum you had in college relevant to your first job?' },
-                        { id: 'q33', type: 'checkbox', text: 'If YES, what competencies learned in college did you find very useful in your first job?', options: ['Communication skills', 'Human Relations skills', 'Entrepreneurial skills', 'Information Technology skills', 'Problem-solving skills', 'Critical Thinking skills', 'Other skills'] },
-                        { id: 'q34', type: 'textarea', text: 'List down suggestions to further improve your course curriculum' }
-                    ]);
                     setQuestions(DEFAULT_GTS_QUESTIONS);
                 }
             }
@@ -305,12 +333,7 @@ export default function ProgramChairDashboard() {
             if (existingGts) {
                 setTracerSchema(JSON.parse(existingGts).questions || []);
             } else {
-                setTracerSchema([
-                    { id: 'q1', text: 'Name' },
-                    { id: 'q16', text: 'Presently Employed?' },
-                    { id: 'q19', text: 'Occupation / Job Title' },
-                    { id: 'q29', text: 'Time to First Job' }
-                ]);
+                setTracerSchema(DEFAULT_GTS_QUESTIONS);
             }
         }
     }, [activeMenu, selectedSurveyView, surveySubTab, formBatchYear]);
@@ -534,6 +557,17 @@ export default function ProgramChairDashboard() {
     const c_tracerRate = totalChecklist === 0 ? 0 : Math.round((c_tracerCompleted / totalChecklist) * 100);
 
     const surveyDetailStudents = surveyDetailBatch === 'All' ? activeStudents : activeStudents.filter(s => s.batch === surveyDetailBatch);
+
+    const gtsAnalyticsCounts = {};
+    MOCK_GTS_RESPONSES.forEach(res => {
+        const val = res[gtsAnalyticsField] || "No Response";
+        gtsAnalyticsCounts[val] = (gtsAnalyticsCounts[val] || 0) + 1;
+    });
+    const gtsAnalyticsResults = Object.keys(gtsAnalyticsCounts).map(key => ({
+        _id: key,
+        frequency: gtsAnalyticsCounts[key],
+        percent: (gtsAnalyticsCounts[key] / 70) * 100
+    })).sort((a, b) => b.frequency - a.frequency);
 
     return (
         <div className="portal-layout">
@@ -1592,8 +1626,8 @@ export default function ProgramChairDashboard() {
                                         <div style={{ animation: 'fadeIn 0.3s ease' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                                                 <div>
-                                                                    <h3 style={{ color: 'var(--text-main)', fontSize: '1.4rem', margin: 0 }}>SO Survey Compliance</h3>
-                                                                    <p style={{ color: 'var(--text-sub)', fontSize: '0.9rem', marginTop: '5px' }}>Yearly update respondents tracking.</p>
+                                                    <h3 style={{ color: 'var(--text-main)', fontSize: '1.4rem', margin: 0 }}>SO Survey Compliance</h3>
+                                                    <p style={{ color: 'var(--text-sub)', fontSize: '0.9rem', marginTop: '5px' }}>Yearly update respondents tracking.</p>
                                                 </div>
                                                 <select className="correction-textbox" style={{ height: '35px', padding: '0 10px', width: 'max-content', minWidth: '150px', backgroundColor: 'var(--bg-card)' }} value={checklistBatch} onChange={(e) => setChecklistBatch(e.target.value)}>
                                                     <option value="All">All Batches</option>
@@ -1708,6 +1742,7 @@ export default function ProgramChairDashboard() {
                                         <div style={{ display: 'flex', gap: '10px' }}>
                                             <button className={`outline-btn ${gtsReportTab === 'raw' ? 'active' : ''}`} onClick={() => setGtsReportTab('raw')} style={{ padding: '8px 16px', backgroundColor: gtsReportTab === 'raw' ? 'rgba(255,255,255,0.1)' : 'transparent', borderColor: gtsReportTab === 'raw' ? 'var(--gold)' : '' }}>Full Data</button>
                                             <button className={`outline-btn ${gtsReportTab === 'custom' ? 'active' : ''}`} onClick={() => setGtsReportTab('custom')} style={{ padding: '8px 16px', backgroundColor: gtsReportTab === 'custom' ? 'rgba(255,255,255,0.1)' : 'transparent', borderColor: gtsReportTab === 'custom' ? 'var(--gold)' : '' }}>Custom Builder</button>
+                                            <button className={`outline-btn ${gtsReportTab === 'analytics' ? 'active' : ''}`} onClick={() => setGtsReportTab('analytics')} style={{ padding: '8px 16px', backgroundColor: gtsReportTab === 'analytics' ? 'rgba(255,255,255,0.1)' : 'transparent', borderColor: gtsReportTab === 'analytics' ? 'var(--gold)' : '' }}>Analytics</button>
                                         </div>
                                     </div>
 
@@ -1733,43 +1768,87 @@ export default function ProgramChairDashboard() {
                                         </div>
                                     )}
 
-                                    <div style={{ overflowX: 'auto', maxHeight: '65vh' }}>
-                                        <table className="data-table">
-                                            <thead>
-                                                <tr>
-                                                    <th style={{ minWidth: '150px', position: 'sticky', top: 0, backgroundColor: 'var(--bg-main)', zIndex: 2 }}>Alumni Name</th>
-                                                    <th style={{ minWidth: '100px', position: 'sticky', top: 0, backgroundColor: 'var(--bg-main)', zIndex: 2 }}>Batch</th>
-                                                    {(gtsReportTab === 'custom' ? tracerSchema.filter(q => selectedGtsCols.includes(q.id)) : tracerSchema).map(q => (
-                                                        <th key={q.id} style={{ minWidth: '200px', position: 'sticky', top: 0, backgroundColor: 'var(--bg-main)', zIndex: 2 }}>{q.text}</th>
+                                    {gtsReportTab === 'analytics' && (
+                                        <div style={{ animation: 'fadeIn 0.3s ease' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '15px' }}>
+                                                <select
+                                                    className="control-select custom-select-arrow"
+                                                    style={{ backgroundColor: 'var(--bg-card)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-main)', width: '250px' }}
+                                                    value={gtsAnalyticsField}
+                                                    onChange={(e) => setGtsAnalyticsField(e.target.value)}
+                                                >
+                                                    {GTS_ANALYTICS_VARIABLES.map(v => (
+                                                        <option key={v.value} value={v.value}>{v.label}</option>
                                                     ))}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {filteredChecklist.map((student, idx) => (
-                                                    <tr key={idx}>
-                                                        <td style={{ fontWeight: 'bold' }}>{student.name}</td>
-                                                        <td>{student.batch}</td>
-                                                        {(gtsReportTab === 'custom' ? tracerSchema.filter(q => selectedGtsCols.includes(q.id)) : tracerSchema).map(q => {
-                                                            const ans = student.surveyAnswers?.gts?.[q.id];
-                                                            const displayAns = Array.isArray(ans) ? ans.join(', ') : (ans || '-');
-                                                            return (
-                                                                <td key={q.id} style={{ color: 'var(--text-sub)' }}>
-                                                                    {displayAns}
-                                                                </td>
-                                                            );
-                                                        })}
-                                                    </tr>
-                                                ))}
-                                                {filteredChecklist.length === 0 && (
+                                                </select>
+                                            </div>
+                                            <div style={{ overflowX: 'auto', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', backgroundColor: 'var(--bg-card)' }}>
+                                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', textAlign: 'left' }}>
+                                                    <thead style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+                                                        <tr>
+                                                            <th style={{ padding: '15px 20px', borderBottom: '2px solid rgba(255,255,255,0.1)', color: 'var(--gold)' }}>Category Variables</th>
+                                                            <th style={{ padding: '15px 20px', textAlign: 'center', borderBottom: '2px solid rgba(255,255,255,0.1)', color: 'var(--gold)' }}>Frequency (f)</th>
+                                                            <th style={{ padding: '15px 20px', textAlign: 'center', borderBottom: '2px solid rgba(255,255,255,0.1)', color: 'var(--gold)' }}>Percentage (%)</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {gtsAnalyticsResults.map((item, index) => (
+                                                            <tr key={index} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                                <td style={{ padding: '12px 20px', fontWeight: 'bold' }}>{item._id}</td>
+                                                                <td style={{ padding: '12px 20px', textAlign: 'center' }}>{item.frequency}</td>
+                                                                <td style={{ padding: '12px 20px', textAlign: 'center' }}>{item.percent.toFixed(2)}%</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                    <tfoot>
+                                                        <tr style={{ backgroundColor: 'rgba(0,0,0,0.2)' }}>
+                                                            <td style={{ padding: '15px 20px', fontWeight: 'bold' }}>Total Respondents (N)</td>
+                                                            <td style={{ padding: '15px 20px', textAlign: 'center', fontWeight: 'bold' }}>70</td>
+                                                            <td style={{ padding: '15px 20px', textAlign: 'center', fontWeight: 'bold' }}>100.00%</td>
+                                                        </tr>
+                                                    </tfoot>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {(gtsReportTab === 'raw' || gtsReportTab === 'custom') && (
+                                        <div style={{ overflowX: 'auto', maxHeight: '65vh', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', backgroundColor: 'var(--bg-card)' }}>
+                                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
+                                                <thead style={{ backgroundColor: 'rgba(0,0,0,0.6)', position: 'sticky', top: 0, zIndex: 10 }}>
                                                     <tr>
-                                                        <td colSpan={(gtsReportTab === 'custom' ? selectedGtsCols.length : tracerSchema.length) + 2} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-sub)' }}>
-                                                            No data available. Upload masterlist first.
-                                                        </td>
+                                                        <th style={{ padding: '15px 20px', minWidth: '200px', borderBottom: '2px solid rgba(255,255,255,0.1)', color: 'var(--gold)', whiteSpace: 'nowrap' }}>Alumni Name</th>
+                                                        <th style={{ padding: '15px 20px', minWidth: '120px', borderBottom: '2px solid rgba(255,255,255,0.1)', color: 'var(--gold)', whiteSpace: 'nowrap' }}>Batch</th>
+                                                        {(gtsReportTab === 'custom' ? tracerSchema.filter(q => selectedGtsCols.includes(q.id)) : tracerSchema).map(q => (
+                                                            <th key={q.id} style={{ padding: '15px 20px', minWidth: '220px', borderBottom: '2px solid rgba(255,255,255,0.1)', color: 'var(--gold)', whiteSpace: 'nowrap' }}>{q.text}</th>
+                                                        ))}
                                                     </tr>
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                                </thead>
+                                                <tbody>
+                                                    {MOCK_GTS_RESPONSES.map((response, idx) => (
+                                                        <tr 
+                                                            key={idx} 
+                                                            style={{ backgroundColor: idx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent', transition: 'background-color 0.2s' }}
+                                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)'}
+                                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = idx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent'}
+                                                        >
+                                                            <td style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 'bold', color: 'var(--text-main)' }}>{response.q1}</td>
+                                                            <td style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-sub)' }}>Batch 2026</td>
+                                                            {(gtsReportTab === 'custom' ? tracerSchema.filter(q => selectedGtsCols.includes(q.id)) : tracerSchema).map(q => {
+                                                                const ans = response[q.id];
+                                                                const displayAns = Array.isArray(ans) ? ans.join(', ') : (ans || '-');
+                                                                return (
+                                                                    <td key={q.id} style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-sub)' }}>
+                                                                        {displayAns}
+                                                                    </td>
+                                                                );
+                                                            })}
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
                                 </>
                             )}
                         </div>
@@ -1887,7 +1966,7 @@ export default function ProgramChairDashboard() {
                                 style={{ padding: '10px 24px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', flex: 1, border: 'none' }}
                             >
                                 Save Evaluated Grades
-                            </button>    
+                            </button>  
                         </div>
                     </div>
                 </div>
