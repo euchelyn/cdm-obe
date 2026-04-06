@@ -349,3 +349,12 @@ label.block-edit-btn input[type="file"] {
 
 /* ensure remove button aligns */
 .student-remove-btn { font-size: 1.0em; }
+
+/* Ensure all input, textarea, and select text is white in dark mode for better visibility */
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  color: #fff !important;
+  background-color: var(--input-bg) !important;
+  border-color: var(--input-border) !important;
+}
