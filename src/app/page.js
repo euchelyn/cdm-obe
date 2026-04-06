@@ -26,20 +26,34 @@ export default function LoginPage() {
       return;
     }
 
-    if (selectedRole === 'PC') {
-      if (username === 'programchair' && password === '12345678') {
-        localStorage.setItem('current_user', JSON.stringify({ role: 'pc', id: 'admin', name: 'Program Chair' }));
-        router.push('/pc'); 
+    if (selectedRole === 'MIS') {
+      if (username === 'mis' && password === '12345678') {
+        localStorage.setItem('current_user', JSON.stringify({ role: 'mis', id: 'admin', name: 'IT (MIS)' }));
+        router.push('/mis'); 
       } else {
-        setErrorMsg("Invalid credentials for program chair.");
+        setErrorMsg("Invalid credentials for IT (MIS).");
       }
-    } else if (selectedRole === 'Alumni') {
+    } else if (selectedRole === 'Registrar') {
+      if (username === 'registrar' && password === '12345678') {
+        localStorage.setItem('current_user', JSON.stringify({ role: 'registrar', id: 'admin', name: 'Registrar' }));
+        router.push('/registrar'); 
+      } else {
+        setErrorMsg("Invalid credentials for registrar.");
+      }
+    } else if (selectedRole === 'Faculty') {
+      if (username === 'faculty' && password === '12345678') {
+        localStorage.setItem('current_user', JSON.stringify({ role: 'faculty', id: 'admin', name: 'Faculty' }));
+        router.push('/faculty'); 
+      } else {
+        setErrorMsg("Invalid credentials for faculty.");
+      }
+    } else if (selectedRole === 'Student') {
       
       if (username === 'goodstudent' && password === '12345678') {
         const studentUser = { 
             id: '20241020067', 
             name: 'Euch', 
-            role: 'alumni',
+            role: 'student',
             batch: '2026',
             program: 'B.S. Computer Engineering',
             surveyProgress: '0%',
@@ -56,7 +70,7 @@ export default function LoginPage() {
         }
 
         localStorage.setItem('current_user', JSON.stringify(studentUser));
-        router.push('/alumni');
+        router.push('/student');
         return;
       }
 
@@ -65,12 +79,12 @@ export default function LoginPage() {
 
       if (userExists && password.trim() === userExists.birthday) {
         localStorage.setItem('current_user', JSON.stringify({ 
-            role: 'alumni', 
+            role: 'student', 
             id: userExists.id, 
             name: userExists.name,
             batch: userExists.batch
         }));
-        router.push('/alumni');
+        router.push('/student');
       } else {
         setErrorMsg("Invalid Student ID or password.");
       }
@@ -149,18 +163,34 @@ export default function LoginPage() {
                     <div className="role-btns">
                       <button 
                           type="button" 
-                          className={`role-btn ${selectedRole === 'PC' ? 'active' : ''}`}
-                          onClick={() => setSelectedRole(selectedRole === 'PC' ? null : 'PC')}
+                          className={`role-btn ${selectedRole === 'MIS' ? 'active' : ''}`}
+                          onClick={() => setSelectedRole(selectedRole === 'MIS' ? null : 'MIS')}
                       >
-                          Program Chair
+                          IT (MIS)
+                      </button>
+
+                      <button 
+                          type="button" 
+                          className={`role-btn ${selectedRole === 'Registrar' ? 'active' : ''}`}
+                          onClick={() => setSelectedRole(selectedRole === 'Registrar' ? null : 'Registrar')}
+                      >
+                          Registrar
+                      </button>
+
+                      <button 
+                          type="button" 
+                          className={`role-btn ${selectedRole === 'Faculty' ? 'active' : ''}`}
+                          onClick={() => setSelectedRole(selectedRole === 'Faculty' ? null : 'Faculty')}
+                      >
+                          Faculty
                       </button>
                       
                       <button 
                           type="button" 
-                          className={`role-btn ${selectedRole === 'Alumni' ? 'active' : ''}`}
-                          onClick={() => setSelectedRole(selectedRole === 'Alumni' ? null : 'Alumni')}
+                          className={`role-btn ${selectedRole === 'Student' ? 'active' : ''}`}
+                          onClick={() => setSelectedRole(selectedRole === 'Student' ? null : 'Student')}
                       >
-                          Alumni
+                          Student
                       </button>
                     </div>
                 </div>

@@ -283,7 +283,7 @@ export default function AlumniDashboard() {
                             <li>Your responses are kept strictly confidential.</li>
                         </ul>
                     </div>
-                    <button className={isPOCompleted ? 'outline-btn' : 'primary-btn'} onClick={() => isPOCompleted ? openReviewModal('po') : router.push('/alumni/survey')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.95rem', border: isPOCompleted ? '1px solid rgba(255,255,255,0.2)' : 'none', cursor: 'pointer', marginTop: '20px' }}>
+                    <button className={isPOCompleted ? 'outline-btn' : 'primary-btn'} onClick={() => isPOCompleted ? openReviewModal('po') : router.push('/student/survey')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.95rem', border: isPOCompleted ? '1px solid rgba(255,255,255,0.2)' : 'none', cursor: 'pointer', marginTop: '20px' }}>
                         {isPOCompleted ? 'Review Responses' : 'Start PO Survey'}
                     </button>
                 </div>
@@ -318,7 +318,7 @@ export default function AlumniDashboard() {
                                     <li>Coordinates directly with Employer feedback.</li>
                                 </ul>
                             </div>
-                            <button className={isPEOCompleted ? 'outline-btn' : 'primary-btn'} onClick={() => isPEOCompleted ? openReviewModal('peo') : router.push('/alumni/survey')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.95rem', border: isPEOCompleted ? '1px solid rgba(255,255,255,0.2)' : 'none', cursor: 'pointer', marginTop: '20px' }}>
+                            <button className={isPEOCompleted ? 'outline-btn' : 'primary-btn'} onClick={() => isPEOCompleted ? openReviewModal('peo') : router.push('/student/survey')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.95rem', border: isPEOCompleted ? '1px solid rgba(255,255,255,0.2)' : 'none', cursor: 'pointer', marginTop: '20px' }}>
                                 {isPEOCompleted ? 'Review Responses' : 'Start PEO Survey'}
                             </button>
                         </>
@@ -347,7 +347,7 @@ export default function AlumniDashboard() {
                             <li>Takes less than 3 minutes.</li>
                         </ul>
                     </div>
-                    <button className={isYearlyCompleted ? 'outline-btn' : 'primary-btn'} onClick={() => isYearlyCompleted ? openReviewModal('yearly') : router.push('/alumni/survey')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.95rem', border: isYearlyCompleted ? '1px solid rgba(255,255,255,0.2)' : 'none', cursor: 'pointer', marginTop: '20px' }}>
+                    <button className={isYearlyCompleted ? 'outline-btn' : 'primary-btn'} onClick={() => isYearlyCompleted ? openReviewModal('yearly') : router.push('/student/survey')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.95rem', border: isYearlyCompleted ? '1px solid rgba(255,255,255,0.2)' : 'none', cursor: 'pointer', marginTop: '20px' }}>
                         {isYearlyCompleted ? 'Review Responses' : 'Start Yearly Survey'}
                     </button>
                 </div>
@@ -374,7 +374,7 @@ export default function AlumniDashboard() {
                             <li>Takes roughly 10-15 minutes.</li>
                         </ul>
                     </div>
-                    <button className={isGTSCompleted ? 'outline-btn' : 'primary-btn'} onClick={() => isGTSCompleted ? openReviewModal('gts') : router.push('/alumni/tracer')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.95rem', border: isGTSCompleted ? '1px solid rgba(255,255,255,0.2)' : 'none', cursor: 'pointer', marginTop: '20px' }}>
+                    <button className={isGTSCompleted ? 'outline-btn' : 'primary-btn'} onClick={() => isGTSCompleted ? openReviewModal('gts') : router.push('/student/tracer')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.95rem', border: isGTSCompleted ? '1px solid rgba(255,255,255,0.2)' : 'none', cursor: 'pointer', marginTop: '20px' }}>
                         {isGTSCompleted ? 'Review Responses' : 'Start Tracer Study'}
                     </button>
                 </div>
