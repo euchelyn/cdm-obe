@@ -26,26 +26,21 @@ export default function LoginPage() {
       return;
     }
 
-    if (selectedRole === 'MIS') {
+    if (selectedRole === 'Faculty') {
       if (username === 'mis' && password === '12345678') {
         localStorage.setItem('current_user', JSON.stringify({ role: 'mis', id: 'admin', name: 'IT (MIS)' }));
         router.push('/mis'); 
-      } else {
-        setErrorMsg("Invalid credentials for IT (MIS).");
-      }
-    } else if (selectedRole === 'Registrar') {
-      if (username === 'registrar' && password === '12345678') {
+      } else if (username === 'registrar' && password === '12345678') {
         localStorage.setItem('current_user', JSON.stringify({ role: 'registrar', id: 'admin', name: 'Registrar' }));
         router.push('/registrar'); 
-      } else {
-        setErrorMsg("Invalid credentials for registrar.");
-      }
-    } else if (selectedRole === 'Faculty') {
-      if (username === 'faculty' && password === '12345678') {
+      } else if (username === 'faculty' && password === '12345678') {
         localStorage.setItem('current_user', JSON.stringify({ role: 'faculty', id: 'admin', name: 'Faculty' }));
         router.push('/faculty'); 
+      } else if (username === 'programchair' && password === '12345678') {
+        localStorage.setItem('current_user', JSON.stringify({ role: 'pc', id: 'admin', name: 'Program Chair' }));
+        router.push('/pc'); 
       } else {
-        setErrorMsg("Invalid credentials for faculty.");
+        setErrorMsg("Invalid credentials for Faculty.");
       }
     } else if (selectedRole === 'Student') {
       
@@ -161,22 +156,6 @@ export default function LoginPage() {
                 <div className="role-selection">
                     <p>Log in as:</p>
                     <div className="role-btns">
-                      <button 
-                          type="button" 
-                          className={`role-btn ${selectedRole === 'MIS' ? 'active' : ''}`}
-                          onClick={() => setSelectedRole(selectedRole === 'MIS' ? null : 'MIS')}
-                      >
-                          IT (MIS)
-                      </button>
-
-                      <button 
-                          type="button" 
-                          className={`role-btn ${selectedRole === 'Registrar' ? 'active' : ''}`}
-                          onClick={() => setSelectedRole(selectedRole === 'Registrar' ? null : 'Registrar')}
-                      >
-                          Registrar
-                      </button>
-
                       <button 
                           type="button" 
                           className={`role-btn ${selectedRole === 'Faculty' ? 'active' : ''}`}

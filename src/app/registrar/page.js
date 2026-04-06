@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import "../alumni/alumni-globals.css";
 import "./registrar.css";
 
 export default function RegistrarPage() {
+	const router = useRouter();
 	const [masterlist, setMasterlist] = useState([]);
 	const [name, setName] = useState("");
 	const [studentId, setStudentId] = useState("");
@@ -15,6 +17,7 @@ export default function RegistrarPage() {
 	const [selectedBatch, setSelectedBatch] = useState("All");
 	const [search, setSearch] = useState("");
 	const [isDarkMode, setIsDarkMode] = useState(true);
+	const [activeTab, setActiveTab] = useState("masterlist");
 	const fileInputRef = React.useRef(null);
 
 	useEffect(() => {
@@ -53,6 +56,13 @@ export default function RegistrarPage() {
 		} else {
 			document.documentElement.removeAttribute('data-theme');
 			localStorage.setItem('theme', 'light');
+		}
+	};
+
+	const handleLogout = () => {
+		if (confirm("Are you sure you want to log out?")) {
+			localStorage.removeItem("current_user");
+			router.push("/");
 		}
 	};
 
@@ -189,89 +199,151 @@ export default function RegistrarPage() {
 	}
 
 	return (
-		<>
-			<div className="registrar-bg-overlay" />
-			<div className={`portal-card registrar-modern${isDarkMode ? ' dark' : ' light'}`} style={{ maxWidth: 900, margin: '40px auto', padding: 32 }}>
-			<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-				<div>
-					<h2 style={{ fontWeight: 800, fontSize: '1.6rem', margin: 0, color: isDarkMode ? '#3b82f6' : '#1e293b', letterSpacing: 1 }}>Registrar — Masterlist</h2>
-					<div style={{ color: isDarkMode ? '#64748b' : '#334155', fontSize: '1rem', marginTop: 2 }}>Add or remove students (upload CSV or manual)</div>
+		<div className="portal-layout">
+			<aside className="sidebar">
+				<div className="brand">
+					<img src="/cdm-logo.png" alt="CDM Logo" className="school-logo-side" />
+					<div className="brand-text">
+						<h3>CDM-OBE System</h3>
+						<span style={{ color: '#3b82f6', fontWeight: 'bold', letterSpacing: '1px' }}>REGISTRAR</span>
+					</div>
 				</div>
-				<div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-					<button className="primary-btn" style={{ padding: '10px 18px', borderRadius: 8, background: isDarkMode ? '#3b82f6' : '#2563eb', color: '#fff' }} onClick={() => fileInputRef.current.click()}>
-						📥 Upload CSV
+				<nav className="nav-menu">
+					<button
+						className={`nav-btn ${activeTab === 'masterlist' ? 'active' : ''}`}
+						onClick={() => setActiveTab('masterlist')}
+					>
+						👥 Masterlist
 					</button>
-					<input type="file" accept=".csv" ref={fileInputRef} onChange={handleUpload} style={{ display: 'none' }} />
-					<button className="nav-btn theme-switch" style={{ marginLeft: 8 }} onClick={toggleTheme}>
+				</nav>
+				<div className="sidebar-bottom">
+					<button className="nav-btn theme-switch" onClick={toggleTheme}>
 						{isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
 					</button>
+					<button className="nav-btn logout" onClick={handleLogout}>Log Out</button>
 				</div>
-			</div>
+			</aside>
 
-			<div style={{ display: 'flex', gap: 16, marginBottom: 18, flexWrap: 'wrap' }}>
-				<input placeholder="Full name" value={name} onChange={e => setName(e.target.value)} className="form-input" style={{ minWidth: 180, flex: 2, background: isDarkMode ? '#23272b' : '#f8fafc', color: isDarkMode ? '#fff' : '#0f172a' }} />
-				<input placeholder="ID number" value={studentId} onChange={e => setStudentId(e.target.value)} className="form-input" style={{ minWidth: 120, flex: 1, background: isDarkMode ? '#23272b' : '#f8fafc', color: isDarkMode ? '#fff' : '#0f172a' }} />
-				<input placeholder="Batch" value={batch} onChange={e => setBatch(e.target.value)} className="form-input" style={{ minWidth: 100, flex: 1, background: isDarkMode ? '#23272b' : '#f8fafc', color: isDarkMode ? '#fff' : '#0f172a' }} />
-				<input placeholder="Program" value={program} onChange={e => setProgram(e.target.value)} className="form-input" style={{ minWidth: 100, flex: 1, background: isDarkMode ? '#23272b' : '#f8fafc', color: isDarkMode ? '#fff' : '#0f172a' }} />
-				<input placeholder="Birthday" value={birthday} onChange={e => setBirthday(e.target.value)} className="form-input" style={{ minWidth: 100, flex: 1, background: isDarkMode ? '#23272b' : '#f8fafc', color: isDarkMode ? '#fff' : '#0f172a' }} />
-				<button className="primary-btn" style={{ padding: '10px 18px', borderRadius: 8, fontWeight: 700, background: isDarkMode ? '#10b981' : '#22d3ee', color: '#fff' }} onClick={handleAddStudent}>Add Student</button>
-			</div>
+			<main className="main-content" style={{ overflowY: 'auto', padding: '40px', backgroundColor: 'var(--bg-main)', position: 'relative' }}>
+				{activeTab === 'masterlist' && (
+					<div style={{ animation: 'fadeIn 0.3s ease' }}>
+						<div className="pc-header" style={{ marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+							<div>
+								<h1 style={{ fontSize: '2.2rem', marginBottom: '5px' }}>Registrar Dashboard</h1>
+								<p style={{ color: 'var(--text-sub)' }}>Manage student masterlist and program enrollment.</p>
+							</div>
+							<div style={{ display: 'flex', gap: '10px' }}>
+								<button className="primary-btn" onClick={() => fileInputRef.current.click()} style={{ padding: '10px 20px', borderRadius: '8px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+									📥 Upload CSV
+								</button>
+								<input type="file" accept=".csv" ref={fileInputRef} onChange={handleUpload} style={{ display: 'none' }} />
+							</div>
+						</div>
 
-			<div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, gap: 10, flexWrap: 'wrap' }}>
-				<label style={{ fontWeight: 600, color: isDarkMode ? '#64748b' : '#334155' }}>Batch:</label>
-				<select className="form-input" style={{ minWidth: 120, maxWidth: 180, background: isDarkMode ? '#23272b' : '#f8fafc', color: isDarkMode ? '#fff' : '#0f172a' }} value={selectedBatch} onChange={e => setSelectedBatch(e.target.value)}>
-					<option value="All">All Batches</option>
-					{batchOptions.map(b => (
-						<option key={b} value={b}>{b}</option>
-					))}
-				</select>
-				<div style={{ flex: 1 }} />
-				<input
-					className="form-input"
-					style={{ minWidth: 200, maxWidth: 320, background: isDarkMode ? '#23272b' : '#f8fafc', color: isDarkMode ? '#fff' : '#0f172a', marginLeft: 'auto' }}
-					placeholder="Search by name or ID..."
-					value={search}
-					onChange={e => setSearch(e.target.value)}
-				/>
-			</div>
+						<div className="portal-card" style={{ padding: '25px', marginBottom: '25px' }}>
+							<h3 style={{ margin: '0 0 15px 0', color: 'var(--text-main)', fontSize: '1.2rem' }}>Add New Student</h3>
+							<div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+								<div style={{ flex: 2, minWidth: '200px' }}>
+									<label style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '5px', display: 'block' }}>Full Name</label>
+									<input placeholder="e.g. Juan Dela Cruz" value={name} onChange={e => setName(e.target.value)} className="form-input" style={{ width: '100%' }} />
+								</div>
+								<div style={{ flex: 1, minWidth: '150px' }}>
+									<label style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '5px', display: 'block' }}>ID Number</label>
+									<input placeholder="e.g. 2021-0001" value={studentId} onChange={e => setStudentId(e.target.value)} className="form-input" style={{ width: '100%' }} />
+								</div>
+								<div style={{ flex: 1, minWidth: '120px' }}>
+									<label style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '5px', display: 'block' }}>Batch Year</label>
+									<input placeholder="e.g. 2026" value={batch} onChange={e => setBatch(e.target.value)} className="form-input" style={{ width: '100%' }} />
+								</div>
+								<div style={{ flex: 1, minWidth: '150px' }}>
+									<label style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '5px', display: 'block' }}>Program</label>
+									<input placeholder="e.g. B.S. CpE" value={program} onChange={e => setProgram(e.target.value)} className="form-input" style={{ width: '100%' }} />
+								</div>
+								<div style={{ flex: 1, minWidth: '150px' }}>
+									<label style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '5px', display: 'block' }}>Birthday</label>
+									<input type="date" value={birthday} onChange={e => setBirthday(e.target.value)} className="form-input" style={{ width: '100%', colorScheme: isDarkMode ? 'dark' : 'light' }} />
+								</div>
+								<div style={{ display: 'flex', alignItems: 'flex-end' }}>
+									<button className="primary-btn" onClick={handleAddStudent} style={{ height: '42px', padding: '0 20px', borderRadius: '8px', fontWeight: 'bold' }}>
+										Add Student
+									</button>
+								</div>
+							</div>
+						</div>
 
-			<div style={{ overflowX: 'auto', borderRadius: 14, boxShadow: isDarkMode ? '0 2px 16px rgba(59,130,246,0.13)' : '0 2px 16px rgba(59,130,246,0.07)', background: 'var(--table-bg)', border: isDarkMode ? '1.5px solid #2a3950' : '1.5px solid #e0e7ef' }}>
-				<table className="data-table" style={{ background: 'transparent' }}>
-					<thead>
-						<tr style={{ background: 'var(--table-header)' }}>
-							<th style={{ color: 'var(--primary)' }}>ID Number</th>
-							<th style={{ color: 'var(--primary)' }}>Name</th>
-							<th style={{ color: 'var(--primary)' }}>Batch</th>
-							<th style={{ color: 'var(--primary)' }}>Program</th>
-							<th style={{ color: 'var(--primary)' }}>Birthday</th>
-							<th style={{ color: 'var(--primary)' }}>Actions</th>
-						</tr>
-					</thead>
-					<tbody>
-						{filteredList.length > 0 ? filteredList.map(s => (
-							<tr key={s.id} style={{ background: 'var(--table-bg)', borderBottom: isDarkMode ? '1.5px solid #2a3950' : '1.5px solid #e0e7ef' }}>
-								<td style={{ color: 'var(--text-sub)', fontWeight: 600 }}>{s.id}</td>
-								<td style={{ fontWeight: 600, color: 'var(--text-main)' }}>{s.name}</td>
-								<td style={{ color: 'var(--text-sub)' }}>{s.batch || '-'}</td>
-								<td style={{ color: 'var(--text-sub)' }}>{s.program || '-'}</td>
-								<td style={{ color: 'var(--text-sub)' }}>{formatBirthday(s.birthday)}</td>
-								<td>
-									<button className="outline-btn" style={{ padding: '6px 12px', fontSize: '0.95rem', borderRadius: '6px', color: '#ef4444', borderColor: '#ef4444', background: 'var(--table-bg)', fontWeight: 600 }} onClick={() => handleRemove(s.id)} title="Remove">🗑️ Remove</button>
-								</td>
-							</tr>
-						)) : (
-							<tr>
-								<td colSpan={6} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-sub)', background: 'var(--table-bg)' }}>No students found.</td>
-							</tr>
-						)}
-					</tbody>
-				</table>
-			</div>
+						<div className="portal-card" style={{ padding: '25px' }}>
+							<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
+								<h3 style={{ margin: 0, color: 'var(--text-main)', fontSize: '1.2rem' }}>Masterlist Directory</h3>
+								<div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
+									<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+										<label style={{ fontSize: '0.9rem', color: 'var(--text-sub)' }}>Filter Batch:</label>
+										<select className="form-input" style={{ width: 'auto', minWidth: '120px' }} value={selectedBatch} onChange={e => setSelectedBatch(e.target.value)}>
+											<option value="All">All Batches</option>
+											{batchOptions.map(b => (
+												<option key={b} value={b}>{b}</option>
+											))}
+										</select>
+									</div>
+									<input
+										className="form-input"
+										style={{ minWidth: '250px' }}
+										placeholder="🔍 Search by name or ID..."
+										value={search}
+										onChange={e => setSearch(e.target.value)}
+									/>
+								</div>
+							</div>
 
-			{toast && (
-				<div style={{ position: 'fixed', right: 20, bottom: 20, background: '#23272b', color: '#ffd700', padding: '10px 14px', borderRadius: 10, border: '1px solid #2a3950', zIndex: 1000 }}>{toast}</div>
-			)}
-			</div>
-		</>
+							<div style={{ overflowX: 'auto' }}>
+								<table className="data-table">
+									<thead>
+										<tr>
+											<th>ID Number</th>
+											<th>Name</th>
+											<th>Batch</th>
+											<th>Program</th>
+											<th>Birthday</th>
+											<th>Actions</th>
+										</tr>
+									</thead>
+									<tbody>
+										{filteredList.length > 0 ? filteredList.map(s => (
+											<tr key={s.id}>
+												<td style={{ color: 'var(--text-sub)' }}>{s.id}</td>
+												<td style={{ fontWeight: '600' }}>{s.name}</td>
+												<td>{s.batch || '-'}</td>
+												<td>{s.program || '-'}</td>
+												<td>{formatBirthday(s.birthday)}</td>
+												<td>
+													<button className="outline-btn" style={{ padding: '6px 12px', fontSize: '0.85rem', borderRadius: '6px', color: '#ef4444', borderColor: 'transparent' }} onClick={() => handleRemove(s.id)} title="Remove Student">
+														🗑️ Remove
+													</button>
+												</td>
+											</tr>
+										)) : (
+											<tr>
+												<td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-sub)' }}>
+													No students found matching your criteria.
+												</td>
+											</tr>
+										)}
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				)}
+
+				{toast && (
+					<div style={{
+						position: 'fixed', bottom: '30px', right: '30px', backgroundColor: '#10b981', color: 'white', padding: '15px 25px',
+						borderRadius: '8px', boxShadow: '0 10px 25px rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', gap: '15px',
+						zIndex: 1000, fontWeight: 'bold', animation: 'fadeIn 0.3s ease'
+					}}>
+						✅ {toast}
+					</div>
+				)}
+			</main>
+		</div>
 	);
 }

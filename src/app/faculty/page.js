@@ -71,6 +71,7 @@
 
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import '../alumni/alumni-globals.css';
 import './faculty.css';
 
@@ -148,6 +149,8 @@ const PO_LIST = [
 ];
 
 export default function FacultyPage() {
+    const router = useRouter();
+
         // Add Course handler
         const handleAddCourse = () => {
           if (!courseInput.trim()) {
@@ -554,14 +557,21 @@ export default function FacultyPage() {
     }
   };
 
+  const handleLogout = () => {
+    if (confirm("Are you sure you want to log out?")) {
+        localStorage.removeItem('current_user');
+        router.push('/');
+    }
+  };
+
   return (
-    <div className={`portal-layout faculty-page${isDarkMode ? ' dark' : ' light'}`}> 
-      <div className="sidebar">
+    <div className="portal-layout"> 
+      <aside className="sidebar">
         <div className="brand">
-          <img src="/cpe-logo.png" alt="Logo" className="school-logo-side" />
+          <img src="/cdm-logo.png" alt="CDM Logo" className="school-logo-side" />
           <div className="brand-text">
-            <h3>Faculty Portal</h3>
-            <span>CDM-OBE</span>
+            <h3>CDM-OBE System</h3>
+            <span style={{ color: '#10b981', fontWeight: 'bold', letterSpacing: '1px' }}>FACULTY</span>
           </div>
         </div>
         <nav className="nav-menu">
@@ -612,23 +622,18 @@ export default function FacultyPage() {
           <button className="nav-btn theme-switch" onClick={toggleTheme}>
             {isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
           </button>
+          <button className="nav-btn logout" onClick={handleLogout}>Log Out</button>
         </div>
-      </div>
+      </aside>
 
-      <div className="main-content">
-        {toastMessage && (
-          <div className="toast-notification">
-            {toastMessage}
-          </div>
-        )}
+      <main className="main-content" style={{ overflowY: 'auto', padding: '40px', backgroundColor: 'var(--bg-main)', position: 'relative' }}>
 
         {activeTab === 'dashboard' && (
-          <div className="dashboard-view">
-            <div className="dashboard-hero">
-              <div className="hero-content">
-                <h1>Welcome back, Faculty</h1>
-                <p>Your assessment & grading hub</p>
-                <hr className="header-divider" />
+          <div style={{ animation: 'fadeIn 0.3s ease' }}>
+            <div className="pc-header" style={{ marginBottom: '30px' }}>
+              <div>
+                <h1 style={{ fontSize: '2.2rem', marginBottom: '5px' }}>Faculty Dashboard</h1>
+                <p style={{ color: 'var(--text-sub)' }}>Welcome back! Your assessment & grading hub.</p>
               </div>
             </div>
 
@@ -839,22 +844,11 @@ export default function FacultyPage() {
         )}
 
         {activeTab === 'manage' && (
-          <div className="manage-view">
-            <div className="alumni-header">
-              <div className="profile-ring">
-                <div style={{
-                  width: 70, height: 70, borderRadius: '50%',
-                  background: 'rgba(10, 25, 47, 0.12)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: 'var(--text-main)', fontSize: '24px', fontWeight: 'bold'
-                }}>
-                  ⚙️
-                </div>
-              </div>
-              <div className="header-text">
-                <h1>Manage Courses</h1>
-                <p className="tab-desc">Add, edit, or remove your courses and blocks</p>
-                <hr className="header-divider" />
+          <div style={{ animation: 'fadeIn 0.3s ease' }}>
+            <div className="pc-header" style={{ marginBottom: '20px' }}>
+              <div>
+                <h1 style={{ fontSize: '2.2rem', marginBottom: '5px' }}>Manage Courses</h1>
+                <p style={{ color: 'var(--text-sub)' }}>Add, edit, or remove your courses and blocks</p>
               </div>
             </div>
             <div className="manage-buttons">
@@ -923,22 +917,11 @@ export default function FacultyPage() {
         )}
 
         {activeTab === 'assessment' && (
-          <div className="assessment-view">
-            <div className="alumni-header">
-              <div className="profile-ring">
-                <div style={{
-                  width: 70, height: 70, borderRadius: '50%',
-                  background: 'rgba(10, 25, 47, 0.12)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: 'var(--text-main)', fontSize: '24px', fontWeight: 'bold'
-                }}>
-                  📋
-                </div>
-              </div>
-              <div className="header-text">
-                <h1>Assessment Setup</h1>
-                <p>Configure Program Outcomes and grading methods for your courses</p>
-                <hr className="header-divider" />
+          <div style={{ animation: 'fadeIn 0.3s ease' }}>
+            <div className="pc-header" style={{ marginBottom: '20px' }}>
+              <div>
+                <h1 style={{ fontSize: '2.2rem', marginBottom: '5px' }}>Assessment Setup</h1>
+                <p style={{ color: 'var(--text-sub)' }}>Configure Program Outcomes and grading methods for your courses</p>
               </div>
             </div>
 
@@ -1327,22 +1310,11 @@ export default function FacultyPage() {
         )}
 
         {activeTab === 'viewAssessments' && (
-          <div className="assessment-view">
-            <div className="alumni-header">
-              <div className="profile-ring">
-                <div style={{
-                  width: 70, height: 70, borderRadius: '50%',
-                  background: 'rgba(10, 25, 47, 0.12)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: 'var(--text-main)', fontSize: '24px', fontWeight: 'bold'
-                }}>
-                  ✓
-                </div>
-              </div>
-              <div className="header-text">
-                <h1>Saved Assessments</h1>
-                <p>View and manage your completed assessment configurations</p>
-                <hr className="header-divider" />
+          <div style={{ animation: 'fadeIn 0.3s ease' }}>
+            <div className="pc-header" style={{ marginBottom: '20px' }}>
+              <div>
+                <h1 style={{ fontSize: '2.2rem', marginBottom: '5px' }}>Saved Assessments</h1>
+                <p style={{ color: 'var(--text-sub)' }}>View and manage your completed assessment configurations</p>
               </div>
             </div>
 
@@ -1497,28 +1469,16 @@ export default function FacultyPage() {
         )}
 
         {activeTab === 'grading' && (
-          <div className="grading-view">
-            <div className="alumni-header">
-              <div className="profile-ring">
-                <div style={{
-                  width: 70, height: 70, borderRadius: '50%',
-                  background: 'rgba(10, 25, 47, 0.12)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: 'var(--text-main)', fontSize: '24px', fontWeight: 'bold'
-                }}>
-                  ⭐
-                </div>
-              </div>
-              <div className="header-text">
-                <h1>Grade Students</h1>
-                <p>Evaluate student performance based on assessments</p>
-                <hr className="header-divider" />
+          <div style={{ animation: 'fadeIn 0.3s ease' }}>
+            <div className="pc-header" style={{ marginBottom: '20px' }}>
+              <div>
+                <h1 style={{ fontSize: '2.2rem', marginBottom: '5px' }}>Grade Students</h1>
+                <p style={{ color: 'var(--text-sub)' }}>Evaluate student performance based on assessments</p>
               </div>
             </div>
 
             {gradingView === 'list' ? (
               <div className="grading-selector">
-                <hr className="header-divider" />
                 <div className="selector-group">
                   <label>Select Course</label>
                   <select
@@ -1662,7 +1622,6 @@ export default function FacultyPage() {
                                 )}
                               </div>
                             </div>
-                            <hr className="header-divider" />
                           </div>
 
                           {assessment.gradingMethod === 'finalExam' ? (
@@ -2171,7 +2130,17 @@ export default function FacultyPage() {
             </div>
           </div>
         )}
-      </div>
+        
+        {toastMessage && (
+            <div style={{
+                position: 'fixed', bottom: '30px', right: '30px', backgroundColor: '#10b981', color: 'white', padding: '15px 25px',
+                borderRadius: '8px', boxShadow: '0 10px 25px rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', gap: '15px',
+                zIndex: 1000, fontWeight: 'bold', animation: 'fadeIn 0.3s ease'
+            }}>
+                ✅ {toastMessage}
+            </div>
+        )}
+      </main>
     </div>
   );
 }
