@@ -5,7 +5,6 @@ import React, { useState, useEffect } from 'react';
 
 export default function LoginPage() {
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [selectedRole, setSelectedRole] = useState(null); 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -21,69 +20,65 @@ export default function LoginPage() {
   const handleLogin = () => {
     setErrorMsg('');
 
-    if (!selectedRole) {
-      setErrorMsg("Please choose what to log in as.");
+    if (!username || !password) {
+      setErrorMsg("Please enter both ID/Codename and Password.");
       return;
     }
 
-    if (selectedRole === 'Faculty') {
-      if (username === 'mis' && password === '12345678') {
-        localStorage.setItem('current_user', JSON.stringify({ role: 'mis', id: 'admin', name: 'IT (MIS)' }));
-        router.push('/mis'); 
-      } else if (username === 'registrar' && password === '12345678') {
-        localStorage.setItem('current_user', JSON.stringify({ role: 'registrar', id: 'admin', name: 'Registrar' }));
-        router.push('/registrar'); 
-      } else if (username === 'faculty' && password === '12345678') {
-        localStorage.setItem('current_user', JSON.stringify({ role: 'faculty', id: 'admin', name: 'Faculty' }));
-        router.push('/faculty'); 
-      } else if (username === 'programchair' && password === '12345678') {
-        localStorage.setItem('current_user', JSON.stringify({ role: 'pc', id: 'admin', name: 'Program Chair' }));
-        router.push('/pc'); 
-      } else {
-        setErrorMsg("Invalid credentials for Faculty.");
-      }
-    } else if (selectedRole === 'Student') {
+    // 1. MASTER ADMIN CHECK (Fail-safe)
+    if (username === 'admin' && password === 'admin123') {
+      localStorage.setItem('current_user', JSON.stringify({ role: 'mis', id: 'admin', name: 'System Admin' }));
+      router.push('/mis');
+      return;
+    }
+
+    // 2. STUDENT CHECK (Regex Pattern)
+    // Matches 2018 to current year + program code + student code
+    const studentRegex = /^(201[8-9]|20[2-9][0-9])\d{4}\d{1,4}$/;
+    
+    if (studentRegex.test(username.trim())) {
+      const studentAccounts = JSON.parse(localStorage.getItem('alumni_accounts') || '{}');
+      const studentRecord = studentAccounts[username.trim()];
       
-      if (username === 'goodstudent' && password === '12345678') {
-        const studentUser = { 
-            id: '20241020067', 
-            name: 'Euch', 
-            role: 'student',
-            batch: '2026',
-            program: 'B.S. Computer Engineering',
-            surveyProgress: '0%',
-            tracerProgress: '0%',
-            employerStatus: 'Pending'
-        };
-
-        const db = JSON.parse(localStorage.getItem('obe_masterlist') || '[]');
-        const exists = db.find(s => s.id === studentUser.id);
-        
-        if (!exists) {
-            db.push(studentUser);
-            localStorage.setItem('obe_masterlist', JSON.stringify(db));
-        }
-
-        localStorage.setItem('current_user', JSON.stringify(studentUser));
-        router.push('/alumni');
-        return;
-      }
-
-      const db = JSON.parse(localStorage.getItem('obe_masterlist') || '[]');
-      const userExists = db.find(student => student.id.trim() === username.trim());
-
-      if (userExists && password.trim() === userExists.birthday) {
-        localStorage.setItem('current_user', JSON.stringify({ 
-            role: 'student', 
-            id: userExists.id, 
-            name: userExists.name,
-            batch: userExists.batch
-        }));
-        router.push('/alumni');
+      if (studentRecord && studentRecord.password === password) {
+         // Add minimal user context for the alumni dashboard
+         localStorage.setItem('current_user', JSON.stringify({ 
+             role: 'student', 
+             id: studentRecord.usn, 
+             name: studentRecord.usn // Fallback if name isn't stored in accounts obj
+         }));
+         router.push('/alumni');
+         return;
       } else {
-        setErrorMsg("Invalid Student ID or password.");
+         setErrorMsg("Invalid Student ID or password.");
+         return;
       }
     }
+
+    // 3. FACULTY / PC / REGISTRAR CHECK (Database Lookup)
+    const staffAccounts = JSON.parse(localStorage.getItem('obe_accounts') || '[]');
+    const staffUser = staffAccounts.find(acc => acc.codename === username.trim());
+
+    if (staffUser && staffUser.password === password) {
+      localStorage.setItem('current_user', JSON.stringify(staffUser));
+      
+      // Smart Routing based on provisioned role
+      if (staffUser.role === 'faculty') {
+        router.push('/faculty');
+      } else if (staffUser.role === 'pc') {
+        router.push('/pc');
+      } else if (staffUser.role === 'registrar') {
+        router.push('/registrar');
+      } else if (staffUser.role === 'mis') {
+        router.push('/mis');
+      } else {
+        setErrorMsg("Account role not recognized.");
+      }
+      return;
+    }
+
+    // 4. FALLBACK ERROR
+    setErrorMsg("Invalid credentials or account not found.");
   };
 
   const toggleTheme = () => {
@@ -125,7 +120,7 @@ export default function LoginPage() {
               <div className="card-header">
                 <h2>Log In</h2>
                 <p>Authorized personnel login only.</p>
-              </div>
+                </div>
 
               {errorMsg && (
                 <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#ef4444', padding: '10px', borderRadius: '8px', marginBottom: '15px', fontSize: '0.85rem', textAlign: 'center' }}>
@@ -135,10 +130,10 @@ export default function LoginPage() {
 
               <form className="login-form">
                 <div className="form-group">
-                  <label>Email / Student ID</label>
+                  <label>Student ID / Username</label>
                   <input 
                     type="text" 
-                    placeholder="Enter your ID or Email" 
+                    placeholder="Enter your Student ID or Username" 
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                   />
@@ -153,28 +148,7 @@ export default function LoginPage() {
                   />
                 </div>
                 
-                <div className="role-selection">
-                    <p>Log in as:</p>
-                    <div className="role-btns">
-                      <button 
-                          type="button" 
-                          className={`role-btn ${selectedRole === 'Faculty' ? 'active' : ''}`}
-                          onClick={() => setSelectedRole(selectedRole === 'Faculty' ? null : 'Faculty')}
-                      >
-                          Faculty
-                      </button>
-                      
-                      <button 
-                          type="button" 
-                          className={`role-btn ${selectedRole === 'Student' ? 'active' : ''}`}
-                          onClick={() => setSelectedRole(selectedRole === 'Student' ? null : 'Student')}
-                      >
-                          Student
-                      </button>
-                    </div>
-                </div>
-
-                <button type="button" onClick={handleLogin} className="login-btn">Log In</button>
+                <button type="button" onClick={handleLogin} className="login-btn" style={{ marginTop: '20px' }}>Log In</button>
               </form>
             </div>
           </div>
