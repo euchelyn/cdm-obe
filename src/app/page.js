@@ -2,6 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
+import { api_login } from './helper/auth';
+import { GSP_NO_RETURNED_VALUE } from 'next/dist/lib/constants';
 
 export default function LoginPage() {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -18,6 +20,19 @@ export default function LoginPage() {
     }
   }, []);
 
+  // ================ UPDATE HANDLE LOGIN TO CONNECT ON API ====================================
+  const handleLogin = async () => {
+    const res = await api_login(username, password);
+
+    if (!res.ok) {
+      console.log(res.error);
+      return;
+    }
+
+    router.push(res.redirectPath);
+  }
+
+  /*
   const handleLogin = () => {
     setErrorMsg('');
 
@@ -85,6 +100,8 @@ export default function LoginPage() {
       }
     }
   };
+  */
+  // ====================================================================
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
@@ -151,27 +168,6 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
-                </div>
-                
-                <div className="role-selection">
-                    <p>Log in as:</p>
-                    <div className="role-btns">
-                      <button 
-                          type="button" 
-                          className={`role-btn ${selectedRole === 'Faculty' ? 'active' : ''}`}
-                          onClick={() => setSelectedRole(selectedRole === 'Faculty' ? null : 'Faculty')}
-                      >
-                          Faculty
-                      </button>
-                      
-                      <button 
-                          type="button" 
-                          className={`role-btn ${selectedRole === 'Student' ? 'active' : ''}`}
-                          onClick={() => setSelectedRole(selectedRole === 'Student' ? null : 'Student')}
-                      >
-                          Student
-                      </button>
-                    </div>
                 </div>
 
                 <button type="button" onClick={handleLogin} className="login-btn">Log In</button>
