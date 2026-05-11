@@ -1,18 +1,12 @@
 import { api_links } from "./links";
 import { page_links } from "./links";
 import { jwtDecode } from "jwt-decode";
-import { DecodedToken } from "../models/DecodedToken";
-
+import { DecodedToken } from "../types/DecodedToken";
+import { useRouter } from "next/navigation";
+import { SessionPayload } from "../types/SessionToken";
+import { setSession, clearSession } from "../lib/session";
 
 type Role = keyof typeof page_links;
-
-type DecodedToken = {
-  id: string;
-  username: string;
-  role: Role;
-  iat: number;
-  exp: number;
-};
 
 export async function api_login(username: string, password: string) {
   const res = await fetch(api_links.login, {
@@ -32,20 +26,12 @@ export async function api_login(username: string, password: string) {
     };
   }
 
-  if (typeof window !== "undefined") {
-    localStorage.setItem("token", data.token);
-  }
-
-  const decoded = jwtDecode<DecodedToken>(data.token);
-  const role = decoded.role;
-
-  const redirectPath = page_links[role] || "/";
+  const role = data.user.role;
 
   return {
     ok: true,
-    token: data.token,
     role,
-    redirectPath,
+    redirectPath: page_links[role] || "/",
     message: data.message,
   };
 }

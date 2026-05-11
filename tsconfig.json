@@ -34,7 +34,7 @@
     "**/*.mts",
     "**/*.ts",
     "**/*.tsx"
-, "src/app/helper/auth.ts"  ],
+, "src/services/authService.ts"  ],
   "exclude": [
     "node_modules"
   ]

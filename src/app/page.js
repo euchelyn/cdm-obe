@@ -2,8 +2,9 @@
 
 import { useRouter } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
-import { api_login } from './helper/auth';
+import { api_login } from '../services/authService';
 import { GSP_NO_RETURNED_VALUE } from 'next/dist/lib/constants';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -20,18 +21,26 @@ export default function LoginPage() {
     }
   }, []);
 
-  // ================ UPDATE HANDLE LOGIN TO CONNECT ON API ====================================
+  // 
+  //
+  //
+  //
   const handleLogin = async () => {
     const res = await api_login(username, password);
 
     if (!res.ok) {
-      console.log(res.error);
+      toast.error(res.error || "Login failed");
       return;
     }
 
-    router.push(res.redirectPath);
-  }
+    toast.success("Login successful 🚀", {
+      description: "Redirecting to your dashboard...",
+    });
 
+    setTimeout(() => {
+      router.push(res.redirectPath);
+    }, 3000);
+  };
   /*
   const handleLogin = () => {
     setErrorMsg('');
@@ -101,7 +110,6 @@ export default function LoginPage() {
     }
   };
   */
-  // ====================================================================
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
