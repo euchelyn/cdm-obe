@@ -121,7 +121,7 @@ export default function MISPage() {
         localStorage.setItem('obe_accounts', JSON.stringify(updatedAccounts));
         setAccountInput({ name: '', role: 'faculty', programId: '', codename: '', password: '' });
         setOpenModal(null);
-        showToast('Account provisioned successfully!');
+        showToast('Account Created successfully!');
     };
 
     const handleDeleteAccount = (id) => {
@@ -145,7 +145,7 @@ export default function MISPage() {
                 <nav className="nav-menu">
                     <button className={`nav-btn ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>📊 Dashboard</button>
                     <button className={`nav-btn ${activeTab === 'programs' ? 'active' : ''}`} onClick={() => setActiveTab('programs')}>🏢 Manage Programs</button>
-                    <button className={`nav-btn ${activeTab === 'accounts' ? 'active' : ''}`} onClick={() => setActiveTab('accounts')}>👥 Provision Accounts</button>
+                    <button className={`nav-btn ${activeTab === 'accounts' ? 'active' : ''}`} onClick={() => setActiveTab('accounts')}>👥 Create Faculty Accounts</button>
                 </nav>
                 <div className="sidebar-bottom">
                     <button className="nav-btn theme-switch" onClick={toggleTheme}>{isDarkMode ? '☀️ Light' : '🌙 Dark'}</button>
@@ -190,7 +190,7 @@ export default function MISPage() {
                                     <button className="quick-action-minimal" onClick={() => setOpenModal('addaccount')}>
                                         <span style={{ fontSize: '1.2rem' }}>🔑</span>
                                         <div>
-                                            <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>Provision Account</div>
+                                            <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>Create Account</div>
                                             <div style={{ fontSize: '0.7rem', color: 'var(--text-sub)' }}>Create user credentials</div>
                                         </div>
                                     </button>
@@ -241,7 +241,7 @@ export default function MISPage() {
                     <div style={{ animation: 'fadeIn 0.3s ease' }}>
                         <div className="pc-header" style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                             <div>
-                                <h1 style={{ fontSize: '2.2rem' }}>Provision Accounts</h1>
+                                <h1 style={{ fontSize: '2.2rem' }}>Create Accounts</h1>
                                 <p style={{ color: 'var(--text-sub)' }}>Manage system access for Faculty, Chairs, and Registrars.</p>
                             </div>
                             <button onClick={() => setOpenModal('addaccount')} className="primary-btn" style={{ padding: '10px 20px', borderRadius: '8px' }}>➕ Create Account</button>
@@ -277,7 +277,7 @@ export default function MISPage() {
                                             </tr>
                                         );
                                     }) : (
-                                        <tr><td colSpan="5" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-sub)' }}>No accounts provisioned.</td></tr>
+                                        <tr><td colSpan="5" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-sub)' }}>No accounts created..</td></tr>
                                     )}
                                 </tbody>
                             </table>
@@ -316,7 +316,7 @@ export default function MISPage() {
                     <div className="modal-overlay" onClick={() => setOpenModal(null)}>
                         <div className="modal-box portal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
                             <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px' }}>
-                                <h2 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--gold)' }}>Provision New Account</h2>
+                                <h2 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--gold)' }}>Create New Account</h2>
                                 <button className="outline-btn" style={{ border: 'none', padding: '5px' }} onClick={() => setOpenModal(null)}>✕</button>
                             </div>
                             
