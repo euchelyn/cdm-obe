@@ -74,6 +74,7 @@ export default function AlumniDashboard() {
             setCourseWeights(JSON.parse(savedWeights));
         }
 
+        /*
         if (session && session.id) {
             const fullUser = db.find(student => student.id === session.id);
             
@@ -99,7 +100,7 @@ export default function AlumniDashboard() {
             }
         } else {
             router.push('/');
-        }
+        } */
     }, [router]);
 
     const toggleTheme = () => {

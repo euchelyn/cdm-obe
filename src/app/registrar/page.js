@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import "../alumni/alumni-globals.css";
 import "./registrar.css";
 
+import { getStudents, createStudent, updateStudent, deleteStudent } from "@/services/masterlistService";
+import { Student } from "@/types/Student"
+
+import * as XLSX from "xlsx";
+
 export default function RegistrarPage() {
     const router = useRouter();
     const [masterlist, setMasterlist] = useState([]);
@@ -20,11 +25,16 @@ export default function RegistrarPage() {
     const [activeTab, setActiveTab] = useState("masterlist");
     const [showAddForm, setShowAddForm] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [itemsPerPage, setItemsPerPage] = useState(5);
     const [activeDropdown, setActiveDropdown] = useState(null);
     const [editingStudent, setEditingStudent] = useState(null);
     const fileInputRef = useRef(null);
-
+    const [totalPages, setTotalPages] = useState();
+    const [batchOptions, setBatchOptions] = useState([]);
+    const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    const [loading, setLoading] = useState(true);
+    /*
     useEffect(() => {
         const saved = localStorage.getItem("obe_masterlist") || "[]";
         try {
@@ -52,6 +62,59 @@ export default function RegistrarPage() {
         localStorage.setItem("obe_masterlist", JSON.stringify(masterlist));
     }, [masterlist]);
 
+    */
+
+    const [mounted, setMounted] = useState(false);
+
+
+    useEffect(() => {
+        let ignore = false;
+
+        async function loadStudents() {
+            setLoading(true);
+
+            try {
+                const res = await getStudents(
+                    currentPage,
+                    itemsPerPage,
+                    selectedBatch
+                );
+
+                if (!ignore) {
+                    setMasterlist(res.data);
+                    setTotalPages(res.totalPages);
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                if (!ignore) setLoading(false);
+            }
+        }
+
+        loadStudents();
+
+        return () => {
+            ignore = true;
+        };
+    }, [currentPage, itemsPerPage, selectedBatch]);
+
+    useEffect(() => {
+    async function loadBatches() {
+        try {
+            const res = await getStudents(1, 9999, "All"); 
+            const batches = Array.from(
+                new Set(res.data.map((s) => s.batch).filter(Boolean))
+            );
+
+            setBatchOptions(batches);
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    loadBatches();
+}, []);
+
     const showToast = (msg) => {
         setToast(msg);
         setTimeout(() => setToast(null), 3000);
@@ -70,10 +133,26 @@ export default function RegistrarPage() {
     };
 
     const handleLogout = () => {
-        if (confirm("Are you sure you want to log out?")) {
+        setShowLogoutConfirm(true);
+    };
+
+    const confirmLogout = async () => {
+        try {
+            await fetch("/api/auth/logout", {
+                method: "POST",
+            });
+
             localStorage.removeItem("current_user");
+
+            setShowLogoutConfirm(false);
             router.push("/");
+        } catch (err) {
+            console.error(err);
         }
+    };
+
+    const cancelLogout = () => {
+        setShowLogoutConfirm(false);
     };
 
     const formatBirthday = (val) => {
@@ -92,7 +171,7 @@ export default function RegistrarPage() {
         return val;
     };
 
-    const handleAddStudent = () => {
+    const handleAddStudent = async () => {
         if (!name.trim() || !studentId.trim() || !birthday.trim() || !batch.trim() || !program.trim()) {
             showToast("Please provide all fields.");
             return;
@@ -105,32 +184,62 @@ export default function RegistrarPage() {
         const newStudent = {
             name: name.trim(),
             id: studentId.trim(),
-            birthday: bday,
             batch: batch.trim(),
             program: program.trim(),
+            birthday: bday,
             status: "Active"
         };
-        setMasterlist((m) => [...m, newStudent]);
         
-        const alumniAccounts = JSON.parse(localStorage.getItem('alumni_accounts') || '{}');
-        alumniAccounts[studentId.trim()] = { usn: studentId.trim(), password: bday };
-        localStorage.setItem('alumni_accounts', JSON.stringify(alumniAccounts));
-        
-        setName("");
-        setStudentId("");
-        setBatch("");
-        setBirthday("");
-        setProgram("");
-        setShowAddForm(false);
-        showToast("Student added successfully.");
+        try {
+            await createStudent(newStudent);
+
+            setMasterlist((m) => [...m, newStudent]);
+            setName("");
+            setStudentId("");
+            setBatch("");
+            setBirthday("");
+            setProgram("");
+            setShowAddForm(false);
+            
+            showToast("Student added successfully.");
+        } catch (err) {
+            showToast(err.message || "Failed to add student");
+        }
+
+
     };
 
-    const handleRemove = (id) => {
-        if (!window.confirm("Remove student from masterlist?")) return;
-        setMasterlist((m) => m.filter((s) => s.id !== id));
-        setActiveDropdown(null);
-        showToast("Student removed");
+    const handleRemove = async (id) => {
+        setConfirmDeleteId(id);
     };
+
+    const confirmDelete = async () => {
+        if (!confirmDeleteId) return;
+
+        try {
+            await deleteStudent(confirmDeleteId);
+
+            const res = await getStudents(
+                currentPage,
+                itemsPerPage,
+                selectedBatch
+            );
+
+            setMasterlist(res.data);
+            setTotalPages(res.totalPages);
+
+            showToast("Student removed");
+        } catch (err) {
+            showToast(err.message || "Delete failed");
+        } finally {
+            setConfirmDeleteId(null);
+        }
+    };
+
+    const cancelDelete = () => {
+        setConfirmDeleteId(null);
+    };
+
 
     const toggleDropdown = (id) => {
         if (activeDropdown === id) setActiveDropdown(null);
@@ -142,92 +251,145 @@ export default function RegistrarPage() {
         setActiveDropdown(null);
     };
 
-    const handleSaveEdit = () => {
+    const handleSaveEdit = async () => {
         if (!editingStudent.name || !editingStudent.id) {
             showToast("Name and ID are required.");
             return;
         }
-        
-        setMasterlist(current => 
-            current.map(s => s.id === editingStudent.id ? editingStudent : s)
-        );
-        
-        const alumniAccounts = JSON.parse(localStorage.getItem('alumni_accounts') || '{}');
-        if (alumniAccounts[editingStudent.id]) {
-            alumniAccounts[editingStudent.id].password = editingStudent.birthday;
-            localStorage.setItem('alumni_accounts', JSON.stringify(alumniAccounts));
-        }
 
-        setEditingStudent(null);
-        showToast("Student updated successfully.");
-    };
-
-    const parseCSV = (text) => {
-        const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-        if (lines.length === 0) return [];
-        const rows = lines.map((line) => {
-            const cols = line.split(",").map((c) => c.trim());
-            if (cols.length >= 5) {
-                return {
-                    name: cols[0],
-                    id: cols[1],
-                    birthday: formatBirthday(cols[2]),
-                    batch: cols[3],
-                    program: cols[4]
-                };
-            }
-            return null;
-        }).filter(Boolean);
-        
-        if (rows.length > 0) {
-            const first = rows[0];
-            const keys = Object.values(first).join(" ").toLowerCase();
-            if (keys.includes("name") || keys.includes("id") || keys.includes("batch")) {
-                rows.shift();
-            }
-        }
-        
-        const alumniAccounts = JSON.parse(localStorage.getItem('alumni_accounts') || '{}');
-        rows.forEach(r => {
-            if (r && r.id && r.birthday) {
-                alumniAccounts[r.id] = { usn: r.id, password: r.birthday };
-            }
-        });
-        localStorage.setItem('alumni_accounts', JSON.stringify(alumniAccounts));
-        return rows.map(r => ({
-            name: r.name,
-            id: r.id,
-            birthday: r.birthday || "",
-            batch: r.batch,
-            program: r.program || "",
-            status: "Active"
-        }));
-    };
-
-    const handleUpload = (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            const text = ev.target.result;
-            const rows = parseCSV(text);
-            let added = 0;
-            setMasterlist((current) => {
-                const byId = new Set(current.map(s => s.id));
-                const merged = [...current];
-                for (const r of rows) {
-                    if (!r.id || !r.name) continue;
-                    if (byId.has(r.id)) continue;
-                    merged.push({ name: r.name, id: r.id, batch: r.batch || "", program: r.program, birthday: r.birthday, status: "Active" });
-                    byId.add(r.id);
-                    added++;
-                }
-                return merged;
+        try {
+            await updateStudent(editingStudent.id, {
+                name: editingStudent.name,
+                batch: editingStudent.batch,
+                program: editingStudent.program,
+                birthday: editingStudent.birthday,
+                status: editingStudent.status,
             });
+
+            // refresh data from backend (IMPORTANT for pagination consistency)
+            const res = await getStudents(currentPage, itemsPerPage, selectedBatch);
+            setMasterlist(res.data);
+            setTotalPages(res.totalPages);
+
+            setEditingStudent(null);
+            showToast("Student updated successfully.");
+        } catch (err) {
+            showToast(err.message || "Update failed");
+        }
+    };
+
+    const parseExcel = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                try {
+                    const data = e.target?.result;
+                    const workbook = XLSX.read(data, { type: "binary" });
+
+                    const sheetName = workbook.SheetNames[0];
+                    const sheet = workbook.Sheets[sheetName];
+
+                    const jsonData = XLSX.utils.sheet_to_json(sheet, {
+                        defval: "",
+                    });
+
+                    const rows = jsonData
+                        .map((row) => {
+                            const name = row["STUDENT NAME"] || row["Name"];
+                            const id = row["ID NUMBER"] || row["ID"];
+                            const batch = row["BATCH"];
+                            const program = row["PROGRAM"];
+                            const birthday = row["BIRTHDAY"];
+
+                            if (!name || !id) return null;
+
+                            return {
+                                name: String(name).trim(),
+                                id: String(id).trim(),
+                                batch: String(batch).trim(),
+                                program: String(program).trim(),
+                                birthday: String(birthday).trim(),
+                            };
+                        })
+                        .filter(Boolean);
+
+                    const alumniAccounts = JSON.parse(
+                        localStorage.getItem("alumni_accounts") || "{}"
+                    );
+
+                    rows.forEach((r) => {
+                        alumniAccounts[r.id] = {
+                            usn: r.id,
+                            password: r.birthday,
+                        };
+                    });
+
+                    localStorage.setItem(
+                        "alumni_accounts",
+                        JSON.stringify(alumniAccounts)
+                    );
+
+                    resolve(
+                        rows.map((r) => ({
+                            name: r.name,
+                            id: r.id,
+                            batch: r.batch,
+                            program: r.program,
+                            birthday: r.birthday,
+                            status: "Active",
+                        }))
+                    );
+                } catch (err) {
+                    reject(err);
+                }
+            };
+
+            reader.onerror = reject;
+            reader.readAsBinaryString(file);
+        });
+    };
+
+    const handleUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            const rows = await parseExcel(file);
+
+            let added = 0;
+
+            for (const r of rows) {
+                if (!r.id || !r.name) continue;
+
+                try {
+                    await createStudent({
+                        name: r.name,
+                        id: r.id,
+                        batch: r.batch || "",
+                        program: r.program || "",
+                        birthday: r.birthday || "",
+                        status: "Active",
+                    });
+
+                    added++;
+                } catch (err) {
+                    console.error(`Failed inserting ${r.id}`, err);
+                }
+            }
+
+            const res = await getStudents(currentPage, itemsPerPage, selectedBatch);
+
+            setMasterlist(res.data);
+            setTotalPages(res.totalPages);
+
             showToast(`${added} student(s) uploaded`);
-            e.target.value = null;
-        };
-        reader.readAsText(file);
+        } catch (err) {
+            console.error(err);
+            showToast("Failed to upload Excel file");
+        }
+
+        e.target.value = null;
     };
 
     const getStatusStyle = (status) => {
@@ -243,14 +405,18 @@ export default function RegistrarPage() {
         if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
         return fullName.substring(0, 2).toUpperCase();
     };
-
-    const batchOptions = Array.from(new Set(masterlist.map(s => s.batch).filter(Boolean)));
     
     let filteredList = selectedBatch === "All" ? masterlist : masterlist.filter(s => s.batch === selectedBatch);
 
-    const totalPages = Math.ceil(filteredList.length / itemsPerPage) || 1;
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const currentData = filteredList.slice(startIndex, startIndex + itemsPerPage);
+    const currentData = masterlist;
+
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (!mounted) return null;
 
     return (
         <div id="registrar-portal-layout" className="portal-layout">
@@ -293,7 +459,10 @@ export default function RegistrarPage() {
                                         <select 
                                             className="control-select custom-select-arrow" 
                                             value={itemsPerPage} 
-                                            onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
+                                            onChange={(e) => { 
+                                                setItemsPerPage(Number(e.target.value));
+                                                setCurrentPage(1); 
+                                            }}
                                         >
                                             <option value={5}>5</option>
                                             <option value={10}>10</option>
@@ -317,7 +486,7 @@ export default function RegistrarPage() {
                                     <button className="control-btn outline" onClick={() => fileInputRef.current.click()}>
                                         <span className="icon">↑</span> Export / Upload
                                     </button>
-                                    <input type="file" accept=".csv" ref={fileInputRef} onChange={handleUpload} style={{ display: 'none' }} />
+                                    <input type="file" accept=".xlsx" ref={fileInputRef} onChange={handleUpload} style={{ display: 'none' }} />
 
                                     <button className="control-btn primary" onClick={() => setShowAddForm(!showAddForm)}>
                                         + Add New Student
@@ -428,6 +597,42 @@ export default function RegistrarPage() {
 
                 {toast && (
                     <div className="toast-notification">✅ {toast}</div>
+                )}
+
+                {showLogoutConfirm && (
+                    <div className="edit-modal-overlay">
+                        <div className="edit-modal-content">
+                            <h3>Log Out</h3>
+                            <p>Are you sure you want to log out?</p>
+
+                            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                                <button className="outline-btn" onClick={cancelLogout}>
+                                    Cancel
+                                </button>
+                                <button className="control-btn danger" onClick={confirmLogout}>
+                                    Log Out
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {confirmDeleteId && (
+                    <div className="edit-modal-overlay">
+                        <div className="edit-modal-content">
+                            <h3>Confirm Deletion</h3>
+                            <p>Are you sure you want to remove this student?</p>
+
+                            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                                <button className="outline-btn" onClick={cancelDelete}>
+                                    Cancel
+                                </button>
+                                <button className="control-btn danger" onClick={confirmDelete}>
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 )}
 
                 {editingStudent && (

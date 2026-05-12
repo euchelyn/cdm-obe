@@ -53,5 +53,6 @@ export const config = {
         "/mis/:path*",
         "/pc/:path*",
         "/alumni/:path*",
+        "/alumni",
     ],
 };
