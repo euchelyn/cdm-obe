@@ -36,14 +36,14 @@ export async function api_login(username: string, password: string) {
   };
 }
 
-export async function api_register(username: string, password: string) {
+export async function api_register(username: string, password: string, role: string) {
 
     const res = await fetch(api_links.register, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, password}),
+        body: JSON.stringify({ username, password, role}),
     });
 
     const data = await res.json();
@@ -54,3 +54,39 @@ export async function api_register(username: string, password: string) {
 
     return data;
 } 
+
+    async function safeJson(res) {
+        const text = await res.text();
+
+        if (!text) return null;
+
+        try {
+            return JSON.parse(text);
+        } catch {
+            return null;
+        }
+    }
+
+export async function api_deleteUser(params) {
+    const searchParams = new URLSearchParams();
+
+    if (params.user_account_id) {
+        searchParams.append('user_account_id', params.user_account_id);
+    }
+
+    if (params.username) {
+        searchParams.append('username', params.username);
+    }
+
+    const res = await fetch(`/api/auth/register?${searchParams.toString()}`, {
+        method: 'DELETE',
+    });
+
+    const data = await safeJson(res);
+
+    if (!res.ok) {
+        throw new Error(data?.error || 'Failed to delete auth user');
+    }
+
+    return data;
+}
