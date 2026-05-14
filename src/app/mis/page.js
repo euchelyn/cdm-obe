@@ -21,14 +21,17 @@ export default function MISPage() {
     const [accounts, setAccounts] = useState([]);
     const [toastMessage, setToastMessage] = useState(null);
     const [openModal, setOpenModal] = useState(null);
-
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [programInput, setProgramInput] = useState({ code: '', name: '' });
     const [accountInput, setAccountInput] = useState({ name: '', id: '', role: 'faculty', programId: '', codename: '', password: '' });
 
     const [listAccount, setListAccount] = useState([])
 
     useEffect(() => {
-        const loadDashboardData = async () => {
+        loadDashboardData();
+    }, []);
+
+    const loadDashboardData = async () => {
             try {
                 const [statsRes, programsRes, privUsersRes] = await Promise.all([
                     getAccountLinkStats(),
@@ -96,9 +99,6 @@ export default function MISPage() {
             }
         };
 
-        loadDashboardData();
-    }, []);
-
     const showToast = (msg) => {
         setToastMessage(msg);
         setTimeout(() => setToastMessage(null), 3000);
@@ -116,11 +116,36 @@ export default function MISPage() {
         }
     };
 
+    /*
     const handleLogout = () => {
         if (window.confirm("Are you sure you want to log out?")) {
             localStorage.removeItem('current_user');
             router.push('/');
         }
+    };
+    */
+
+    const handleLogout = () => {
+        setShowLogoutConfirm(true);
+    };
+
+    const confirmLogout = async () => {
+        try {
+            await fetch("/api/auth/logout", {
+                method: "POST",
+            });
+
+            localStorage.removeItem("current_user");
+
+            setShowLogoutConfirm(false);
+            router.push("/");
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const cancelLogout = () => {
+        setShowLogoutConfirm(false);
     };
 
     const handleAddAccount = async () => {
@@ -132,7 +157,7 @@ export default function MISPage() {
 
             if (
                 (accountInput.role === 'pc' ||
-                accountInput.role === 'faculty') &&
+                    accountInput.role === 'faculty') &&
                 !accountInput.programId
             ) {
                 showToast('Please assign a program to this academic account.');
@@ -146,13 +171,33 @@ export default function MISPage() {
             let roleAccountId = null;
             let userAccountId = null;
 
+            /* =========================
+            STUDENT FLOW
+            ========================= */
+            if (accountInput.role === 'student') {
+                await createStudentAccountFlow(
+                    accountInput.id,
+                    accountInput.codename,
+                    accountInput.password,
+                    accountInput.role
+                );
+
+                showToast('Account created successfully!');
+                return;
+            }
+
+            /* =========================
+            ROLE ACCOUNT CREATION
+            ========================= */
+            let roleRes;
+
             switch (accountInput.role) {
 
                 /* =========================
                 FACULTY
                 ========================= */
-                case 'faculty': {
-                    const roleRes = await createPrivUser('faculty', {
+                case 'faculty':
+                    roleRes = await createPrivUser('faculty', {
                         faculty_id: accountInput.id || null,
                         name: accountInput.name,
                         email: accountInput.codename || null,
@@ -160,28 +205,13 @@ export default function MISPage() {
                         department: selectedProgram?.department || null,
                         program: selectedProgram?.code || null,
                     });
-
-                    console.log("roleResid: " + roleRes.id);
-
-                    roleAccountId = roleRes?.id;
-
-                    const authRes = await api_register(
-                        accountInput.codename,
-                        accountInput.password,
-                        accountInput.role
-                    );
-                    
-                    console.log("authid: " + authRes.id);
-                    userAccountId = authRes?.id;
-
                     break;
-                }
 
                 /* =========================
                 PROGRAM CHAIR
                 ========================= */
-                case 'pc': {
-                    const roleRes = await createPrivUser('program_chair', {
+                case 'pc':
+                    roleRes = await createPrivUser('pc', {
                         program_chair_id: accountInput.id || null,
                         name: accountInput.name,
                         email: accountInput.codename || null,
@@ -189,80 +219,31 @@ export default function MISPage() {
                         department: selectedProgram?.department || null,
                         program: selectedProgram?.code || null,
                     });
-
-                    roleAccountId = roleRes?.id;
-
-                    const authRes = await api_register(
-                        accountInput.codename,
-                        accountInput.password,
-                        accountInput.role
-                    );
-
-                    userAccountId = authRes?.id;
-
                     break;
-                }
 
                 /* =========================
                 REGISTRAR
                 ========================= */
-                case 'registrar': {
-                    const roleRes = await createPrivUser('registrar', {
+                case 'registrar':
+                    roleRes = await createPrivUser('registrar', {
                         registrar_id: accountInput.id || null,
                         name: accountInput.name,
                         email: accountInput.codename || null,
                         contact_number: null,
                     });
-
-                    roleAccountId = roleRes?.id;
-
-                    const authRes = await api_register(
-                        accountInput.codename,
-                        accountInput.password,
-                        accountInput.role
-                    );
-
-                    userAccountId = authRes?.id;
-
                     break;
-                }
 
                 /* =========================
                 MIS
                 ========================= */
-                case 'mis': {
-                    const roleRes = await createPrivUser('mis', {
+                case 'mis':
+                    roleRes = await createPrivUser('mis', {
                         mis_id: accountInput.id || null,
                         name: accountInput.name,
                         email: accountInput.codename || null,
                         contact_number: null,
                     });
-
-                    roleAccountId = roleRes?.id;
-
-                    const authRes = await api_register(
-                        accountInput.codename,
-                        accountInput.password,
-                        accountInput.role
-                    );
-
-                    userAccountId = authRes?.id;
-
                     break;
-                }
-
-                /* =========================
-                STUDENT (UNCHANGED FLOW)
-                ========================= */
-                case 'student': {
-                    await createStudentAccountFlow(
-                        accountInput.id,
-                        accountInput.codename,
-                        accountInput.password,
-                        accountInput.role
-                    );
-                    break;
-                }
 
                 default:
                     showToast('Invalid role selected.');
@@ -270,19 +251,54 @@ export default function MISPage() {
             }
 
             /* =========================
-            LINK ACCOUNTS (ALL NON-STUDENTS)
+            STOP IF ROLE CREATION FAILED
             ========================= */
-            if (accountInput.role !== 'student') {
-                if (!roleAccountId || !userAccountId) {
-                    throw new Error('Failed to capture account IDs for linking.');
-                }
-
-                await createAccountLink({
-                    user_account_id: userAccountId,
-                    role: accountInput.role,
-                    role_account_id: roleAccountId,
-                });
+            if (!roleRes || roleRes.error || !roleRes.id) {
+                throw new Error(
+                    roleRes?.error || 'Failed to create role account.'
+                );
             }
+
+            console.log('Role ID:', roleRes.id);
+
+            roleAccountId = roleRes.id;
+
+            /* =========================
+            CREATE AUTH ACCOUNT
+            ========================= */
+            const authRes = await api_register(
+                accountInput.codename,
+                accountInput.password,
+                accountInput.role
+            );
+
+            /* =========================
+            STOP IF AUTH CREATION FAILED
+            ========================= */
+            if (!authRes || authRes.error || !authRes.id) {
+                throw new Error(
+                    authRes?.error || 'Failed to create auth account.'
+                );
+            }
+
+            console.log('Auth ID:', authRes.id);
+
+            userAccountId = authRes.id;
+
+            /* =========================
+            CREATE ACCOUNT LINK
+            ========================= */
+            await createAccountLink({
+                user_account_id: userAccountId,
+                role: accountInput.role,
+                role_account_id: roleAccountId,
+            });
+
+            /* =========================
+            RESET FORM
+            ========================= */
+
+            await loadDashboardData();
 
             setAccountInput({
                 name: '',
@@ -294,10 +310,15 @@ export default function MISPage() {
             });
 
             setOpenModal(null);
+
             showToast('Account created successfully!');
+
         } catch (error) {
-            console.log(error.message);
-            showToast(error.message || 'Failed to create account.');
+            console.error(error);
+
+            showToast(
+                error?.message || 'Failed to create account.'
+            );
         }
     };
 
@@ -377,11 +398,80 @@ export default function MISPage() {
             showToast('Please enter a name first.');
             return;
         }
+
+        /* =========================
+        USERNAME GENERATION
+        ========================= */
+        const cleanName = accountInput.name
+            .trim()
+            .split(' ')
+            .pop()
+            ?.toLowerCase()
+            .replace(/[^a-z0-9]/g, '');
+
+        const randomNum = Math.floor(100 + Math.random() * 900);
+
+        const generatedCodename = `${
+            accountInput.role === 'pc'
+                ? 'pc'
+                : accountInput.role === 'faculty'
+                ? 'fac'
+                : accountInput.role
+        }_${cleanName}${randomNum}`;
+
+        /* =========================
+        SECURE PASSWORD GENERATION
+        ========================= */
+        const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const lower = 'abcdefghijklmnopqrstuvwxyz';
+        const numbers = '0123456789';
+        const symbols = '!@#$%^&*';
+
+        const all = upper + lower + numbers + symbols;
+
+        const getRandomChar = (str) =>
+            str[Math.floor(Math.random() * str.length)];
+
+        // Ensure complexity requirements
+        let generatedPassword =
+            getRandomChar(upper) +
+            getRandomChar(lower) +
+            getRandomChar(numbers) +
+            getRandomChar(symbols);
+
+        // Add remaining random chars
+        for (let i = 0; i < 8; i++) {
+            generatedPassword += getRandomChar(all);
+        }
+
+        // Shuffle password
+        generatedPassword = generatedPassword
+            .split('')
+            .sort(() => Math.random() - 0.5)
+            .join('');
+
+        /* =========================
+        UPDATE STATE
+        ========================= */
+        setAccountInput((prev) => ({
+            ...prev,
+            codename: generatedCodename,
+            password: generatedPassword,
+        }));
+    };
+
+    /*
+    const generateCodename = () => {
+        if (!accountInput.name) {
+            showToast('Please enter a name first.');
+            return;
+        }
         const cleanName = accountInput.name.split(' ').pop().toLowerCase();
         const randomNum = Math.floor(Math.random() * 900) + 100;
         const generated = `${accountInput.role === 'pc' ? 'pc_' : 'fac_'}${cleanName}${randomNum}`;
         setAccountInput(prev => ({ ...prev, codename: generated, password: 'password123' }));
     };
+    */
 
     /*
     const handleAddAccount = () => {
@@ -428,6 +518,8 @@ export default function MISPage() {
             );
 
             showToast('Account revoked successfully.');
+
+            await loadDashboardData();
 
         } catch (err) {
             console.error(err);
@@ -747,6 +839,24 @@ export default function MISPage() {
                     </div>
                 )}
 
+                                {showLogoutConfirm && (
+                    <div className="edit-modal-overlay">
+                        <div className="edit-modal-content">
+                            <h3>Log Out</h3>
+                            <p>Are you sure you want to log out?</p>
+
+                            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                                <button className="outline-btn" onClick={cancelLogout}>
+                                    Cancel
+                                </button>
+                                <button className="control-btn danger" onClick={confirmLogout}>
+                                    Log Out
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {openModal === 'addaccount' && (
                     <div className="modal-overlay" onClick={() => setOpenModal(null)}>
                         <div className="modal-box portal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
@@ -808,6 +918,8 @@ export default function MISPage() {
                         </div>
                     </div>
                 )}
+                
+                
 
                 {toastMessage && <div style={{ position: 'fixed', bottom: '30px', right: '30px', backgroundColor: '#10b981', color: 'white', padding: '15px 25px', borderRadius: '8px', zIndex: 1000, fontWeight: 'bold' }}> {toastMessage}</div>}
             </main>
