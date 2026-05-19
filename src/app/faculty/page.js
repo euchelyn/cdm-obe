@@ -1,72 +1,197 @@
 "use client";
-  function BlockSection({ block, course, masterlist, handleRemoveBlock, handleRemoveStudent, setRenameBlockModal, renameBlockModal, setCourses, courses, showToast }) {
-    const [collapsed, setCollapsed] = React.useState(true); // Start collapsed
-    return (
-      <div className="organized-block-section">
-        <div className="block-label-row" style={{ cursor: 'pointer' }} onClick={() => setCollapsed(c => !c)}>
-          <div className="block-label">{block.name}</div>
-          <div className="block-student-count">{block.students.length} students</div>
-          <div>
-            <button
-              className="block-collapse-btn"
-              tabIndex={-1}
-              onClick={e => { e.stopPropagation(); setCollapsed(c => !c); }}
-              title={collapsed ? 'Expand' : 'Collapse'}
-              aria-label={collapsed ? 'Expand block' : 'Collapse block'}
-            >
-              {collapsed ? '▶' : '▼'}
-            </button>
-            <button className="block-edit-btn" tabIndex={-1} onClick={e => { e.stopPropagation(); setRenameBlockModal({ open: true, courseId: course.id, oldName: block.name, newName: block.name }); }} title="Rename Block">✏️</button>
-            <button className="block-delete-btn" tabIndex={-1} onClick={e => { e.stopPropagation(); handleRemoveBlock(course.id, block.name); }} title="Remove Block">🗑️</button>
-          </div>
+function BlockSection({
+  block,
+  course,
+  masterlist,
+  handleRemoveBlock,
+  handleRemoveStudent,
+  setRenameBlockModal,
+  renameBlockModal,
+  setCourses,
+  courses,
+  showToast
+}) {
+  const [collapsed, setCollapsed] = React.useState(true);
+
+  // Prevent crashes if students does not exist yet
+  const students = block.students || [];
+
+  return (
+    <div className="organized-block-section">
+      <div
+        className="block-label-row"
+        style={{ cursor: 'pointer' }}
+        onClick={() => setCollapsed(c => !c)}
+      >
+        <div className="block-label">{block.name}</div>
+
+        <div className="block-student-count">
+          {students.length} students
         </div>
-        {!collapsed && (
-          <div className="organized-students-list-vertical" style={{ background: '#23272b', borderRadius: 10, marginTop: 8, padding: 0 }}>
-            {block.students.length > 0 ? (
-              <div className="student-vertical-list">
-                <div className="student-vertical-header" style={{ background: '#2d3136', color: '#ffe066', fontWeight: 700 }}>
-                  <span className="student-id-col">ID Number</span>
-                  <span className="student-name-col">Name</span>
-                  <span className="student-batch-col">Batch</span>
-                  <span className="student-action-col"></span>
-                </div>
-                {block.students.map(sid => {
-                  const student = masterlist.find(stu => stu.id === sid);
-                  return student ? (
-                    <div key={sid} className="student-vertical-row" style={{ background: '#23272b', color: '#fff', borderBottom: '1px solid #ffe066' }}>
-                      <span className="student-id-col">{student.id}</span>
-                      <span className="student-name-col" style={{ color: '#fff', fontWeight: 500 }}>{student.name}</span>
-                      <span className="student-batch-col">{student.batch || '-'}</span>
-                      <span className="student-action-col">
-                        <button
-                          className="student-remove-btn"
-                          title="Remove Student"
-                          onClick={() => {
-                            if (window.confirm('Remove this student from the block?')) {
-                              handleRemoveStudent(course.id, block.name, student.id);
-                            }
-                          }}
-                        >🗑️</button>
-                      </span>
-                    </div>
-                  ) : (
-                    <div key={sid} className="student-vertical-row" style={{ background: '#23272b', color: '#fff' }}>
-                      <span className="student-id-col">Unknown ({sid})</span>
-                      <span className="student-name-col"></span>
-                      <span className="student-batch-col"></span>
-                      <span className="student-action-col"></span>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <span className="empty-blocks">No students</span>
-            )}
-          </div>
-        )}
+
+        <div>
+          <button
+            className="block-collapse-btn"
+            tabIndex={-1}
+            onClick={e => {
+              e.stopPropagation();
+              setCollapsed(c => !c);
+            }}
+            title={collapsed ? 'Expand' : 'Collapse'}
+            aria-label={collapsed ? 'Expand block' : 'Collapse block'}
+          >
+            {collapsed ? '▶' : '▼'}
+          </button>
+
+          <button
+            className="block-edit-btn"
+            tabIndex={-1}
+            onClick={e => {
+              e.stopPropagation();
+
+              setRenameBlockModal({
+                open: true,
+                courseId: course._id || course.id,
+                oldName: block.name,
+                newName: block.name
+              });
+            }}
+            title="Rename Block"
+          >
+            ✏️
+          </button>
+
+          <button
+            className="block-delete-btn"
+            tabIndex={-1}
+            onClick={e => {
+              e.stopPropagation();
+
+              handleRemoveBlock(
+                course._id || course.id,
+                block._id || block.name
+              );
+            }}
+            title="Remove Block"
+          >
+            🗑️
+          </button>
+        </div>
       </div>
-    );
-  }
+
+      {!collapsed && (
+        <div
+          className="organized-students-list-vertical"
+          style={{
+            background: '#23272b',
+            borderRadius: 10,
+            marginTop: 8,
+            padding: 0
+          }}
+        >
+          {students.length > 0 ? (
+            <div className="student-vertical-list">
+              <div
+                className="student-vertical-header"
+                style={{
+                  background: '#2d3136',
+                  color: '#ffe066',
+                  fontWeight: 700
+                }}
+              >
+                <span className="student-id-col">ID Number</span>
+                <span className="student-name-col">Name</span>
+                <span className="student-batch-col">Batch</span>
+                <span className="student-action-col"></span>
+              </div>
+
+              {students.map(sid => {
+                const student = masterlist.find(
+                  stu => stu.id === sid || stu._id === sid
+                );
+
+                return student ? (
+                  <div
+                    key={sid}
+                    className="student-vertical-row"
+                    style={{
+                      background: '#23272b',
+                      color: '#fff',
+                      borderBottom: '1px solid #ffe066'
+                    }}
+                  >
+                    <span className="student-id-col">
+                      {student.id || student.student_id}
+                    </span>
+
+                    <span
+                      className="student-name-col"
+                      style={{
+                        color: '#fff',
+                        fontWeight: 500
+                      }}
+                    >
+                      {student.name}
+                    </span>
+
+                    <span className="student-batch-col">
+                      {student.batch || '-'}
+                    </span>
+
+                    <span className="student-action-col">
+                      <button
+                        className="student-remove-btn"
+                        title="Remove Student"
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              'Remove this student from the block?'
+                            )
+                          ) {
+                            handleRemoveStudent(
+                              course._id || course.id,
+                              block._id || block.name,
+                              student._id || student.id
+                            );
+                          }
+                        }}
+                      >
+                        🗑️
+                      </button>
+                    </span>
+                  </div>
+                ) : (
+                  <div
+                    key={sid}
+                    className="student-vertical-row"
+                    style={{
+                      background: '#23272b',
+                      color: '#fff'
+                    }}
+                  >
+                    <span className="student-id-col">
+                      Unknown ({sid})
+                    </span>
+
+                    <span className="student-name-col"></span>
+
+                    <span className="student-batch-col"></span>
+
+                    <span className="student-action-col"></span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <span className="empty-blocks">
+              No students
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 
 
@@ -74,66 +199,10 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import '../alumni/alumni-globals.css';
 import './faculty.css';
-
-const CPE_CURRICULUM = [
-    {
-        year: "4th Year",
-        courses: [
-            "COEN 4103 Computer Architecture and Organization (lec)", "COEN 4101 Computer Architecture and Organization (lab)",
-            "COEN 4113 Embedded Systems (lec)", "COEN 4111 Embedded Systems (lab)",
-            "COEN 4202 CPE Practice and Design 2", "COEN 4123 Digital Signal Processing (lec)",
-            "COEN 4121 Digital Signal Processing (lab)", "GECE 2213 GEC Elective 2 (Gender & Society)",
-            "COEN 4203 Computer Networks and Security (lec)", "COEN 4201 Computer Networks and Security (lab)",
-            "COEN 4211 Seminars and Fieldtrips", "COEN 4212 CPE Laws and Professional Practice",
-            "ENSC 4003 Technopreneurship", "GECE 4103 GEC Free Elective 3 (Foreign Language)",
-            "HIST 1023 Life and Works of Rizal", "ENSC 2033 Basic Occupational Health and Safety",
-            "COEN 4223 Cognate Elective 3 (CISCO 3)"
-        ]
-    },
-    {
-        year: "3rd Year",
-        courses: [
-            "COEN 3103 Logic, Circuit and Design (lec)", "COEN 3101 Logic, Circuit and Design (lab)",
-            "COEN 3113 Operating System", "COEN 3123 Intro to Networks, Data and Digital Comm (CISCO 1)",
-            "COEN 3133 Methods of Research", "COEN 3143 Feedback and Control System",
-            "COEN 3153 Fundamentals of Mixed Signals and Sensors", "COEN 3111 Computer Engineering Drafting and Design",
-            "PHIL 1013 Ethics", "COEN 3203 Microprocessors (lec)", "COEN 3201 Microprocessors (lab)",
-            "COEN 3211 Introduction to HDL", "COEN 3221 CPE Project Design 1", "COEN 3213 Emerging Technologies in CPE",
-            "COEN 3212 Programmable Logic Control, Robotics and Mechatronics Applications", "GECE 2203 GEC Elective 1",
-            "COEN 3223 Cognate Elective 2(CISCO 2)", "COEN 3223 On-the-Job Training"
-        ]
-    },
-    {
-        year: "2nd Year",
-        courses: [
-            "ENSC 2021 Computer-Aided Drafting", "ELEN 2123 Fundamentals of Electrical Circuits (lec)",
-            "ELEN 2121 Fundamentals of Electrical Circuits (lab)", "MATH 2123 Differential Equations",
-            "COEN 2102 Data Structures and Algorithms", "NASC 2063 Physics 2 (lec)", "NASC 2061 Physics 2 (lab)",
-            "ENSC 2063 Engineering Economics", "COEN 2112 Fundamentals of Computer Hardware",
-            "PFIT 2102 PATHFit 3(Sports and Dance)", "COEN 2203 Numerical Methods", "COEN 2213 Software Design (lec)",
-            "COEN 2201 Software Design (lab)", "COEN 2223 Discrete Mathematics",
-            "ECEN 2103 Fundamentals of Electronic Engineering (lec)", "ECEN 2101 Fundamentals of Electronic Engineering (lab)",
-            "HIST 1013 Reading in Philippine History", "PFIT 2202 PATHFit 4(Team Sports)", "COEN 2233 Cognate Elective 1"
-        ]
-    },
-    {
-        year: "1st Year",
-        courses: [
-            "SOCI 1103 Contemporary World", "MATH 1013 Mathematics in the Modern World",
-            "MATH 2033 College and Advanced Algebra", "MATH 2044 Plane & Spherical Trig, Analytic & Solid Geo",
-            "COEN 1101 Computer Engineering as Discipline", "COEN 1102 Programming Logic and Design",
-            "ENGL 1103 Purposive Communication", "PSYC 1013 Understanding the Self", "PFIT 1102 PATHFIt 1",
-            "NSTP 1013 National Service Training Program 1", "HUMA 1013 Art Appreciation",
-            "MATH 2074 Differential & Integral Calculus 1", "ENSC 1013 Science, Technology and Society",
-            "COEN 1202 Object Oriented Programming", "ENSC 1203 Engineering Data Analysis",
-            "NASC 2013 Chemistry for Engineers (lec)", "NASC 2011 Chemistry for Engineers (lab)",
-            "PFIT 1202 PATHFit 2", "NSTP 1023 National Service Training Program 2",
-            "NASC 2053 Physics 1(lec)", "NASC 2051 Physics 1(lab)", "MATH 2094 Differential & Integral Calculus 2"
-        ]
-    }
-];
-
-const ALL_COURSES = CPE_CURRICULUM.flatMap(year => year.courses);
+import { getAllCourses } from '@/services/coursesService';
+import { getClientUser } from '@/lib/clientSession';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { createFacultyCourse, getAllFacultyCourses, createBlock, getAllBlocks } from '@/services/facultyService';
 
 const PO_LIST = [
   { id: 'A', name: 'Mathematics and Scientific Concepts' },
@@ -149,9 +218,12 @@ const PO_LIST = [
 ];
 
 export default function FacultyPage() {
+
+    const currentUser = useCurrentUser();
+
     const router = useRouter();
 
-        // Add Course handler
+        /*
         const handleAddCourse = () => {
           if (!courseInput.trim()) {
             showToast('Please select a course');
@@ -175,6 +247,10 @@ export default function FacultyPage() {
           setShowCourseDropdown(false);
           showToast('Course added successfully!');
         };
+        */
+
+    
+
       // ...existing code...
     const [dashboardDetail, setDashboardDetail] = useState(null); // null or 'courses' | 'assessments' | 'graded' | 'students'
     // ...existing code...
@@ -186,13 +262,17 @@ export default function FacultyPage() {
     const [masterlist, setMasterlist] = useState([]);
     const [toastMessage, setToastMessage] = useState(null);
     
+    // Add Course
+    const [schoolYear, setSchoolYear] = useState("");
+    const [semester, setSemester] = useState("");
+    const [courseSY, setCourseSY] = useState("");
+
     // Modal states
     const [openModal, setOpenModal] = useState(null);
     const [courseInput, setCourseInput] = useState('');
     const [courseSearchTerm, setCourseSearchTerm] = useState('');
     const [showCourseDropdown, setShowCourseDropdown] = useState(false);
-    const [selectedCourseForBlock, setSelectedCourseForBlock] = useState('');
-    const [blockInput, setBlockInput] = useState('');
+    const [selectedCourse, setSelectedCourse] = useState("");
     const [selectedCourseForStudents, setSelectedCourseForStudents] = useState('');
     const [selectedBlockForStudents, setSelectedBlockForStudents] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
@@ -200,6 +280,12 @@ export default function FacultyPage() {
     const [sortBy, setSortBy] = useState('batch-desc');
     const [selectedStudents, setSelectedStudents] = useState({});
     
+    // Manage Course
+    const [facultyCourses, setFacultyCourses] = useState([]);
+    const [blockInput, setBlockInput] = useState('');
+    const [selectedCourseForBlock, setSelectedCourseForBlock] = useState('');
+    const [blocks, setBlocks] = useState([]);
+
     // Assessment Setup states
     const [courseAssessments, setCourseAssessments] = useState({});
     const [selectedCourseForAssessment, setSelectedCourseForAssessment] = useState('');
@@ -223,42 +309,98 @@ export default function FacultyPage() {
     const [questionScores, setQuestionScores] = useState({});
     const [rubricScores, setRubricScores] = useState({});
     const [gradingView, setGradingView] = useState('list'); // 'list' or 'grade'
+    
+    const [CPE_CURRICULUM, setCPE_CURRICULUM] = useState([]);
+    const [ALL_COURSES, setALL_COURSES] = useState([]);  
 
     // Compute graded students list and count for dashboard modal (after studentGrades is defined)
     const gradedList = Object.entries(studentGrades).filter(([key, val]) => val.scores);
     const gradedCount = gradedList.length;
 
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'light') {
-      setIsDarkMode(false);
-      document.documentElement.removeAttribute('data-theme');
-    } else {
-      setIsDarkMode(true);
-      document.documentElement.setAttribute('data-theme', 'dark');
-    }
+    useEffect(() => {
 
-    const savedCourses = localStorage.getItem('faculty_courses');
-    if (savedCourses) {
-      setCourses(JSON.parse(savedCourses));
-    }
+      const user = getClientUser();
+      console.log("RAW USER:", user);
 
-    const savedMasterlist = localStorage.getItem('obe_masterlist') || '[]';
-    setMasterlist(JSON.parse(savedMasterlist));
-    
-    const savedAssessments = localStorage.getItem('faculty_assessments') || '{}';
-    setCourseAssessments(JSON.parse(savedAssessments));
+      // Fetch all courses and group by year level
+      getAllCourses().then((data) => {
+        const grouped = data.reduce((acc, course) => {
+          const existing = acc.find((g) => g.year === course.year_level);
+          if (existing) {
+            existing.courses.push(course);
+          } else {
+            acc.push({ year: course.year_level, courses: [course] });
+          }
+          return acc;
+        }, []);
+        setCPE_CURRICULUM(grouped);
+        setALL_COURSES(grouped.flatMap((year) => year.courses));
+      });
 
-    const savedGrades = localStorage.getItem('faculty_grades') || '{}';
-    setStudentGrades(JSON.parse(savedGrades));
-  }, []);
+      // Fetch faculty courses and their blocks
+      const fetchFacultyData = async () => {
+        try {
+          const fcData = await getAllFacultyCourses({
+            faculty_id: currentUser?.link?.roleAccount?._id?.toString(),
+          });
 
+          const blockData = await getAllBlocks();
+
+          // Attach blocks to their respective faculty course
+          const fcWithBlocks = fcData.map(fc => ({
+            ...fc,
+            blocks: blockData.filter(b => 
+              b.faculty_course_id?.toString() === fc._id?.toString()
+            ),
+          }));
+
+          setFacultyCourses(fcWithBlocks);
+          console.log(fcWithBlocks);
+        } catch (e) {
+          showToast(e.message);
+        }
+      };
+
+      fetchFacultyData();
+    }, []);
+
+    const handleAddCourse = async () => {
+      try {
+
+          console.log({ selectedCourse, courseSY, semester });
+        if (!selectedCourse || !courseSY || !semester) {
+          alert('Please fill in all fields: ' + `${selectedCourse, courseSY, semester}`);
+          return;
+        }
+          console.log(currentUser?.link?.roleAccount?.faculty_id)
+          console.log(selectedCourse._id)
+        await createFacultyCourse({
+          faculty_id: currentUser?.link?.roleAccount?._id,
+          course_id: selectedCourse._id,
+          school_year: courseSY,
+          semester: semester,
+        });
+
+        showToast('Course added successfully');
+
+        // Reset fields
+        setCourseSearchTerm('');
+        setCourseSY('');
+        setSemester('');
+        setSelectedCourse(null);
+        setShowCourseDropdown(false);
+
+      } catch (e) {
+        showToast(e.message);
+      }
+    };
 
   const showToast = (message) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  /*
   const handleAddBlock = () => {
     if (!blockInput.trim()) {
       showToast('Please enter a block name');
@@ -289,6 +431,35 @@ export default function FacultyPage() {
     setSelectedCourseForBlock('');
     setOpenModal(null);
     showToast('Block added successfully');
+  };
+  */
+ 
+  const handleAddBlock = async () => {
+    try {
+      if (!selectedCourseForBlock || !blockInput) {
+        showToast('Please fill in all fields');
+        return;
+      }
+
+      // Get the full faculty course object
+      const selectedFC = facultyCourses.find(fc => fc._id === selectedCourseForBlock);
+
+      await createBlock({
+        faculty_course_id: selectedCourseForBlock,
+        name: blockInput,
+        school_year: selectedFC?.school_year,
+        semester: selectedFC?.semester,
+      });
+
+      showToast('Block added successfully');
+
+      setBlockInput('');
+      setSelectedCourseForBlock('');
+      setOpenModal(null);
+
+    } catch (e) {
+      showToast(e.message);
+    }
   };
 
   const handleAddStudents = () => {
@@ -852,34 +1023,25 @@ export default function FacultyPage() {
               </div>
             </div>
             <div className="manage-buttons">
-              <button
-                onClick={() => setOpenModal('addcourse')}
-                className="primary-btn"
-              >
+              <button onClick={() => setOpenModal('addcourse')} className="primary-btn">
                 ➕ Add Course
               </button>
-              <button
-                onClick={() => setOpenModal('addblock')}
-                className="outline-btn"
-              >
+              <button onClick={() => setOpenModal('addblock')} className="outline-btn">
                 📦 Add Blocks
               </button>
-              <button
-                onClick={() => setOpenModal('addstudents')}
-                className="outline-btn"
-              >
+              <button onClick={() => setOpenModal('addstudents')} className="outline-btn">
                 👥 Add Students
               </button>
             </div>
-
-            {courses.length > 0 ? (
+            {facultyCourses.length > 0 ? (
               <div className="manage-courses-organized">
-                {courses.map(course => (
-                  <div key={course.id} className="organized-course-card">
+                {facultyCourses.map(fc => (
+                  <div key={fc._id} className="organized-course-card">
                     <div className="organized-course-header">
-                      <span className="course-title">{course.courseName}</span>
+                      <span className="course-title">{fc.course?.code} {fc.course?.course}</span>
+                      <span className="course-meta">{fc.school_year} — {fc.semester} Semester</span>
                       <button
-                        onClick={() => handleDeleteCourse(course.id)}
+                        onClick={() => handleDeleteCourse(fc._id)}
                         className="card-delete-btn"
                         title="Delete Course"
                       >
@@ -887,18 +1049,18 @@ export default function FacultyPage() {
                       </button>
                     </div>
                     <div className="organized-blocks-list">
-                      {course.blocks.length > 0 ? course.blocks.map(block => (
+                      {fc.blocks?.length > 0 ? fc.blocks.map(block => (
                         <BlockSection
                           key={block.name}
                           block={block}
-                          course={course}
+                          course={fc}
                           masterlist={masterlist}
                           handleRemoveBlock={handleRemoveBlock}
                           handleRemoveStudent={handleRemoveStudent}
                           setRenameBlockModal={setRenameBlockModal}
                           renameBlockModal={renameBlockModal}
                           setCourses={setCourses}
-                          courses={courses}
+                          courses={facultyCourses}
                           showToast={showToast}
                         />
                       )) : (
@@ -915,6 +1077,7 @@ export default function FacultyPage() {
             )}
           </div>
         )}
+                
 
         {activeTab === 'assessment' && (
           <div style={{ animation: 'fadeIn 0.3s ease' }}>
@@ -1836,27 +1999,41 @@ export default function FacultyPage() {
                   onFocus={() => setShowCourseDropdown(true)}
                   className="form-input"
                 />
+                <input
+                  type="text"
+                  placeholder="e.g. 2024-2025"
+                  value={courseSY}
+                  onChange={(e) => setCourseSY(e.target.value)}
+                  className="form-input"
+                />
+                <select value={semester} onChange={(e) => setSemester(e.target.value)}>
+                  <option value="">Select Semester</option>
+                  <option value="1st">1st Semester</option>
+                  <option value="2nd">2nd Semester</option>
+                  <option value="Summer">Summer</option>
+                </select>
               </div>
 
-              {showCourseDropdown && !courseInput ? (
+              {showCourseDropdown && !selectedCourse ? (
                 <div className="courses-dropdown">
                   {(() => {
-                    const filteredCourses = ALL_COURSES.filter(course => 
-                      course.toLowerCase().includes(courseSearchTerm.toLowerCase()) &&
-                      !courses.some(c => c.courseName === course)
-                    );
+                      const filteredCourses = ALL_COURSES.filter(course =>
+                        course.course.toLowerCase().includes(courseSearchTerm.toLowerCase()) &&
+                        !courses.some(c => c.courseName === course.course)
+                      );
                     return filteredCourses.length > 0 ? (
                       filteredCourses.map((course) => (
                         <button
-                          key={course}
+                          key={course._id}
                           className="dropdown-item"
                           onClick={() => {
-                            setCourseInput(course);
-                            setCourseSearchTerm(course);
+                            setSelectedCourse(course);
+                            setCourseInput(course.course);
+                            setCourseSearchTerm(course.course);
                             setShowCourseDropdown(false);
                           }}
                         >
-                          {course}
+                          {`${course.code} ${course.course}`}
                         </button>
                       ))
                     ) : (
@@ -1914,9 +2091,9 @@ export default function FacultyPage() {
                   className="form-input"
                 >
                   <option value="">Choose a course...</option>
-                  {courses.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.courseName} ({c.blocks.length}/2)
+                  {facultyCourses.map(fc => (
+                    <option key={fc._id} value={fc._id}>
+                        {fc.course?.code} {fc.course?.course} — {fc.school_year} {fc.semester} Sem
                     </option>
                   ))}
                 </select>
