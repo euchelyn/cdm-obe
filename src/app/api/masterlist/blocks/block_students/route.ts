@@ -48,8 +48,6 @@ export async function POST(req: NextRequest) {
 }
 
 // GET - Fetch all block_students or a single one by id (?id=...)
-//       Filter by block    (?block_id=...)
-//       Filter by student  (?student_id=...)
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -77,7 +75,7 @@ export async function GET(req: NextRequest) {
               as: 'block',
             },
           },
-          { $unwind: { path: '$block', preserveNullAndEmpty: true } },
+          { $unwind: { path: '$block', preserveNullAndEmptyArrays: true } },
           {
             $lookup: {
               from: 'students',
@@ -86,7 +84,7 @@ export async function GET(req: NextRequest) {
               as: 'student',
             },
           },
-          { $unwind: { path: '$student', preserveNullAndEmpty: true } },
+          { $unwind: { path: '$student', preserveNullAndEmptyArrays: true } },
         ])
         .toArray();
 
@@ -125,7 +123,7 @@ export async function GET(req: NextRequest) {
             as: 'block',
           },
         },
-        { $unwind: { path: '$block', preserveNullAndEmpty: true } },
+        { $unwind: { path: '$block', preserveNullAndEmptyArrays: true } },
         {
           $lookup: {
             from: 'students',
@@ -134,7 +132,7 @@ export async function GET(req: NextRequest) {
             as: 'student',
           },
         },
-        { $unwind: { path: '$student', preserveNullAndEmpty: true } },
+        { $unwind: { path: '$student', preserveNullAndEmptyArrays: true } },
         { $sort: { createdAt: -1 } },
       ])
       .toArray();
@@ -145,8 +143,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// PUT - Update a block_student record by id (?id=...)
-//       e.g. move a student to a different block
+// PUT - Update a block_student record
 export async function PUT(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -169,7 +166,6 @@ export async function PUT(req: NextRequest) {
     const db = await connectDB();
     const blockStudents = db.collection('block_students');
 
-    // Prevent duplicate if moving to a block the student is already in
     const duplicate = await blockStudents.findOne({
       _id: { $ne: new ObjectId(id) },
       block_id: new ObjectId(block_id),
@@ -209,7 +205,7 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-// DELETE - Remove a student from a block by id (?id=...)
+// DELETE - Remove a student from a block
 export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);

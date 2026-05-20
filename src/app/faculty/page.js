@@ -1,4 +1,33 @@
-"use client";
+"use client"
+
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import '../alumni/alumni-globals.css';
+import './faculty.css';
+import { getAllCourses } from '@/services/coursesService';
+import { getClientUser } from '@/lib/clientSession';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { 
+  createFacultyCourse, 
+  getAllFacultyCourses, 
+  deleteFacultyCourse,
+  createBlock, 
+  getAllBlocks, 
+  updateBlock,
+  deleteBlock,
+  createBlockStudent,
+  deleteBlockStudent } from '@/services/facultyService';
+import { getStudentById } from '@/services/masterlistService';
+import { searchStudentsByName } from '@/services/masterlistService';
+import { getAllBlockStudents } from '@/services/facultyService';
+import { getAllStudents } from '@/services/masterlistService';
+import { 
+  createAssessment,
+  createQuestion,
+  createRubric,
+  getAllAssessments
+} from '@/services/assessmentService';
+
 function BlockSection({
   block,
   course,
@@ -9,12 +38,35 @@ function BlockSection({
   renameBlockModal,
   setCourses,
   courses,
-  showToast
+  showToast,
+  searchResults = []
 }) {
-  const [collapsed, setCollapsed] = React.useState(true);
-
-  // Prevent crashes if students does not exist yet
+  const [collapsed, setCollapsed] = useState(true);
+  
+  // Get students array from block (should be array of student IDs)
   const students = block.students || [];
+
+  // Helper to find student from multiple sources
+  const findStudent = (sid) => {
+    // Try masterlist first - check both _id and id (student number)
+    let student = masterlist.find(stu => 
+      stu._id === sid || 
+      stu._id?.toString() === sid ||
+      stu.id === sid ||
+      stu.id?.toString() === sid
+    );
+    
+    // If not found, try searchResults fallback
+    if (!student && searchResults?.length > 0) {
+      student = searchResults.find(stu => 
+        stu._id === sid || 
+        stu._id?.toString() === sid ||
+        stu.id === sid
+      );
+    }
+    
+    return student;
+  };
 
   return (
     <div className="organized-block-section">
@@ -26,19 +78,25 @@ function BlockSection({
         <div className="block-label">{block.name}</div>
 
         <div className="block-student-count">
-          {students.length} students
+          {students.length} student{students.length !== 1 ? 's' : ''}
         </div>
 
-        <div>
+        <div style={{ display: 'flex', gap: '4px' }}>
           <button
             className="block-collapse-btn"
             tabIndex={-1}
-            onClick={e => {
+            onClick={(e) => {
               e.stopPropagation();
               setCollapsed(c => !c);
             }}
             title={collapsed ? 'Expand' : 'Collapse'}
-            aria-label={collapsed ? 'Expand block' : 'Collapse block'}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: '#ffe066',
+              fontSize: '12px'
+            }}
           >
             {collapsed ? '▶' : '▼'}
           </button>
@@ -46,7 +104,7 @@ function BlockSection({
           <button
             className="block-edit-btn"
             tabIndex={-1}
-            onClick={e => {
+            onClick={(e) => {
               e.stopPropagation();
 
               setRenameBlockModal({
@@ -57,6 +115,12 @@ function BlockSection({
               });
             }}
             title="Rename Block"
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
           >
             ✏️
           </button>
@@ -64,15 +128,23 @@ function BlockSection({
           <button
             className="block-delete-btn"
             tabIndex={-1}
-            onClick={e => {
+            onClick={(e) => {
               e.stopPropagation();
 
-              handleRemoveBlock(
-                course._id || course.id,
-                block._id || block.name
-              );
+              if (window.confirm(`Delete block "${block.name}"?`)) {
+                handleRemoveBlock(
+                  course._id || course.id,
+                  block._id || block.name
+                );
+              }
             }}
             title="Remove Block"
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
           >
             🗑️
           </button>
@@ -96,113 +168,128 @@ function BlockSection({
                 style={{
                   background: '#2d3136',
                   color: '#ffe066',
-                  fontWeight: 700
+                  fontWeight: 700,
+                  padding: '10px',
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 2fr 1fr 80px',
+                  gap: '10px',
+                  fontSize: '12px'
                 }}
               >
-                <span className="student-id-col">ID Number</span>
-                <span className="student-name-col">Name</span>
-                <span className="student-batch-col">Batch</span>
-                <span className="student-action-col"></span>
+                <span>ID Number</span>
+                <span>Name</span>
+                <span>Batch</span>
+                <span style={{ textAlign: 'center' }}>Action</span>
               </div>
 
-              {students.map(sid => {
-                const student = masterlist.find(
-                  stu => stu.id === sid || stu._id === sid
-                );
+              {students.map((sid, index) => {
+                const student = findStudent(sid);
 
-                return student ? (
-                  <div
-                    key={sid}
-                    className="student-vertical-row"
-                    style={{
-                      background: '#23272b',
-                      color: '#fff',
-                      borderBottom: '1px solid #ffe066'
-                    }}
-                  >
-                    <span className="student-id-col">
-                      {student.id || student.student_id}
-                    </span>
-
-                    <span
-                      className="student-name-col"
+                if (student) {
+                  return (
+                    <div
+                      key={sid || index}
+                      className="student-vertical-row"
                       style={{
+                        background: '#23272b',
                         color: '#fff',
-                        fontWeight: 500
+                        borderBottom: '1px solid #3a3f47',
+                        padding: '10px',
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 2fr 1fr 80px',
+                        gap: '10px',
+                        fontSize: '13px',
+                        alignItems: 'center'
                       }}
                     >
-                      {student.name}
-                    </span>
+                      <span className="student-id-col">
+                        {student.id || student.student_id || 'N/A'}
+                      </span>
 
-                    <span className="student-batch-col">
-                      {student.batch || '-'}
-                    </span>
-
-                    <span className="student-action-col">
-                      <button
-                        className="student-remove-btn"
-                        title="Remove Student"
-                        onClick={() => {
-                          if (
-                            window.confirm(
-                              'Remove this student from the block?'
-                            )
-                          ) {
-                            handleRemoveStudent(
-                              course._id || course.id,
-                              block._id || block.name,
-                              student._id || student.id
-                            );
-                          }
+                      <span
+                        className="student-name-col"
+                        style={{
+                          color: '#fff',
+                          fontWeight: 500
                         }}
                       >
-                        🗑️
-                      </button>
-                    </span>
-                  </div>
-                ) : (
-                  <div
-                    key={sid}
-                    className="student-vertical-row"
-                    style={{
-                      background: '#23272b',
-                      color: '#fff'
-                    }}
-                  >
-                    <span className="student-id-col">
-                      Unknown ({sid})
-                    </span>
+                        {student.name || 'Unknown'}
+                      </span>
 
-                    <span className="student-name-col"></span>
+                      <span className="student-batch-col">
+                        {student.batch || '-'}
+                      </span>
 
-                    <span className="student-batch-col"></span>
-
-                    <span className="student-action-col"></span>
-                  </div>
-                );
+                      <span className="student-action-col" style={{ textAlign: 'center' }}>
+                        <button
+                          className="student-remove-btn"
+                          title="Remove Student"
+                          onClick={() => {
+                            if (window.confirm('Remove this student from the block?')) {
+                              handleRemoveStudent(
+                                course._id || course.id,
+                                block._id,
+                                student._id
+                              );
+                            }
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '14px'
+                          }}
+                        >
+                          🗑️
+                        </button>
+                      </span>
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div
+                      key={sid || index}
+                      className="student-vertical-row"
+                      style={{
+                        background: '#23272b',
+                        color: '#888',
+                        borderBottom: '1px solid #3a3f47',
+                        padding: '10px',
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 2fr 1fr 80px',
+                        gap: '10px',
+                        fontSize: '13px',
+                        fontStyle: 'italic'
+                      }}
+                    >
+                      <span className="student-id-col">
+                        Unknown ({String(sid).slice(-6)})
+                      </span>
+                      <span className="student-name-col">-</span>
+                      <span className="student-batch-col">-</span>
+                      <span className="student-action-col"></span>
+                    </div>
+                  );
+                }
               })}
             </div>
           ) : (
-            <span className="empty-blocks">
-              No students
-            </span>
+            <div
+              className="empty-block"
+              style={{
+                padding: '20px',
+                textAlign: 'center',
+                color: '#888'
+              }}
+            >
+              No students in this block
+            </div>
           )}
         </div>
       )}
     </div>
   );
 }
-
-
-
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import '../alumni/alumni-globals.css';
-import './faculty.css';
-import { getAllCourses } from '@/services/coursesService';
-import { getClientUser } from '@/lib/clientSession';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { createFacultyCourse, getAllFacultyCourses, createBlock, getAllBlocks } from '@/services/facultyService';
 
 const PO_LIST = [
   { id: 'A', name: 'Mathematics and Scientific Concepts' },
@@ -285,6 +372,9 @@ export default function FacultyPage() {
     const [blockInput, setBlockInput] = useState('');
     const [selectedCourseForBlock, setSelectedCourseForBlock] = useState('');
     const [blocks, setBlocks] = useState([]);
+    const [searchResults, setSearchResults] = useState([])
+    const [allStudents, setAllStudents] = useState([]);
+    const [blockStudents, setBlockStudents] = useState([]);
 
     // Assessment Setup states
     const [courseAssessments, setCourseAssessments] = useState({});
@@ -300,6 +390,9 @@ export default function FacultyPage() {
     const [rubricName, setRubricName] = useState('');
     const [rubricCriteria, setRubricCriteria] = useState([]);
     const [assessmentStep, setAssessmentStep] = useState(1);
+    const [assessmentId, setAssessmentId] = useState(null);
+    const [poWeights, setPoWeights] = useState({});
+    const [assessments, setAssessments] = useState([]);
 
     // Grading states
     const [studentGrades, setStudentGrades] = useState({});
@@ -317,63 +410,185 @@ export default function FacultyPage() {
     const gradedList = Object.entries(studentGrades).filter(([key, val]) => val.scores);
     const gradedCount = gradedList.length;
 
+   const fetchFacultyData = async () => {
+  try {
+    const [
+      fcData,
+      blockData,
+      bsData,
+      assessmentData
+    ] = await Promise.all([
+      getAllFacultyCourses({
+        faculty_id: currentUser?.link?.roleAccount?._id?.toString(),
+      }),
+
+      getAllBlocks(),
+      getAllBlockStudents(),
+
+      getAllAssessments({
+        created_by: currentUser?.link?.roleAccount?._id?.toString(),
+      }),
+    ]);
+
+    // ─────────────────────────────────────────────────────────────
+    // MAP BLOCKS + STUDENTS TO FACULTY COURSES
+    // ─────────────────────────────────────────────────────────────
+
+    const fcWithBlocks = fcData.map(fc => {
+      const blocks = blockData.filter(
+        b => b.faculty_course_id?.toString() === fc._id?.toString()
+      );
+
+      const blocksWithStudents = blocks.map(block => {
+        const enrolledStudents = bsData
+          .filter(
+            bs =>
+              bs.block?._id?.toString() ===
+              block._id?.toString()
+          )
+          .map(
+            bs =>
+              bs.student?._id?.toString() ||
+              bs.student?._id
+          );
+
+        return {
+          ...block,
+          students: enrolledStudents,
+        };
+      });
+
+      return {
+        ...fc,
+        blocks: blocksWithStudents,
+      };
+    });
+
+    // ─────────────────────────────────────────────────────────────
+    // 🔥 BUILD FAST LOOKUP MAP (IMPORTANT FIX)
+    // ─────────────────────────────────────────────────────────────
+
+    const facultyCourseMap = new Map(
+      fcData.map(fc => [String(fc._id), fc])
+    );
+
+    // ─────────────────────────────────────────────────────────────
+    // 🔥 ATTACH COURSE INFO INTO ASSESSMENTS
+    // ─────────────────────────────────────────────────────────────
+
+    const assessmentsWithCourse = assessmentData.map(a => {
+      const fc = facultyCourseMap.get(String(a.faculty_course_id));
+
+      return {
+        ...a,
+        faculty_course: fc || null,
+        course: fc?.course || null,
+      };
+    });
+
+    // ─────────────────────────────────────────────────────────────
+    // SAVE STATES
+    // ─────────────────────────────────────────────────────────────
+
+    setFacultyCourses(fcWithBlocks);
+    setAssessments(assessmentsWithCourse);
+    setBlockStudents(bsData);
+
+  } catch (e) {
+    console.error(e);
+    showToast(e.message || 'Failed to fetch faculty data');
+  }
+};
+
     useEffect(() => {
 
       const user = getClientUser();
-      console.log("RAW USER:", user);
 
-      // Fetch all courses and group by year level
-      getAllCourses().then((data) => {
-        const grouped = data.reduce((acc, course) => {
-          const existing = acc.find((g) => g.year === course.year_level);
-          if (existing) {
-            existing.courses.push(course);
-          } else {
-            acc.push({ year: course.year_level, courses: [course] });
-          }
-          return acc;
-        }, []);
-        setCPE_CURRICULUM(grouped);
-        setALL_COURSES(grouped.flatMap((year) => year.courses));
-      });
+      // ─────────────────────────────────────────────────────────────
+      // FETCH STUDENTS
+      // ─────────────────────────────────────────────────────────────
 
-      // Fetch faculty courses and their blocks
-      const fetchFacultyData = async () => {
-        try {
-          const fcData = await getAllFacultyCourses({
-            faculty_id: currentUser?.link?.roleAccount?._id?.toString(),
-          });
+      getAllStudents()
+        .then((data) => {
 
-          const blockData = await getAllBlocks();
+          setMasterlist(data);
 
-          // Attach blocks to their respective faculty course
-          const fcWithBlocks = fcData.map(fc => ({
-            ...fc,
-            blocks: blockData.filter(b => 
-              b.faculty_course_id?.toString() === fc._id?.toString()
-            ),
-          }));
+        })
+        .catch((err) => {
 
-          setFacultyCourses(fcWithBlocks);
-          console.log(fcWithBlocks);
-        } catch (e) {
-          showToast(e.message);
-        }
-      };
+          console.error(
+            'getAllStudents error:',
+            err
+          );
+        });
 
-      fetchFacultyData();
-    }, []);
+      // ─────────────────────────────────────────────────────────────
+      // FETCH COURSES
+      // ─────────────────────────────────────────────────────────────
+
+      getAllCourses()
+        .then((data) => {
+
+          const grouped = data.reduce(
+            (acc, course) => {
+
+              const existing = acc.find(
+                g => g.year === course.year_level
+              );
+
+              if (existing) {
+
+                existing.courses.push(course);
+
+              } else {
+
+                acc.push({
+                  year: course.year_level,
+                  courses: [course],
+                });
+              }
+
+              return acc;
+
+            },
+            []
+          );
+
+          setCPE_CURRICULUM(grouped);
+
+          setALL_COURSES(
+            grouped.flatMap(
+              (year) => year.courses
+            )
+          );
+        })
+        .catch((err) => {
+
+          console.error(
+            'getAllCourses error:',
+            err
+          );
+        });
+
+      // ─────────────────────────────────────────────────────────────
+      // FETCH FACULTY DATA + ASSESSMENTS
+      // ─────────────────────────────────────────────────────────────
+
+      if (
+        currentUser?.link?.roleAccount?._id
+      ) {
+        fetchFacultyData();
+      }
+
+    }, [currentUser?.link?.roleAccount?._id]);
 
     const handleAddCourse = async () => {
       try {
 
-          console.log({ selectedCourse, courseSY, semester });
         if (!selectedCourse || !courseSY || !semester) {
           alert('Please fill in all fields: ' + `${selectedCourse, courseSY, semester}`);
           return;
         }
-          console.log(currentUser?.link?.roleAccount?.faculty_id)
-          console.log(selectedCourse._id)
         await createFacultyCourse({
           faculty_id: currentUser?.link?.roleAccount?._id,
           course_id: selectedCourse._id,
@@ -389,6 +604,8 @@ export default function FacultyPage() {
         setSemester('');
         setSelectedCourse(null);
         setShowCourseDropdown(false);
+        
+        fetchFacultyData();
 
       } catch (e) {
         showToast(e.message);
@@ -457,11 +674,13 @@ export default function FacultyPage() {
       setSelectedCourseForBlock('');
       setOpenModal(null);
 
+      fetchFacultyData();
     } catch (e) {
       showToast(e.message);
     }
   };
 
+  /*
   const handleAddStudents = () => {
     if (!selectedCourseForStudents || !selectedBlockForStudents) {
       showToast('Please select a course and block');
@@ -501,7 +720,79 @@ export default function FacultyPage() {
     setOpenModal(null);
     showToast(`${studentIds.length} student(s) added to block`);
   };
+  */
+  const handleAddStudents = async () => {
+    try {
+      if (!selectedCourseForStudents || !selectedBlockForStudents) {
+        showToast('Please select a course and block');
+        return;
+      }
 
+      const studentIds = Object.keys(selectedStudents)
+        .filter(key => selectedStudents[key]?.selected === true)
+        .map(key => selectedStudents[key]._id);
+
+      if (studentIds.length === 0) {
+        showToast('Please select at least one student');
+        return;
+      }
+
+      // Add students to block
+      await Promise.all(
+        studentIds.map(studentId => 
+          createBlockStudent({
+            block_id: selectedBlockForStudents,
+            student_id: studentId
+          })
+        )
+      );
+
+      showToast(`${studentIds.length} student(s) added to block`);
+
+      // Reset UI
+      setSelectedStudents({});
+      setSelectedCourseForStudents('');
+      setSelectedBlockForStudents('');
+      setSearchTerm('');
+      setSelectedBatch('');
+      setSortBy('batch-desc');
+      setOpenModal(null);
+
+      // Refresh everything
+      await fetchFacultyData();
+      
+      // Also refresh masterlist for display
+      const allStudents = await getAllStudents();
+      setMasterlist(allStudents);
+
+    } catch (e) {
+      console.error('Error adding students:', e);
+      showToast(e.message);
+    }
+  };
+
+  const handleDeleteCourse = async (courseId) => {
+
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this course? This action cannot be undone.'
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await deleteFacultyCourse(courseId);
+
+      // Remove from local facultyCourses state
+      setFacultyCourses(prev => prev.filter(fc => fc._id !== courseId));
+
+      showToast('Course deleted');
+
+    } catch (e) {
+      showToast(e.message);
+    }
+  };
+
+  /*
   const handleDeleteCourse = (courseId) => {
     const updatedCourses = courses.filter(c => c.id !== courseId);
     setCourses(updatedCourses);
@@ -515,42 +806,148 @@ export default function FacultyPage() {
     }
     showToast('Course deleted');
   };
+  */
+    const handleRemoveBlock = async (courseId, blockId) => {
+    try {
 
-  const handleRemoveBlock = (courseId, blockName) => {
-    const updatedCourses = courses.map(c => {
-      if (c.id === courseId) {
-        return {
-          ...c,
-          blocks: c.blocks.filter(b => b.name !== blockName)
-        };
+      // Find faculty course
+      const facultyCourse = facultyCourses.find(
+        fc => fc._id?.toString() === courseId?.toString()
+      );
+
+      if (!facultyCourse) {
+        showToast('Faculty course not found');
+        return;
       }
-      return c;
-    });
 
-    setCourses(updatedCourses);
-    localStorage.setItem('faculty_courses', JSON.stringify(updatedCourses));
+      // Find block
+      const block = facultyCourse.blocks?.find(
+        b => b._id?.toString() === blockId?.toString()
+      );
 
-    // If the course now has no blocks, remove its assessments and grades
-    const courseAfter = updatedCourses.find(c => c.id === courseId);
-    if (courseAfter && courseAfter.blocks.length === 0) {
-      // Remove assessment for this course
-      const updatedAssessments = { ...courseAssessments };
-      delete updatedAssessments[courseId];
-      setCourseAssessments(updatedAssessments);
-      localStorage.setItem('faculty_assessments', JSON.stringify(updatedAssessments));
+      if (!block) {
+        showToast('Block not found');
+        return;
+      }
 
-      // Remove grades for this course
-      const updatedGrades = { ...studentGrades };
-      Object.keys(updatedGrades).forEach(key => {
-        if (key.startsWith(courseId + '_')) delete updatedGrades[key];
+      // Confirm deletion
+      const confirmed = window.confirm(
+        `Delete block "${block.name}"?`
+      );
+
+      if (!confirmed) return;
+
+      // Delete from database
+      await deleteBlock(block._id);
+
+      // Update local state
+      const updatedFacultyCourses = facultyCourses.map(fc => {
+
+        if (fc._id?.toString() === courseId?.toString()) {
+
+          return {
+            ...fc,
+            blocks: fc.blocks.filter(
+              b => b._id?.toString() !== blockId?.toString()
+            ),
+          };
+        }
+
+        return fc;
       });
-      setStudentGrades(updatedGrades);
-      localStorage.setItem('faculty_grades', JSON.stringify(updatedGrades));
-    }
 
-    showToast('Block removed');
+      setFacultyCourses(updatedFacultyCourses);
+
+      showToast('Block deleted successfully');
+
+    } catch (e) {
+
+      showToast(e.message);
+
+    }
   };
 
+  const handleRenameBlock = async () => {
+    try {
+      if (!renameBlockModal.newName) {
+        showToast('Please enter a block name');
+        return;
+      }
+
+      // Find faculty course first
+      const facultyCourse = facultyCourses.find(
+        fc => fc._id?.toString() === renameBlockModal.courseId?.toString()
+      );
+
+      if (!facultyCourse) {
+        showToast('Faculty course not found');
+        return;
+      }
+
+      // Find block inside faculty course
+      const block = facultyCourse.blocks?.find(
+        b => b.name === renameBlockModal.oldName
+      );
+
+
+
+      if (!block) {
+        showToast('Block not found');
+        return;
+      }
+
+      await updateBlock(block._id, {
+        faculty_course_id: block.faculty_course_id,
+        name: renameBlockModal.newName,
+        school_year: block.school_year,
+        semester: block.semester,
+      });
+
+      showToast('Block renamed successfully');
+
+      setRenameBlockModal({
+        open: false,
+        courseId: null,
+        oldName: '',
+        newName: '',
+      });
+
+      // Refresh blocks
+      const blockData = await getAllBlocks();
+
+      const fcWithBlocks = facultyCourses.map(fc => ({
+        ...fc,
+        blocks: blockData.filter(
+          b => b.faculty_course_id?.toString() === fc._id?.toString()
+        ),
+      }));
+
+      setFacultyCourses(fcWithBlocks);
+
+    } catch (e) {
+      showToast(e.message);
+    }
+  };
+
+    const handleStudentSearch = async (value) => {
+    setSearchTerm(value);
+
+    // Clear results immediately if input is empty to close dropdown
+    if (!value.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    try {
+      // Replace this with your actual API call function
+      const res = await searchStudentsByName(value);
+      setSearchResults(res.data || []);
+    } catch (err) {
+      console.error(err);
+      setSearchResults([]);
+    }
+  };
+  /*
   const handleRemoveStudent = (courseId, blockName, studentId) => {
     const updatedCourses = courses.map(c => {
       if (c.id === courseId) {
@@ -573,7 +970,43 @@ export default function FacultyPage() {
     setCourses(updatedCourses);
     localStorage.setItem('faculty_courses', JSON.stringify(updatedCourses));
     showToast('Student removed');
-  };
+  };*/
+
+  const handleRemoveStudent = async (courseId, blockId, studentId) => {
+  try {
+
+    // Query the database directly
+    const blockStudentsData = await getAllBlockStudents({ block_id: blockId });
+
+    // Find the specific record
+    const blockStudentRecord = blockStudentsData.find(bs => 
+      bs.student?._id?.toString() === studentId?.toString()
+    );
+
+
+    if (!blockStudentRecord) {
+      showToast('Block student record not found');
+      return;
+    }
+
+    // Delete using the block_student _id
+    await deleteBlockStudent(blockStudentRecord._id);
+
+    showToast('Student removed from block');
+
+    // Refresh data
+    await fetchFacultyData();
+    
+    // Refresh block students
+    const bsData = await getAllBlockStudents();
+    setBlockStudents(bsData);
+
+  } catch (e) {
+    console.error('Error removing student:', e);
+    showToast(e.message);
+  }
+};
+
 
   const filteredStudents = masterlist.filter(student =>
     (student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -655,31 +1088,43 @@ export default function FacultyPage() {
   };
 
   // Grading helper functions
-  const calculateStudentGrade = (studentId, courseId, assessment) => {
-    const gradeKey = `${courseId}_${studentId}`;
-    const grade = studentGrades[gradeKey];
-    
-    if (!grade || !grade.scores) return null;
+ const calculateStudentGrade = (studentId, courseId, assessment) => {
+  const gradeKey = `${courseId}_${studentId}`;
+  const grade = studentGrades?.[gradeKey];
 
-    if (assessment.gradingMethod === 'finalExam') {
-      // Count correct answers: 100 points per question
-      const correctCount = Object.keys(grade.scores).filter(key => 
-        key.startsWith('q') && grade.scores[key] === true
-      ).length;
-      const totalQuestions = assessment.questions.length;
-      return totalQuestions > 0 ? (correctCount / totalQuestions) * 100 : 0;
-    } else {
-      let totalScore = 0;
-      const levelValues = { 'Excellent': 100, 'Good': 85, 'Fair': 70, 'Poor': 50 };
-      assessment.rubrics.forEach((r, idx) => {
-        const level = grade.scores[`r${idx}`];
-        if (level) {
-          totalScore += levelValues[level] || 0;
-        }
-      });
-      return Math.round(totalScore / assessment.rubrics.length) || null;
-    }
-  };
+  // 🔐 HARD GUARD — prevents runtime crash
+  if (!assessment || !grade || !grade.scores) return null;
+
+  const isFinalExam =
+    assessment.gradingMethod === 'finalExam' ||
+    assessment.type === 'final_exam';
+
+  if (isFinalExam) {
+    const questions = assessment.questions || [];
+
+    const correctCount = Object.keys(grade.scores).filter(
+      key => key.startsWith('q') && grade.scores[key] === true
+    ).length;
+
+    return questions.length > 0
+      ? (correctCount / questions.length) * 100
+      : 0;
+  }
+
+  const rubrics = assessment.rubrics || [];
+  const levelValues = { Excellent: 100, Good: 85, Fair: 70, Poor: 50 };
+
+  let totalScore = 0;
+
+  rubrics.forEach((r, idx) => {
+    const level = grade.scores[`r${idx}`];
+    if (level) totalScore += levelValues[level] || 0;
+  });
+
+  return rubrics.length > 0
+    ? Math.round(totalScore / rubrics.length)
+    : null;
+};
 
   const getPoScores = (studentId, courseId, assessment) => {
     const gradeKey = `${courseId}_${studentId}`;
@@ -734,6 +1179,225 @@ export default function FacultyPage() {
         router.push('/');
     }
   };
+
+const handleUploadAssessment = async () => {
+
+  // ─────────────────────────────────────────────────────────────
+  // STEP 1 — All validations first, no API calls yet
+  // ─────────────────────────────────────────────────────────────
+
+  if (!selectedCourseForAssessment) {
+    showToast('Please select a course');
+    return;
+  }
+
+  if (selectedPOs.length === 0) {
+    showToast('Please select at least one Program Outcome');
+    return;
+  }
+
+  if (!gradingMethod) {
+    showToast('Please select a grading method');
+    return;
+  }
+
+  if (gradingMethod === 'finalExam' && questions.length === 0) {
+    showToast('Please add at least one question');
+    return;
+  }
+
+  if (gradingMethod === 'rubrics' && rubrics.length === 0) {
+    showToast('Please add at least one rubric criteria');
+    return;
+  }
+
+  if (!currentUser?.link?.roleAccount?._id) {
+    showToast('User session is invalid. Please log in again.');
+    return;
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // FINAL EXAM VALIDATION
+  // ─────────────────────────────────────────────────────────────
+
+  if (gradingMethod === 'finalExam') {
+
+    for (let i = 0; i < questions.length; i++) {
+
+      const hasWeight = selectedPOs.some(
+        poId => (questionPOs[`${i}-${poId}`] || 0) > 0
+      );
+
+      if (!hasWeight) {
+        showToast(`Q${i + 1} has no PO weights assigned`);
+        return;
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // RUBRICS VALIDATION
+  // ─────────────────────────────────────────────────────────────
+
+  if (gradingMethod === 'rubrics') {
+
+    for (let i = 0; i < rubrics.length; i++) {
+
+      const r = rubrics[i];
+
+      if (!r.name?.trim()) {
+        showToast(`Rubric ${i + 1} has no criteria name`);
+        return;
+      }
+
+      const hasWeight = selectedPOs.some(
+        poId => (r.poWeights?.[poId] || 0) > 0
+      );
+
+      if (!hasWeight) {
+        showToast(`Rubric "${r.name}" has no PO weights assigned`);
+        return;
+      }
+
+      const hasLevels =
+        r.levels?.Excellent &&
+        r.levels?.Good &&
+        r.levels?.Fair &&
+        r.levels?.Poor;
+
+      if (!hasLevels) {
+        showToast(
+          `Rubric "${r.name}" must have all four level descriptions filled in`
+        );
+        return;
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // STEP 2 — Pre-build all payloads before any API call
+  // ─────────────────────────────────────────────────────────────
+
+  // Distribute PO weights evenly for assessment level
+  const evenWeight = Math.floor(100 / selectedPOs.length);
+  const remainder = 100 - evenWeight * selectedPOs.length;
+
+  const assessmentPOWeights = selectedPOs.reduce((acc, po, idx) => {
+    acc[po] = idx === 0 ? evenWeight + remainder : evenWeight;
+    return acc;
+  }, {});
+
+  // Pre-build question payloads
+  const questionPayloads = gradingMethod === 'finalExam'
+    ? questions.map((q, i) => {
+
+        const pos = {};
+
+        selectedPOs.forEach(poId => {
+          const weight = questionPOs[`${i}-${poId}`] || 0;
+
+          if (weight > 0) {
+            pos[poId] = weight;
+          }
+        });
+
+        return {
+          question: q.text,
+          program_outcomes: pos,
+          order: i + 1,
+        };
+      })
+    : [];
+
+  // Pre-build rubric payloads
+  const rubricPayloads = gradingMethod === 'rubrics'
+    ? rubrics.map((r, i) => {
+
+        const pos = {};
+
+        selectedPOs.forEach(poId => {
+          const weight = r.poWeights?.[poId] || 0;
+
+          if (weight > 0) {
+            pos[poId] = weight;
+          }
+        });
+
+        return {
+          criteria: r.name,
+          program_outcomes: pos,
+          levels: {
+            excellent: r.levels?.Excellent || '',
+            good: r.levels?.Good || '',
+            fair: r.levels?.Fair || '',
+            poor: r.levels?.Poor || '',
+          },
+          order: i + 1,
+        };
+      })
+    : [];
+
+
+  // ─────────────────────────────────────────────────────────────
+  // STEP 3 — Save
+  // ─────────────────────────────────────────────────────────────
+
+  try {
+
+    const res = await createAssessment({
+      faculty_course_id: selectedCourseForAssessment,
+      type: gradingMethod === 'finalExam'
+        ? 'final_exam'
+        : 'rubric',
+      program_outcomes: assessmentPOWeights,
+      created_by: currentUser?.link?.roleAccount?._id?.toString(),
+    });
+
+    const savedAssessmentId = res.id;
+
+    if (gradingMethod === 'finalExam') {
+
+      for (const payload of questionPayloads) {
+        await createQuestion({
+          assessment_id: savedAssessmentId,
+          selectedPOs,
+          ...payload
+        });
+      }
+
+    } else {
+
+      for (const payload of rubricPayloads) {
+        await createRubric({
+          assessment_id: savedAssessmentId,
+          ...payload
+        });
+      }
+    }
+
+    showToast('Assessment setup saved successfully!');
+
+    setQuestions([]);
+    setRubrics([]);
+    setQuestionPOs({});
+    setSelectedPOs([]);
+    setGradingMethod('');
+    setSelectedCourseForAssessment('');
+    setAssessmentStep(1);
+
+    setActiveTab('viewAssessments');
+
+    fetchFacultyData();
+
+    // ─────────────────────────────────────────────────────────────
+// DEBUG LOGS
+// ─────────────────────────────────────────────────────────────
+
+
+  } catch (e) {
+    showToast(e.message);
+  }
+};
 
   return (
     <div className="portal-layout"> 
@@ -1080,667 +1744,878 @@ export default function FacultyPage() {
                 
 
         {activeTab === 'assessment' && (
-          <div style={{ animation: 'fadeIn 0.3s ease' }}>
-            <div className="pc-header" style={{ marginBottom: '20px' }}>
-              <div>
-                <h1 style={{ fontSize: '2.2rem', marginBottom: '5px' }}>Assessment Setup</h1>
-                <p style={{ color: 'var(--text-sub)' }}>Configure Program Outcomes and grading methods for your courses</p>
-              </div>
-            </div>
+  <div style={{ animation: 'fadeIn 0.3s ease' }}>
+    <div className="pc-header" style={{ marginBottom: '20px' }}>
+      <div>
+        <h1 style={{ fontSize: '2.2rem', marginBottom: '5px' }}>Assessment Setup</h1>
+        <p style={{ color: 'var(--text-sub)' }}>Configure Program Outcomes and grading methods for your courses</p>
+      </div>
+    </div>
 
-            <div className="assessment-container">
-              <div className="step-indicator">
-                <div className={`step ${assessmentStep >= 1 ? 'active' : ''}`}>
-                  <span>1</span>
-                  <p>Select Course</p>
-                </div>
-                <div className="step-line"></div>
-                <div className={`step ${assessmentStep >= 2 ? 'active' : ''}`}>
-                  <span>2</span>
-                  <p>POs & Method</p>
-                </div>
-                <div className="step-line"></div>
-                <div className={`step ${assessmentStep >= 3 ? 'active' : ''}`}>
-                  <span>3</span>
-                  <p>Questions/Rubrics</p>
-                </div>
-              </div>
+    <div className="assessment-container">
+      <div className="step-indicator">
+        <div className={`step ${assessmentStep >= 1 ? 'active' : ''}`}>
+          <span>1</span>
+          <p>Select Course</p>
+        </div>
+        <div className="step-line"></div>
+        <div className={`step ${assessmentStep >= 2 ? 'active' : ''}`}>
+          <span>2</span>
+          <p>POs & Method</p>
+        </div>
+        <div className="step-line"></div>
+        <div className={`step ${assessmentStep >= 3 ? 'active' : ''}`}>
+          <span>3</span>
+          <p>Questions/Rubrics</p>
+        </div>
+      </div>
 
-              {assessmentStep === 1 && (
-                <div className="assessment-form">
-                  <h2>Select a Course</h2>
-                  <div className="form-group">
-                    <label>Choose Course</label>
-                    <select
-                      value={selectedCourseForAssessment}
-                      onChange={(e) => {
-                        const courseId = e.target.value;
-                        setSelectedCourseForAssessment(courseId);
-                        if (courseId && courseAssessments[courseId]) {
-                          const assessment = courseAssessments[courseId];
-                          setSelectedPOs(assessment.pos || []);
-                          setGradingMethod(assessment.gradingMethod || '');
-                        } else {
-                          setSelectedPOs([]);
-                          setGradingMethod('');
-                        }
-                      }}
-                      className="form-input"
-                    >
-                      <option value="">Choose a course...</option>
-                      {courses.map(c => (
-                        <option key={c.id} value={c.id}>{c.courseName}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {courses.length === 0 && (
-                    <div className="empty-state">
-                      <p>No courses available. Create courses first from the Manage Courses tab.</p>
-                    </div>
-                  )}
-
-                  {selectedCourseForAssessment && (
-                    <div className="form-buttons">
-                      <button
-                        onClick={() => setAssessmentStep(2)}
-                        className="primary-btn"
-                      >
-                        Next: Program Outcomes →
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {assessmentStep === 2 && selectedCourseForAssessment && (
-                <div className="assessment-form">
-                  <h2>Program Outcomes & Grading Method</h2>
-                  
-                  <div className="form-group">
-                    <label>Select Program Outcomes (POs)</label>
-                    <p className="help-text">Select one or more POs that this course covers:</p>
-                    <div className="po-grid">
-                      {PO_LIST.map(po => (
-                        <label key={po.id} className="po-checkbox">
-                          <input
-                            type="checkbox"
-                            checked={selectedPOs.includes(po.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedPOs([...selectedPOs, po.id]);
-                              } else {
-                                setSelectedPOs(selectedPOs.filter(id => id !== po.id));
-                              }
-                            }}
-                          />
-                          <span className="po-label">
-                            <strong>PO-{po.id}</strong>: {po.name}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Grading Method</label>
-                    <p className="help-text">Choose how you will assess student learning:</p>
-                    <div className="method-options">
-                      <button
-                        className={`method-option ${gradingMethod === 'finalExam' ? 'selected' : ''}`}
-                        onClick={() => setGradingMethod('finalExam')}
-                      >
-                        <div className="method-icon">📝</div>
-                        <div className="method-text">
-                          <h3>Final Exam</h3>
-                          <p>Upload questions and map to POs</p>
-                        </div>
-                      </button>
-                      <button
-                        className={`method-option ${gradingMethod === 'rubrics' ? 'selected' : ''}`}
-                        onClick={() => setGradingMethod('rubrics')}
-                      >
-                        <div className="method-icon">📊</div>
-                        <div className="method-text">
-                          <h3>Rubrics</h3>
-                          <p>Create criteria and assign POs</p>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="form-buttons">
-                    <button
-                      onClick={() => setAssessmentStep(1)}
-                      className="outline-btn"
-                    >
-                      ← Back
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (selectedPOs.length === 0) {
-                          showToast('Please select at least one PO');
-                          return;
-                        }
-                        if (!gradingMethod) {
-                          showToast('Please select a grading method');
-                          return;
-                        }
-                        setAssessmentStep(3);
-                      }}
-                      className="primary-btn"
-                    >
-                      Next: Setup Assessment →
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {assessmentStep === 3 && selectedCourseForAssessment && (
-                <div className="assessment-form">
-                  {gradingMethod === 'finalExam' ? (
-                    <div>
-                      <h2>Final Exam - Question Setup</h2>
-                      <p className="help-text">Add questions and assign POs with weights (must total 100% per PO)</p>
-                      
-                      <div className="questions-list">
-                        {questions.length > 0 ? (
-                          questions.map((q, idx) => (
-                            <div key={idx} className="question-item portal-card">
-                              <div className="question-header">
-                                <h4>Q{idx + 1}: {q.text}</h4>
-                                <button
-                                  onClick={() => setQuestions(questions.filter((_, i) => i !== idx))}
-                                  className="delete-btn"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                              <div className="question-pos">
-                                {selectedPOs.map(poId => (
-                                  <div key={poId} className="po-weight-input">
-                                    <label>PO-{poId} Weight:</label>
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      max="100"
-                                      value={questionPOs[`${idx}-${poId}`] || 0}
-                                      onChange={(e) => {
-                                        setQuestionPOs({
-                                          ...questionPOs,
-                                          [`${idx}-${poId}`]: parseInt(e.target.value) || 0
-                                        });
-                                      }}
-                                      className="form-input"
-                                      placeholder="Weight %"
-                                    />
-                                    <span>%</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="empty-state">No questions added yet</p>
-                        )}
-                      </div>
-
-                      <div className="add-question-form">
-                        <h3>Add New Question</h3>
-                        <div className="form-group">
-                          <input
-                            type="text"
-                            placeholder="Enter question text..."
-                            value={currentQuestion}
-                            onChange={(e) => setCurrentQuestion(e.target.value)}
-                            className="form-input"
-                          />
-                        </div>
-                        <button
-                          onClick={() => {
-                            if (!currentQuestion.trim()) {
-                              showToast('Please enter a question');
-                              return;
-                            }
-                            setQuestions([...questions, { text: currentQuestion }]);
-                            setCurrentQuestion('');
-                          }}
-                          className="primary-btn"
-                        >
-                          ➕ Add Question
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <h2>Rubrics - Criteria Setup</h2>
-                      <p className="help-text">Create rubric criteria and assign POs with weights (must total 100% per PO)</p>
-                      
-                      <div className="rubrics-list">
-                        {rubrics.length > 0 ? (
-                          rubrics.map((r, idx) => (
-                            <div key={idx} className="rubric-item portal-card">
-                              <div className="rubric-header">
-                                <h4>{r.name}</h4>
-                                <button
-                                  onClick={() => setRubrics(rubrics.filter((_, i) => i !== idx))}
-                                  className="delete-btn"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                              <div className="rubric-levels">
-                                {['Excellent', 'Good', 'Fair', 'Poor'].map(level => (
-                                  <div key={level} className="level-row">
-                                    <label>{level}:</label>
-                                    <input
-                                      type="text"
-                                      placeholder={`${level} description...`}
-                                      defaultValue={r.levels?.[level] || ''}
-                                      onChange={(e) => {
-                                        const updated = [...rubrics];
-                                        updated[idx].levels = { ...r.levels, [level]: e.target.value };
-                                        setRubrics(updated);
-                                      }}
-                                      className="form-input"
-                                    />
-                                  </div>
-                                ))}
-                              </div>
-                              <div className="rubric-pos">
-                                {selectedPOs.map(poId => (
-                                  <div key={poId} className="po-weight-input">
-                                    <label>PO-{poId} Weight:</label>
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      max="100"
-                                      value={r.poWeights?.[poId] || 0}
-                                      onChange={(e) => {
-                                        const updated = [...rubrics];
-                                        updated[idx].poWeights = { ...r.poWeights, [poId]: parseInt(e.target.value) || 0 };
-                                        setRubrics(updated);
-                                      }}
-                                      className="form-input"
-                                      placeholder="Weight %"
-                                    />
-                                    <span>%</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="empty-state">No rubrics added yet</p>
-                        )}
-                      </div>
-
-                      <div className="add-rubric-form">
-                        <h3>Add New Rubric Criteria</h3>
-                        <div className="form-group">
-                          <input
-                            type="text"
-                            placeholder="Enter criteria name (e.g., Problem Solving)..."
-                            value={rubricName}
-                            onChange={(e) => setRubricName(e.target.value)}
-                            className="form-input"
-                          />
-                        </div>
-                        <button
-                          onClick={() => {
-                            if (!rubricName.trim()) {
-                              showToast('Please enter a criteria name');
-                              return;
-                            }
-                            setRubrics([...rubrics, { name: rubricName, levels: {}, poWeights: {} }]);
-                            setRubricName('');
-                          }}
-                          className="primary-btn"
-                        >
-                          ➕ Add Criteria
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {!isWeightValid && (
-                    <div className="weight-validation-error">
-                      <div className="error-icon">⚠️</div>
-                      <div className="error-content">
-                        <h4>Weight Validation Error</h4>
-                        <p>Each PO must total exactly 100%. Current weights:</p>
-                        <div className="weight-details">
-                          {getWeightErrors().map((error, idx) => (
-                            <div key={idx} className="weight-error-item">{error}</div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="form-buttons">
-                    <button
-                      onClick={() => setAssessmentStep(2)}
-                      className="outline-btn"
-                    >
-                      ← Back
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (!isWeightValid) {
-                          const errors = getWeightErrors();
-                          showToast(`Weights must total 100% per PO. Issues: ${errors.join(', ')}`);
-                          return;
-                        }
-
-                        if (gradingMethod === 'finalExam' && questions.length === 0) {
-                          showToast('Please add at least one question');
-                          return;
-                        }
-
-                        if (gradingMethod === 'rubrics' && rubrics.length === 0) {
-                          showToast('Please add at least one rubric criteria');
-                          return;
-                        }
-
-                        // Save assessment
-                        const updatedAssessments = {
-                          ...courseAssessments,
-                          [selectedCourseForAssessment]: {
-                            pos: selectedPOs,
-                            gradingMethod: gradingMethod,
-                            questions: gradingMethod === 'finalExam' ? questions : [],
-                            questionPOs: gradingMethod === 'finalExam' ? questionPOs : {},
-                            rubrics: gradingMethod === 'rubrics' ? rubrics : [],
-                            savedAt: new Date().toISOString()
-                          }
-                        };
-                        setCourseAssessments(updatedAssessments);
-                        localStorage.setItem('faculty_assessments', JSON.stringify(updatedAssessments));
-                        showToast('Assessment setup saved successfully!');
-                        setActiveTab('viewAssessments');
-                      }}
-                      className="primary-btn success-btn"
-                      disabled={!isWeightValid}
-                    >
-                      ✓ Save Assessment
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+      {assessmentStep === 1 && (
+        <div className="assessment-form">
+          <h2>Select a Course</h2>
+          <div className="form-group">
+            <label>Choose Course</label>
+            <select
+              value={selectedCourseForAssessment}
+              onChange={(e) => {
+                const courseId = e.target.value;
+                setSelectedCourseForAssessment(courseId);
+                if (courseId && courseAssessments[courseId]) {
+                  const assessment = courseAssessments[courseId];
+                  setSelectedPOs(assessment.pos || []);
+                  setGradingMethod(assessment.gradingMethod || '');
+                } else {
+                  setSelectedPOs([]);
+                  setGradingMethod('');
+                }
+              }}
+              className="form-input"
+            >
+              <option value="">Choose a course...</option>
+              {facultyCourses.map(fc => (
+                <option key={fc._id} value={fc._id}>
+                  {fc.course?.code} {fc.course?.course} — {fc.school_year} {fc.semester} Sem
+                </option>
+              ))}
+            </select>
           </div>
-        )}
 
-        {activeTab === 'viewAssessments' && (
-          <div style={{ animation: 'fadeIn 0.3s ease' }}>
-            <div className="pc-header" style={{ marginBottom: '20px' }}>
-              <div>
-                <h1 style={{ fontSize: '2.2rem', marginBottom: '5px' }}>Saved Assessments</h1>
-                <p style={{ color: 'var(--text-sub)' }}>View and manage your completed assessment configurations</p>
-              </div>
+          {facultyCourses.length === 0 && (
+            <div className="empty-state">
+              <p>No courses available. Create courses first from the Manage Courses tab.</p>
             </div>
+          )}
 
-            <div className="assessment-container">
-              {Object.keys(courseAssessments).length > 0 ? (
-                <div className="assessments-grid">
-                  {Object.entries(courseAssessments).map(([courseId, assessment]) => {
-                    const course = courses.find(c => c.id === courseId);
-                    if (!course) return null;
-
-                    return (
-                      <div key={courseId} className="assessment-card portal-card">
-                        <div className="assessment-card-header">
-                          <div className="assessment-course-info">
-                            <h3>{course.courseName}</h3>
-                            <p className="method-badge">
-                              {assessment.gradingMethod === 'finalExam' ? '📝 Final Exam' : '📊 Rubrics'}
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => {
-                              const updated = { ...courseAssessments };
-                              delete updated[courseId];
-                              setCourseAssessments(updated);
-                              localStorage.setItem('faculty_assessments', JSON.stringify(updated));
-                              showToast('Assessment deleted');
-                            }}
-                            className="delete-btn"
-                            title="Delete assessment"
-                          >
-                            🗑️
-                          </button>
-                        </div>
-
-                        <div className="assessment-details">
-                          <div className="detail-section">
-                            <h4>Program Outcomes</h4>
-                            <div className="pos-display">
-                              {assessment.pos.map(po => (
-                                <span key={po} className="po-tag">PO-{po}</span>
-                              ))}
-                            </div>
-                          </div>
-
-                          {assessment.gradingMethod === 'finalExam' ? (
-                            <div className="detail-section">
-                              <h4>Questions ({assessment.questions.length})</h4>
-                              <div className="questions-summary">
-                                {assessment.questions.slice(0, 2).map((q, idx) => (
-                                  <div key={idx} className="question-summary">
-                                    <span className="q-num">Q{idx + 1}:</span>
-                                    <span className="q-text">{q.text}</span>
-                                  </div>
-                                ))}
-                                {assessment.questions.length > 2 && (
-                                  <div className="more-questions">+{assessment.questions.length - 2} more questions</div>
-                                )}
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="detail-section">
-                              <h4>Rubric Criteria ({assessment.rubrics.length})</h4>
-                              <div className="rubrics-summary">
-                                {assessment.rubrics.slice(0, 2).map((r, idx) => (
-                                  <div key={idx} className="rubric-summary">
-                                    {r.name}
-                                  </div>
-                                ))}
-                                {assessment.rubrics.length > 2 && (
-                                  <div className="more-rubrics">+{assessment.rubrics.length - 2} more criteria</div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="detail-section">
-                            <h4>PO Weight Distribution</h4>
-                            <div className="weights-display">
-                              {assessment.pos.map(po => {
-                                let total = 0;
-                                if (assessment.gradingMethod === 'finalExam') {
-                                  assessment.questions.forEach((q, idx) => {
-                                    total += (assessment.questionPOs[`${idx}-${po}`] || 0);
-                                  });
-                                } else {
-                                  assessment.rubrics.forEach(r => {
-                                    total += (r.poWeights?.[po] || 0);
-                                  });
-                                }
-                                return (
-                                  <div key={po} className="weight-row">
-                                    <span className="po-label">PO-{po}:</span>
-                                    <div className="weight-bar">
-                                      <div className="weight-fill" style={{ width: `${total}%` }}></div>
-                                    </div>
-                                    <span className="weight-value">{total}%</span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-
-                          <div className="assessment-actions">
-                            <button
-                              onClick={() => {
-                                setSelectedCourseForAssessment(courseId);
-                                const existing = courseAssessments[courseId];
-                                setSelectedPOs(existing.pos);
-                                setGradingMethod(existing.gradingMethod);
-                                if (existing.gradingMethod === 'finalExam') {
-                                  setQuestions(existing.questions);
-                                  setQuestionPOs(existing.questionPOs);
-                                } else {
-                                  setRubrics(existing.rubrics);
-                                }
-                                setAssessmentStep(3);
-                                setActiveTab('assessment');
-                              }}
-                              className="edit-btn"
-                            >
-                              ✏️ Edit
-                            </button>
-                          </div>
-                        </div>
-
-                        {assessment.savedAt && (
-                          <div className="assessment-meta">
-                            Last updated: {new Date(assessment.savedAt).toLocaleDateString()}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="empty-state">
-                  <div className="assessment-empty-card">
-                    <div className="assessment-empty-icon">📝</div>
-                    <div className="assessment-empty-title">No Assessments Yet</div>
-                    <div className="assessment-empty-sub">Get started by setting up your first assessment for your course.<br/>Assessments help track student outcomes and progress!</div>
-                    <button
-                      onClick={() => setActiveTab('assessment')}
-                      className="primary-btn assessment-setup-btn"
-                    >
-                      <span className="assessment-btn-icon">➕</span> Start Assessment Setup
-                    </button>
-                  </div>
-                </div>
-              )}
+          {selectedCourseForAssessment && (
+            <div className="form-buttons">
+              <button
+                onClick={() => setAssessmentStep(2)}
+                className="primary-btn"
+              >
+                Next: Program Outcomes →
+              </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+      )}
 
-        {activeTab === 'grading' && (
-          <div style={{ animation: 'fadeIn 0.3s ease' }}>
-            <div className="pc-header" style={{ marginBottom: '20px' }}>
-              <div>
-                <h1 style={{ fontSize: '2.2rem', marginBottom: '5px' }}>Grade Students</h1>
-                <p style={{ color: 'var(--text-sub)' }}>Evaluate student performance based on assessments</p>
-              </div>
-            </div>
+      {assessmentStep === 2 && selectedCourseForAssessment && (
+        <div className="assessment-form">
+          <h2>Program Outcomes & Grading Method</h2>
 
-            {gradingView === 'list' ? (
-              <div className="grading-selector">
-                <div className="selector-group">
-                  <label>Select Course</label>
-                  <select
-                    value={selectedCourseForGrading}
+          <div className="form-group">
+            <label>Select Program Outcomes (POs)</label>
+            <p className="help-text">Select one or more POs that this course covers:</p>
+            <div className="po-grid">
+              {PO_LIST.map(po => (
+                <label key={po.id} className="po-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={selectedPOs.includes(po.id)}
                     onChange={(e) => {
-                      setSelectedCourseForGrading(e.target.value);
-                      setSelectedBlockForGrading('');
-                      setSelectedStudentForGrading('');
+                      if (e.target.checked) {
+                        setSelectedPOs([...selectedPOs, po.id]);
+                      } else {
+                        setSelectedPOs(selectedPOs.filter(id => id !== po.id));
+                      }
                     }}
+                  />
+                  <span className="po-label">
+                    <strong>PO-{po.id}</strong>: {po.name}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Grading Method</label>
+            <p className="help-text">Choose how you will assess student learning:</p>
+            <div className="method-options">
+              <button
+                className={`method-option ${gradingMethod === 'finalExam' ? 'selected' : ''}`}
+                onClick={() => setGradingMethod('finalExam')}
+              >
+                <div className="method-icon">📝</div>
+                <div className="method-text">
+                  <h3>Final Exam</h3>
+                  <p>Upload questions and map to POs</p>
+                </div>
+              </button>
+              <button
+                className={`method-option ${gradingMethod === 'rubrics' ? 'selected' : ''}`}
+                onClick={() => setGradingMethod('rubrics')}
+              >
+                <div className="method-icon">📊</div>
+                <div className="method-text">
+                  <h3>Rubrics</h3>
+                  <p>Create criteria and assign POs</p>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <div className="form-buttons">
+            <button onClick={() => setAssessmentStep(1)} className="outline-btn">
+              ← Back
+            </button>
+            <button
+              onClick={() => {
+                if (selectedPOs.length === 0) {
+                  showToast('Please select at least one PO');
+                  return;
+                }
+                if (!gradingMethod) {
+                  showToast('Please select a grading method');
+                  return;
+                }
+                setAssessmentStep(3);
+              }}
+              className="primary-btn"
+            >
+              Next: Setup Assessment →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {assessmentStep === 3 && selectedCourseForAssessment && (
+        <div className="assessment-form">
+          {gradingMethod === 'finalExam' ? (
+            <div>
+              <h2>Final Exam - Question Setup</h2>
+              <p className="help-text">Add questions and assign POs with weights (must total 100% per question)</p>
+
+              <div className="questions-list">
+                {questions.length > 0 ? (
+                  questions.map((q, idx) => (
+                    <div key={idx} className="question-item portal-card">
+                      <div className="question-header">
+                        <h4>Q{idx + 1}: {q.text}</h4>
+                        <button
+                          onClick={() => setQuestions(questions.filter((_, i) => i !== idx))}
+                          className="delete-btn"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <div className="question-pos">
+                        {selectedPOs.map(poId => (
+                          <div key={poId} className="po-weight-input">
+                            <label>PO-{poId} Weight:</label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={questionPOs[`${idx}-${poId}`] || 0}
+                              onChange={(e) => {
+                                setQuestionPOs({
+                                  ...questionPOs,
+                                  [`${idx}-${poId}`]: parseInt(e.target.value) || 0
+                                });
+                              }}
+                              className="form-input"
+                              placeholder="Weight %"
+                            />
+                            <span>%</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="empty-state">No questions added yet</p>
+                )}
+              </div>
+
+              <div className="add-question-form">
+                <h3>Add New Question</h3>
+                <div className="form-group">
+                  <input
+                    type="text"
+                    placeholder="Enter question text..."
+                    value={currentQuestion}
+                    onChange={(e) => setCurrentQuestion(e.target.value)}
                     className="form-input"
-                  >
-                    <option value="">Choose a course...</option>
-                    {courses.filter(c => courseAssessments[c.id]).map(c => (
-                      <option key={c.id} value={c.id}>{c.courseName}</option>
-                    ))}
-                  </select>
-                  {courses.filter(c => courseAssessments[c.id]).length === 0 && (
-                    <p className="help-text">No courses with assessments available. Create assessments first.</p>
+                  />
+                </div>
+                <button
+                  onClick={() => {
+                    if (!currentQuestion.trim()) {
+                      showToast('Please enter a question');
+                      return;
+                    }
+                    setQuestions([...questions, { text: currentQuestion }]);
+                    setCurrentQuestion('');
+                  }}
+                  className="primary-btn"
+                >
+                  ➕ Add Question
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <h2>Rubrics - Criteria Setup</h2>
+              <p className="help-text">Create rubric criteria and assign POs with weights (must total 100% per criteria)</p>
+
+              <div className="rubrics-list">
+                {rubrics.length > 0 ? (
+                  rubrics.map((r, idx) => (
+                    <div key={idx} className="rubric-item portal-card">
+                      <div className="rubric-header">
+                        <h4>{r.name}</h4>
+                        <button
+                          onClick={() => setRubrics(rubrics.filter((_, i) => i !== idx))}
+                          className="delete-btn"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <div className="rubric-levels">
+                        {['Excellent', 'Good', 'Fair', 'Poor'].map(level => (
+                          <div key={level} className="level-row">
+                            <label>{level}:</label>
+                            <input
+                              type="text"
+                              placeholder={`${level} description...`}
+                              defaultValue={r.levels?.[level] || ''}
+                              onChange={(e) => {
+                                const updated = [...rubrics];
+                                updated[idx].levels = { ...r.levels, [level]: e.target.value };
+                                setRubrics(updated);
+                              }}
+                              className="form-input"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <div className="rubric-pos">
+                        {selectedPOs.map(poId => (
+                          <div key={poId} className="po-weight-input">
+                            <label>PO-{poId} Weight:</label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={r.poWeights?.[poId] || 0}
+                              onChange={(e) => {
+                                const updated = [...rubrics];
+                                updated[idx].poWeights = { ...r.poWeights, [poId]: parseInt(e.target.value) || 0 };
+                                setRubrics(updated);
+                              }}
+                              className="form-input"
+                              placeholder="Weight %"
+                            />
+                            <span>%</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="empty-state">No rubrics added yet</p>
+                )}
+              </div>
+
+              <div className="add-rubric-form">
+                <h3>Add New Rubric Criteria</h3>
+                <div className="form-group">
+                  <input
+                    type="text"
+                    placeholder="Enter criteria name (e.g., Problem Solving)..."
+                    value={rubricName}
+                    onChange={(e) => setRubricName(e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+                <button
+                  onClick={() => {
+                    if (!rubricName.trim()) {
+                      showToast('Please enter a criteria name');
+                      return;
+                    }
+                    setRubrics([...rubrics, { name: rubricName, levels: {}, poWeights: {} }]);
+                    setRubricName('');
+                  }}
+                  className="primary-btn"
+                >
+                  ➕ Add Criteria
+                </button>
+              </div>
+            </div>
+          )}
+
+          {!isWeightValid && (
+            <div className="weight-validation-error">
+              <div className="error-icon">⚠️</div>
+              <div className="error-content">
+                <h4>Weight Validation Error</h4>
+                <p>Each PO must total exactly 100%. Current weights:</p>
+                <div className="weight-details">
+                  {getWeightErrors().map((error, idx) => (
+                    <div key={idx} className="weight-error-item">{error}</div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="form-buttons">
+            <button onClick={() => setAssessmentStep(2)} className="outline-btn">
+              ← Back
+            </button>
+            <button
+              onClick={handleUploadAssessment}
+              className="primary-btn success-btn"
+              disabled={!isWeightValid}
+            >
+              ✓ Save Assessment
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+)}
+
+{activeTab === 'viewAssessments' && (
+  <div style={{ animation: 'fadeIn 0.3s ease' }}>
+    <div className="pc-header" style={{ marginBottom: '20px' }}>
+      <div>
+        <h1 style={{ fontSize: '2.2rem', marginBottom: '5px' }}>
+          Saved Assessments
+        </h1>
+        <p style={{ color: 'var(--text-sub)' }}>
+          View and manage your completed assessment configurations
+        </p>
+      </div>
+    </div>
+
+    <div className="assessment-container">
+      {assessments.length > 0 ? (
+        <div className="assessments-grid">
+{assessments.map((assessment) => {
+
+  const targetId = String(assessment.faculty_course_id);
+
+  const match = ALL_COURSES.find(
+    (c) => String(c._id) === targetId
+  );
+
+  // DEBUG (keep for now)
+  console.group("🧠 Assessment Debug");
+  console.log("Assessment ID:", assessment._id);
+  console.log("faculty_course_id:", targetId);
+  console.log("Match found?:", !!match);
+  console.log(
+    "Matched course:",
+    match
+      ? {
+          id: match._id,
+          code: match.code,
+          name: match.course
+        }
+      : "❌ NOT FOUND IN ALL_COURSES"
+  );
+  console.groupEnd();
+
+  const pos = Object.keys(assessment.program_outcomes || {});
+
+  return (
+    <div
+      key={assessment._id}
+      className="assessment-card portal-card"
+    >
+
+      {/* HEADER */}
+      <div className="assessment-card-header">
+
+        <div className="assessment-course-info">
+
+          <h3>
+            {assessment.course
+              ? `${assessment.course.code} - ${assessment.course.course}`
+              : 'Unknown Course'}
+          </h3>
+
+          <p className="method-badge">
+            {assessment.type === 'final_exam'
+              ? '📝 Final Exam'
+              : '📊 Rubrics'}
+          </p>
+
+        </div>
+
+        <button
+          onClick={async () => {
+            const confirmed = window.confirm(
+              'Are you sure you want to delete this assessment?'
+            );
+
+            if (!confirmed) return;
+
+            try {
+              await deleteAssessment(assessment._id);
+
+              setAssessments(prev =>
+                prev.filter(a => a._id !== assessment._id)
+              );
+
+              showToast('Assessment deleted');
+
+            } catch (e) {
+              showToast(e.message);
+            }
+          }}
+          className="delete-btn"
+          title="Delete assessment"
+        >
+          🗑️
+        </button>
+
+      </div>
+
+                {/* DETAILS */}
+                <div className="assessment-details">
+
+                  <div className="detail-section">
+                    <h4>Program Outcomes</h4>
+
+                    <div className="pos-display">
+                      {pos.map(po => (
+                        <span key={po} className="po-tag">
+                          PO-{po}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* QUESTIONS / RUBRICS */}
+                  {assessment.type === 'final_exam' ? (
+                    <div className="detail-section">
+
+                      <h4>
+                        Questions ({assessment.questions?.length || 0})
+                      </h4>
+
+                      <div className="questions-summary">
+
+                        {assessment.questions
+                          ?.slice(0, 2)
+                          .map((q, idx) => (
+                            <div
+                              key={idx}
+                              className="question-summary"
+                            >
+                              <span className="q-num">
+                                Q{idx + 1}:
+                              </span>
+                              <span className="q-text">
+                                {q.question}
+                              </span>
+                            </div>
+                          ))}
+
+                        {(assessment.questions?.length || 0) > 2 && (
+                          <div className="more-questions">
+                            +{assessment.questions.length - 2} more questions
+                          </div>
+                        )}
+
+                      </div>
+                    </div>
+
+                  ) : (
+                    <div className="detail-section">
+
+                      <h4>
+                        Rubric Criteria ({assessment.rubrics?.length || 0})
+                      </h4>
+
+                      <div className="rubrics-summary">
+
+                        {assessment.rubrics
+                          ?.slice(0, 2)
+                          .map((r, idx) => (
+                            <div key={idx} className="rubric-summary">
+                              {r.criteria}
+                            </div>
+                          ))}
+
+                        {(assessment.rubrics?.length || 0) > 2 && (
+                          <div className="more-rubrics">
+                            +{assessment.rubrics.length - 2} more criteria
+                          </div>
+                        )}
+
+                      </div>
+                    </div>
                   )}
+
+                  {/* PO WEIGHTS */}
+                  <div className="detail-section">
+
+                    <h4>PO Weight Distribution</h4>
+
+                    <div className="weights-display">
+
+                      {pos.map(po => {
+
+                        let total = 0;
+
+                        if (assessment.type === 'final_exam') {
+                          assessment.questions?.forEach(q => {
+                            total += q.program_outcomes?.[po] || 0;
+                          });
+                        } else {
+                          assessment.rubrics?.forEach(r => {
+                            total += r.program_outcomes?.[po] || 0;
+                          });
+                        }
+
+                        return (
+                          <div key={po} className="weight-row">
+
+                            <span className="po-label">
+                              PO-{po}:
+                            </span>
+
+                            <div className="weight-bar">
+                              <div
+                                className="weight-fill"
+                                style={{
+                                  width: `${Math.min(total, 100)}%`
+                                }}
+                              />
+                            </div>
+
+                            <span className="weight-value">
+                              {total}%
+                            </span>
+
+                          </div>
+                        );
+                      })}
+
+                    </div>
+                  </div>
+
+                  {/* EDIT */}
+                  <div className="assessment-actions">
+
+                    <button
+                      onClick={() => {
+                        setSelectedCourseForAssessment(
+                          assessment.faculty_course_id
+                        );
+
+                        setSelectedPOs(pos);
+
+                        setGradingMethod(
+                          assessment.type === 'final_exam'
+                            ? 'finalExam'
+                            : 'rubrics'
+                        );
+
+                        if (assessment.type === 'final_exam') {
+                          setQuestions(
+                            assessment.questions?.map(q => ({
+                              text: q.question
+                            })) || []
+                          );
+
+                          const rebuiltQuestionPOs = {};
+
+                          assessment.questions?.forEach((q, idx) => {
+                            Object.entries(
+                              q.program_outcomes || {}
+                            ).forEach(([po, weight]) => {
+                              rebuiltQuestionPOs[
+                                `${idx}-${po}`
+                              ] = weight;
+                            });
+                          });
+
+                          setQuestionPOs(rebuiltQuestionPOs);
+
+                        } else {
+                          setRubrics(
+                            assessment.rubrics?.map(r => ({
+                              name: r.criteria,
+                              poWeights: r.program_outcomes,
+                              levels: {
+                                Excellent: r.levels?.excellent || '',
+                                Good: r.levels?.good || '',
+                                Fair: r.levels?.fair || '',
+                                Poor: r.levels?.poor || '',
+                              }
+                            })) || []
+                          );
+                        }
+
+                        setAssessmentStep(3);
+                        setActiveTab('assessment');
+                      }}
+                      className="edit-btn"
+                    >
+                      ✏️ Edit
+                    </button>
+
+                  </div>
                 </div>
 
-                {selectedCourseForGrading && (
-                  <div className="selector-group">
-                    <label>Select Block</label>
-                    <select
-                      value={selectedBlockForGrading}
-                      onChange={(e) => {
-                        setSelectedBlockForGrading(e.target.value);
-                        setSelectedStudentForGrading('');
-                      }}
-                      className="form-input"
-                    >
-                      <option value="">Choose a block...</option>
-                      {courses.find(c => c.id === selectedCourseForGrading)?.blocks.map((b, idx) => (
-                        <option key={idx} value={b.name}>{b.name}</option>
-                      ))}
-                    </select>
+                {/* META */}
+                {assessment.createdAt && (
+                  <div className="assessment-meta">
+                    Last updated:{' '}
+                    {new Date(
+                      assessment.updatedAt || assessment.createdAt
+                    ).toLocaleDateString()}
                   </div>
                 )}
+
+              </div>
+            );
+          })}
+        </div>
+
+      ) : (
+        <div className="empty-state">
+          <div className="assessment-empty-card">
+
+            <div className="assessment-empty-icon">
+              📝
+            </div>
+
+            <div className="assessment-empty-title">
+              No Assessments Yet
+            </div>
+
+            <div className="assessment-empty-sub">
+              Get started by setting up your first assessment
+              for your course.
+              <br />
+              Assessments help track student outcomes and progress!
+            </div>
+
+            <button
+              onClick={() => setActiveTab('assessment')}
+              className="primary-btn assessment-setup-btn"
+            >
+              <span className="assessment-btn-icon">➕</span>
+              Start Assessment Setup
+            </button>
+
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+)}
+
+{activeTab === 'grading' && (
+  <div style={{ animation: 'fadeIn 0.3s ease' }}>
+    <div className="pc-header" style={{ marginBottom: '20px' }}>
+      <div>
+        <h1 style={{ fontSize: '2.2rem', marginBottom: '5px' }}>
+          Grade Students
+        </h1>
+        <p style={{ color: 'var(--text-sub)' }}>
+          Evaluate student performance based on assessments
+        </p>
+      </div>
+    </div>
+
+    {gradingView === 'list' ? (
+      <div className="grading-selector">
+
+        {/* ─────────────────────────────
+            COURSE SELECTOR (FIXED)
+        ───────────────────────────── */}
+        <div className="selector-group">
+          <label>Select Course</label>
+
+          <select
+            value={selectedCourseForGrading}
+            onChange={(e) => {
+              setSelectedCourseForGrading(e.target.value);
+              setSelectedBlockForGrading('');
+              setSelectedStudentForGrading('');
+            }}
+            className="form-input"
+          >
+            <option value="">Choose a course...</option>
+
+            {facultyCourses
+              ?.filter(fc =>
+                assessments.some(a =>
+                  a.faculty_course_id?.toString() === fc._id?.toString()
+                )
+              )
+              .map(fc => {
+                const course = fc.course || {};
+                return (
+                  <option key={fc._id} value={fc._id}>
+                    {course.code} - {course.course}
+                  </option>
+                );
+              })}
+          </select>
+
+          {facultyCourses?.filter(fc =>
+            assessments.some(a =>
+              a.faculty_course_id?.toString() === fc._id?.toString()
+            )
+          ).length === 0 && (
+            <p className="help-text">
+              No courses with assessments available. Create assessments first.
+            </p>
+          )}
+        </div>
+
+        {/* ─────────────────────────────
+            BLOCK SELECTOR (FIXED)
+        ───────────────────────────── */}
+        {selectedCourseForGrading && (
+          <div className="selector-group">
+            <label>Select Block</label>
+
+            <select
+              value={selectedBlockForGrading}
+              onChange={(e) => {
+                setSelectedBlockForGrading(e.target.value);
+                setSelectedStudentForGrading('');
+              }}
+              className="form-input"
+            >
+              <option value="">Choose a block...</option>
+
+              {facultyCourses
+                ?.find(fc => fc._id === selectedCourseForGrading)
+                ?.blocks?.map((b) => (
+                  <option key={b._id} value={b.name}>
+                    {b.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+        )}
+
 
                 {selectedCourseForGrading && selectedBlockForGrading && (
                   <div className="students-grading-list">
                     <h3>Students in {selectedBlockForGrading}</h3>
                     <div className="student-list-grading">
-                      {courses
-                        .find(c => c.id === selectedCourseForGrading)
-                        ?.blocks.find(b => b.name === selectedBlockForGrading)
-                        ?.students.map(studentId => {
-                          const student = masterlist.find(s => s.id === studentId);
-                          if (!student) return null;
+  {facultyCourses
+    ?.find(fc => fc._id === selectedCourseForGrading)
+    ?.blocks
+    ?.find(b => b.name === selectedBlockForGrading)
+    ?.students
+    ?.map(studentId => {
 
-                          const assessment = courseAssessments[selectedCourseForGrading];
-                          const grade = calculateStudentGrade(studentId, selectedCourseForGrading, assessment);
-                          const gradeNumber = grade ? Math.round(grade) : null;
-                          const gradeColor = gradeNumber ? (gradeNumber >= 75 ? '#10b981' : gradeNumber >= 60 ? '#f59e0b' : '#ef4444') : '#94a3b8';
+      const student = masterlist.find(
+        s => s._id === studentId || s.id === studentId
+      );
 
-                          return (
-                            <div
-                              key={studentId}
-                              className="student-grading-item"
-                              onClick={() => {
-                                setSelectedStudentForGrading(studentId);
-                                const gradeKey = `${selectedCourseForGrading}_${studentId}`;
-                                if (studentGrades[gradeKey]) {
-                                  setQuestionScores(studentGrades[gradeKey].scores || {});
-                                  setRubricScores(studentGrades[gradeKey].scores || {});
-                                } else {
-                                  setQuestionScores({});
-                                  setRubricScores({});
-                                }
-                                setGradingView('grade');
-                              }}
-                            >
-                              <div className="student-grading-info">
-                                <h4>{student.name}</h4>
-                                <p>{student.id}</p>
-                              </div>
-                              <div className="student-grade-display" style={{ borderColor: gradeColor }}>
-                                {gradeNumber !== null ? (
-                                  <>
-                                    <div className="grade-circle" style={{ background: gradeColor }}>
-                                      {gradeNumber}
-                                    </div>
-                                    <span className="grade-label">Grade</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <div className="grade-circle" style={{ background: gradeColor }}>
-                                      ?
-                                    </div>
-                                    <span className="grade-label">Not Graded</span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })
-                        .filter(Boolean)}
-                    </div>
+      if (!student) return null;
+
+      const assessment = assessments.find(
+        a => a.faculty_course_id?.toString() === selectedCourseForGrading
+      );
+
+      const grade = calculateStudentGrade(
+        studentId,
+        selectedCourseForGrading,
+        assessment
+      );
+
+      const gradeNumber = grade ? Math.round(grade) : null;
+
+      const gradeColor = gradeNumber
+        ? gradeNumber >= 75
+          ? '#10b981'
+          : gradeNumber >= 60
+          ? '#f59e0b'
+          : '#ef4444'
+        : '#94a3b8';
+
+      return (
+        <div
+          key={studentId}
+          className="student-grading-item"
+          onClick={() => {
+            setSelectedStudentForGrading(studentId);
+
+            const gradeKey = `${selectedCourseForGrading}_${studentId}`;
+
+            if (studentGrades[gradeKey]) {
+              setQuestionScores(studentGrades[gradeKey].scores || {});
+              setRubricScores(studentGrades[gradeKey].scores || {});
+            } else {
+              setQuestionScores({});
+              setRubricScores({});
+            }
+
+            setGradingView('grade');
+          }}
+        >
+          <div className="student-grading-info">
+            <h4>{student?.name}</h4>
+            <p>{student?.student_number || student?.id}</p>
+          </div>
+
+          <div
+            className="student-grade-display"
+            style={{ borderColor: gradeColor }}
+          >
+            {gradeNumber !== null ? (
+              <>
+                <div
+                  className="grade-circle"
+                  style={{ background: gradeColor }}
+                >
+                  {gradeNumber}
+                </div>
+                <span className="grade-label">Grade</span>
+              </>
+            ) : (
+              <>
+                <div
+                  className="grade-circle"
+                  style={{ background: gradeColor }}
+                >
+                  ?
+                </div>
+                <span className="grade-label">Not Graded</span>
+              </>
+            )}
+          </div>
+        </div>
+      );
+    })
+    .filter(Boolean)}
+</div>
                   </div>
                 )}
               </div>
@@ -1787,162 +2662,224 @@ export default function FacultyPage() {
                             </div>
                           </div>
 
-                          {assessment.gradingMethod === 'finalExam' ? (
-                            <div className="grading-content">
-                              <h3>Final Exam - Mark Questions</h3>
-                              <p className="grading-subtitle">Check off questions the student answered correctly</p>
-                              <div className="questions-checklist">
-                                {assessment.questions.map((q, idx) => {
-                                  const isCorrect = currentGrade?.scores?.[`q${idx}`] === true;
-                                  return (
-                                    <div key={idx} className="question-checklist-item">
-                                      <div className="question-check-content">
-                                        <button
-                                          className={`question-checkbox ${isCorrect ? 'checked' : ''}`}
-                                          onClick={() => {
-                                            const updatedGrades = { ...studentGrades };
-                                            if (!updatedGrades[gradeKey]) {
-                                              updatedGrades[gradeKey] = { scores: {} };
-                                            }
-                                            updatedGrades[gradeKey].scores[`q${idx}`] = !isCorrect;
-                                            setStudentGrades(updatedGrades);
-                                          }}
-                                        >
-                                          {isCorrect ? '✓' : ''}
-                                        </button>
-                                        <div className="question-text">
-                                          <span className="q-num">Q{idx + 1}</span>
-                                          <span className="q-content">{q.text}</span>
-                                        </div>
-                                      </div>
-                                      <div className="question-status">
-                                        {isCorrect ? (
-                                          <span className="status-correct">✓ Correct</span>
-                                        ) : (
-                                          <span className="status-incorrect">✗ Incorrect</span>
-                                        )}
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                              <div className="exam-summary">
-                                <h4>Answer Summary</h4>
-                                <div className="summary-stats">
-                                  <div className="stat-item correct">
-                                    <span className="stat-value">
-                                      {Object.keys(currentGrade?.scores || {}).filter(k => k.startsWith('q') && currentGrade?.scores?.[k] === true).length}
-                                    </span>
-                                    <span className="stat-label">Correct</span>
-                                  </div>
-                                  <div className="stat-item total">
-                                    <span className="stat-value">{assessment.questions.length}</span>
-                                    <span className="stat-label">Total</span>
-                                  </div>
-                                  <div className="stat-item score">
-                                    <span className="stat-value">
-                                      {Math.round(
-                                        (Object.keys(currentGrade?.scores || {}).filter(k => k.startsWith('q') && currentGrade?.scores?.[k] === true).length / assessment.questions.length) * 100
-                                      )}%
-                                    </span>
-                                    <span className="stat-label">Score</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="grading-content">
-                              <h3>Rubrics Assessment</h3>
-                              <div className="rubrics-grading">
-                                {assessment.rubrics.map((r, idx) => {
-                                  const selectedLevel = currentGrade?.scores?.[`r${idx}`];
-                                  const levelValues = { 'Excellent': 100, 'Good': 85, 'Fair': 70, 'Poor': 50 };
-                                  const currentScore = levelValues[selectedLevel] || 0;
+                         {(() => {
+const assessment =
+  assessments?.find(a =>
+    a.faculty_course_id?.toString() ===
+    selectedCourseForGrading?.toString()
+  ) || null;
 
-                                  return (
-                                    <div key={idx} className="rubric-card">
-                                      <div className="rubric-card-header">
-                                        <h4>{r.name}</h4>
-                                        {selectedLevel && (
-                                          <div className="level-score-badge">
-                                            <span className="score-value">{currentScore}</span>
-                                            <span className="score-label">pts</span>
-                                          </div>
-                                        )}
-                                      </div>
+if (!assessment) {
+  return (
+    <div className="empty-state">
+      <p>No assessment found for this course.</p>
+    </div>
+  );
+}
 
-                                      <div className="level-buttons">
-                                        {['Excellent', 'Good', 'Fair', 'Poor'].map(level => (
-                                          <button
-                                            key={level}
-                                            className={`level-button ${selectedLevel === level ? 'selected' : ''}`}
-                                            onClick={() => {
-                                              const updatedGrades = { ...studentGrades };
-                                              if (!updatedGrades[gradeKey]) {
-                                                updatedGrades[gradeKey] = { scores: {} };
-                                              }
-                                              updatedGrades[gradeKey].scores[`r${idx}`] = level;
-                                              setStudentGrades(updatedGrades);
-                                            }}
-                                          >
-                                            <div className="level-icon">
-                                              {level === 'Excellent' && '⭐'}
-                                              {level === 'Good' && '✓'}
-                                              {level === 'Fair' && '→'}
-                                              {level === 'Poor' && '✗'}
-                                            </div>
-                                            <div className="level-name">{level}</div>
-                                            <div className="level-score">{levelValues[level]}</div>
-                                          </button>
-                                        ))}
-                                      </div>
+  const isFinalExam =
+    assessment.gradingMethod === 'finalExam' ||
+    assessment.type === 'final_exam';
 
-                                      <div className="rubric-description">
-                                        {selectedLevel === 'Excellent' && <p>Exceptional work demonstrating mastery of the criteria</p>}
-                                        {selectedLevel === 'Good' && <p>Solid performance meeting the criteria effectively</p>}
-                                        {selectedLevel === 'Fair' && <p>Adequate performance with some gaps in the criteria</p>}
-                                        {selectedLevel === 'Poor' && <p>Below expectations, needs significant improvement</p>}
-                                        {!selectedLevel && <p className="empty-desc">Select a level above</p>}
-                                      </div>
+  const questions = assessment.questions || [];
+  const rubrics = assessment.rubrics || [];
+  const pos = assessment.pos || [];
 
-                                      <div className="rubric-pos-mapping">
-                                        <span className="pos-label">Weighted to:</span>
-                                        {assessment.pos.map(po => {
-                                          const weight = r.poWeights?.[po] || 0;
-                                          return (
-                                            <div key={po} className="po-mapping-badge">
-                                              <span className="po-tag-small">PO-{po}</span>
-                                              <span className="po-weight-small">{weight}%</span>
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
+  return isFinalExam ? (
+    <div className="grading-content">
+      <h3>Final Exam - Mark Questions</h3>
+      <p className="grading-subtitle">
+        Check off questions the student answered correctly
+      </p>
 
-                          <div className="grading-po-breakdown">
-                            <h3>Program Outcome Scores</h3>
-                            <div className="po-scores">
-                              {assessment.pos.map(po => {
-                                const poScore = getPoScores(selectedStudentForGrading, selectedCourseForGrading, assessment)[po];
-                                return (
-                                  <div key={po} className="po-score-card">
-                                    <div className="po-score-header">
-                                      <span className="po-badge">PO-{po}</span>
-                                    </div>
-                                    <div className="po-score-bar">
-                                      <div className="po-score-fill" style={{ width: `${Math.round(poScore)}%` }}></div>
-                                    </div>
-                                    <div className="po-score-value">{Math.round(poScore)}</div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
+      <div className="questions-checklist">
+        {questions.map((q, idx) => {
+          const isCorrect =
+            currentGrade?.scores?.[`q${idx}`] === true;
+
+          return (
+            <div key={idx} className="question-checklist-item">
+              <div className="question-check-content">
+                <button
+                  className={`question-checkbox ${isCorrect ? 'checked' : ''}`}
+                  onClick={() => {
+                    const updatedGrades = { ...studentGrades };
+
+                    if (!updatedGrades[gradeKey]) {
+                      updatedGrades[gradeKey] = { scores: {} };
+                    }
+
+                    updatedGrades[gradeKey].scores[`q${idx}`] =
+                      !isCorrect;
+
+                    setStudentGrades(updatedGrades);
+                  }}
+                >
+                  {isCorrect ? '✓' : ''}
+                </button>
+
+                <div className="question-text">
+                  <span className="q-num">Q{idx + 1}</span>
+                  <span className="q-content">{q.question}</span>
+                </div>
+              </div>
+
+              <div className="question-status">
+                {isCorrect ? (
+                  <span className="status-correct">✓ Correct</span>
+                ) : (
+                  <span className="status-incorrect">✗ Incorrect</span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  ) : (
+    <div className="grading-content">
+      <h3>Rubrics Assessment</h3>
+
+      <div className="rubrics-grading">
+        {rubrics.map((r, idx) => {
+          const selectedLevel =
+            currentGrade?.scores?.[`r${idx}`];
+
+          const levelValues = {
+            Excellent: 100,
+            Good: 85,
+            Fair: 70,
+            Poor: 50,
+          };
+
+          const currentScore =
+            levelValues[selectedLevel] || 0;
+
+          return (
+            <div key={idx} className="rubric-card">
+              <div className="rubric-card-header">
+                <h4>{r.criteria || r.name}</h4>
+
+                {selectedLevel && (
+                  <div className="level-score-badge">
+                    <span className="score-value">
+                      {currentScore}
+                    </span>
+                    <span className="score-label">pts</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="level-buttons">
+                {['Excellent', 'Good', 'Fair', 'Poor'].map(level => (
+                  <button
+                    key={level}
+                    className={`level-button ${
+                      selectedLevel === level ? 'selected' : ''
+                    }`}
+                    onClick={() => {
+                      const updatedGrades = { ...studentGrades };
+
+                      if (!updatedGrades[gradeKey]) {
+                        updatedGrades[gradeKey] = { scores: {} };
+                      }
+
+                      updatedGrades[gradeKey].scores[`r${idx}`] =
+                        level;
+
+                      setStudentGrades(updatedGrades);
+                    }}
+                  >
+                    <div className="level-name">{level}</div>
+                    <div className="level-score">
+                      {levelValues[level]}
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="rubric-pos-mapping">
+                <span className="pos-label">Weighted to:</span>
+
+                {pos.map(po => {
+                  const weight = r.poWeights?.[po] || 0;
+
+                  return (
+                    <div key={po} className="po-mapping-badge">
+                      <span className="po-tag-small">
+                        PO-{po}
+                      </span>
+                      <span className="po-weight-small">
+                        {weight}%
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+})()}
+
+{(() => {
+  const assessment =
+    assessments?.find(a =>
+      a.faculty_course_id?.toString() ===
+      selectedCourseForGrading?.toString()
+    ) || null;
+
+  if (!assessment) {
+    return (
+      <div className="grading-po-breakdown">
+        <h3>Program Outcome Scores</h3>
+        <p>No assessment available.</p>
+      </div>
+    );
+  }
+
+  const pos = assessment.pos || [];
+
+  return (
+    <div className="grading-po-breakdown">
+      <h3>Program Outcome Scores</h3>
+
+      <div className="po-scores">
+        {pos.map(po => {
+          const poScore =
+            getPoScores(
+              selectedStudentForGrading,
+              selectedCourseForGrading,
+              assessment
+            )?.[po] || 0;
+
+          const safeScore = Math.round(poScore);
+
+          return (
+            <div key={po} className="po-score-card">
+              <div className="po-score-header">
+                <span className="po-badge">PO-{po}</span>
+              </div>
+
+              <div className="po-score-bar">
+                <div
+                  className="po-score-fill"
+                  style={{ width: `${safeScore}%` }}
+                />
+              </div>
+
+              <div className="po-score-value">
+                {safeScore}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+})()}
 
                           <div className="grading-actions">
                             <button
@@ -2123,6 +3060,7 @@ export default function FacultyPage() {
             setSearchTerm('');
             setSelectedBatch('');
             setSortBy('batch-desc');
+            setSelectedStudents({});
           }}>
             <div className="modal-box portal-card modal-large" onClick={e => e.stopPropagation()}>
               <div className="modal-header">
@@ -2132,6 +3070,7 @@ export default function FacultyPage() {
                   setSearchTerm('');
                   setSelectedBatch('');
                   setSortBy('batch-desc');
+                  setSelectedStudents({});
                 }}>✕</button>
               </div>
               
@@ -2142,28 +3081,51 @@ export default function FacultyPage() {
                   onChange={(e) => {
                     setSelectedCourseForStudents(e.target.value);
                     setSelectedBlockForStudents('');
+                    setSelectedStudents({});
                   }}
                   className="form-input"
                 >
                   <option value="">Choose a course...</option>
-                  {courses.filter(c => c.blocks.length > 0).map(c => (
-                    <option key={c.id} value={c.id}>{c.courseName}</option>
-                  ))}
+
+                  {facultyCourses
+                    .filter(fc => fc.blocks?.length > 0)
+                    .map(fc => (
+                      <option key={fc._id} value={fc._id}>
+                        {fc.course?.code} {fc.course?.course} —{' '}
+                        {fc.school_year} {fc.semester} Sem
+                      </option>
+                    ))}
                 </select>
               </div>
 
               {selectedCourseForStudents && (
                 <div className="form-group">
                   <label>Select Block</label>
+                  
                   <select
                     value={selectedBlockForStudents}
-                    onChange={(e) => setSelectedBlockForStudents(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedBlockForStudents(e.target.value);
+                      setSelectedStudents({});
+                    }}
                     className="form-input"
                   >
                     <option value="">Choose a block...</option>
-                    {courses.find(c => c.id === selectedCourseForStudents)?.blocks.map((b, idx) => (
-                      <option key={idx} value={b.name}>{b.name}</option>
-                    ))}
+
+                    {facultyCourses
+                      .find(
+                        fc =>
+                          fc._id?.toString() ===
+                          selectedCourseForStudents?.toString()
+                      )
+                      ?.blocks?.map((block) => (
+                        <option
+                          key={block._id}
+                          value={block._id}
+                        >
+                          {block.name}
+                        </option>
+                      ))}
                   </select>
                 </div>
               )}
@@ -2192,13 +3154,83 @@ export default function FacultyPage() {
 
               <div className="form-group">
                 <label>Search & Select Students</label>
-                <input
-                  type="text"
-                  placeholder="Search by name or ID..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="form-input"
-                />
+                
+                {/* Search Container */}
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    placeholder="Search by name or ID..."
+                    value={searchTerm}
+                    onChange={(e) => handleStudentSearch(e.target.value)}
+                    className="form-input"
+                  />
+
+                  {/* Search Dropdown */}
+                  {searchTerm && searchResults.length > 0 && (
+                    <ul className="search-dropdown-list">
+                      {searchResults.slice(0, 5).map((student) => {
+                        // Use 'id' (the student number) as the key since masterlist might be empty
+                        const studentKey = student.id || student._id;
+                        
+                        return (
+                          <li 
+                            key={studentKey} 
+                            onClick={() => {
+                              // Store BOTH the ID and the student data
+                              setSelectedStudents(prev => ({ 
+                                ...prev, 
+                                [studentKey]: {
+                                  selected: true,
+                                  name: student.name,
+                                  id: student.id,
+                                  _id: student._id
+                                }
+                              }));
+                              setSearchTerm('');
+                              setSearchResults([]);
+                            }}
+                            className="search-dropdown-item"
+                          >
+                            <div className="student-info">
+                              <span className="name">{student.name}</span>
+                              <span className="id"> - {student.id}</span>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+
+                {/* Selected Students Chips */}
+                                <div className="selected-students-chips">
+                  <label>Selected Students</label>
+                  {Object.keys(selectedStudents).filter(id => selectedStudents[id]?.selected).length > 0 ? (
+                    Object.keys(selectedStudents)
+                      .filter(id => selectedStudents[id]?.selected)
+                      .map(studentKey => {
+                        const studentData = selectedStudents[studentKey];
+                        
+                        return (
+                          <div key={studentKey} className="student-chip-selection">
+                            <span>{studentData?.name}</span>
+                            <button 
+                              onClick={() => {
+                                const updated = { ...selectedStudents };
+                                delete updated[studentKey];
+                                setSelectedStudents(updated);
+                              }}
+                              className="chip-remove"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        );
+                      })
+                  ) : (
+                    <p className="no-students-chip">No students selected yet</p>
+                  )}
+                </div>
 
                 {uniqueBatches.length > 0 && (
                   <div className="filter-dropdowns">
@@ -2234,30 +3266,6 @@ export default function FacultyPage() {
                   </div>
                 )}
 
-                {Object.keys(selectedStudents).filter(id => selectedStudents[id]).length > 0 && (
-                  <div className="selected-students-chips">
-                    {Object.keys(selectedStudents).filter(id => selectedStudents[id]).map(studentId => {
-                      const student = masterlist.find(s => s.id === studentId);
-                      return student ? (
-                        <div key={studentId} className="student-chip-selection">
-                          <span>{student.name}</span>
-                          <button 
-                            onClick={() => {
-                              setSelectedStudents(prev => ({
-                                ...prev,
-                                [studentId]: false
-                              }));
-                            }}
-                            className="chip-remove"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ) : null;
-                    })}
-                  </div>
-                )}
-
                 <div className="students-by-batch">
                   {Object.keys(studentsByBatch).length > 0 ? (
                     Object.keys(studentsByBatch).sort().reverse().map(batch => (
@@ -2267,24 +3275,33 @@ export default function FacultyPage() {
                           <span className="batch-count">{studentsByBatch[batch].length} students</span>
                         </div>
                         <div className="students-grid">
-                          {studentsByBatch[batch].map(student => (
-                            <button
-                              key={student.id}
-                              className={`student-card ${selectedStudents[student.id] ? 'selected' : ''}`}
-                              onClick={() => {
-                                setSelectedStudents(prev => ({
-                                  ...prev,
-                                  [student.id]: !prev[student.id]
-                                }));
-                              }}
-                            >
-                              <div className="card-content">
-                                <div className="student-name">{student.name}</div>
-                                <div className="student-id">{student.id}</div>
-                              </div>
-                              <div className="card-check">{selectedStudents[student.id] ? '✓' : ''}</div>
-                            </button>
-                          ))}
+                          {studentsByBatch[batch].map(student => {
+                            const studentKey = student.id || student._id;
+                            const isSelected = selectedStudents[studentKey]?.selected === true;
+                            return (
+                              <button
+                                key={studentKey}
+                                className={`student-card ${isSelected ? 'selected' : ''}`}
+                                onClick={() => {
+                                  setSelectedStudents(prev => ({
+                                    ...prev,
+                                    [studentKey]: {
+                                      selected: !prev[studentKey]?.selected,
+                                      name: student.name,
+                                      id: student.id,
+                                      _id: student._id
+                                    }
+                                  }));
+                                }}
+                              >
+                                <div className="card-content">
+                                  <div className="student-name">{student.name}</div>
+                                  <div className="student-id">{student.id}</div>
+                                </div>
+                                <div className="card-check">{isSelected ? '✓' : ''}</div>
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     ))
@@ -2301,8 +3318,53 @@ export default function FacultyPage() {
                   setSelectedBatch('');
                   setSortBy('batch-desc');
                   setSelectedStudents({});
+                  setSearchResults([]);
                 }} className="outline-btn">Cancel</button>
                 <button onClick={handleAddStudents} className="primary-btn">Add Students</button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {renameBlockModal.open && (
+          <div className="modal-overlay" onClick={() => setRenameBlockModal({ open: false, courseId: null, oldName: '', newName: '' })}>
+            <div className="modal-box portal-card" onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>✏️ Rename Block</h2>
+                <button className="close-btn" onClick={() => setRenameBlockModal({ open: false, courseId: null, oldName: '', newName: '' })}>✕</button>
+              </div>
+
+              <div className="form-group">
+                <label>Current Name</label>
+                <input
+                  type="text"
+                  value={renameBlockModal.oldName}
+                  className="form-input"
+                  disabled
+                />
+              </div>
+
+              <div className="form-group">
+                <label>New Block Name</label>
+                <input
+                  type="text"
+                  value={renameBlockModal.newName}
+                  onChange={(e) => setRenameBlockModal({ ...renameBlockModal, newName: e.target.value })}
+                  className="form-input"
+                  placeholder="e.g. CpE 2A"
+                />
+              </div>
+
+              <div className="modal-buttons">
+                <button
+                  onClick={() => setRenameBlockModal({ open: false, courseId: null, oldName: '', newName: '' })}
+                  className="outline-btn"
+                >
+                  Cancel
+                </button>
+                <button onClick={handleRenameBlock} className="primary-btn">
+                  Rename
+                </button>
               </div>
             </div>
           </div>

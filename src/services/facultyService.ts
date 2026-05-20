@@ -249,7 +249,7 @@ export async function deleteBlock(id: string): Promise<{ message: string }> {
 // BLOCK STUDENTS  →  /api/blocks/block_students
 // ═════════════════════════════════════════════════════════════
 
-const BLOCK_STUDENTS_URL = '/api/blocks/block_students';
+const BLOCK_STUDENTS_URL = '/api/masterlist/blocks/block_students';
 
 /**
  * Fetch all block-student enrollments.

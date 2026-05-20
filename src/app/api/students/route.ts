@@ -11,16 +11,27 @@ export async function GET(req: NextRequest) {
 
         const id = searchParams.get("id");
         const batch = searchParams.get("batch");
+        const search = searchParams.get("search");
 
         const page = parseInt(searchParams.get("page") || "1");
         const limit = parseInt(searchParams.get("limit") || "10");
 
         const filter: any = {};
 
+        // Filter by batch
         if (batch && batch !== "All") {
             filter.batch = batch;
         }
 
+        // 🔥 Search by name (wildcard, case-insensitive)
+        if (search) {
+            filter.name = {
+                $regex: search,
+                $options: "i"
+            };
+        }
+
+        // Fetch single student by ID (kept as-is)
         if (id) {
             const student = await students.findOne({ id });
 
