@@ -417,7 +417,7 @@ export default function FacultyPage() {
 
   const fetchGradesFromDB = async () => {
     try {
-      const facultyAssessments = assessments.filter(a => 
+      const facultyAssessments = assessments.filter(a =>
         String(a.created_by) === String(currentUser?.link?.roleAccount?._id)
       );
       if (facultyAssessments.length === 0) return;
@@ -438,10 +438,10 @@ export default function FacultyPage() {
           const studentAssessmentId = submission._id;
           const studentId = submission.student_id;
 
-          const fc = facultyCourses.find(fc => 
+          const fc = facultyCourses.find(fc =>
             String(fc._id) === String(assessment.faculty_course_id)
           );
-          
+
           if (!fc) continue;
 
           const courseId = fc._id;
@@ -453,22 +453,22 @@ export default function FacultyPage() {
 
           if (grades.length > 0) {
             const grade = grades[0];
-            
+
             let scores = {};
-            
+
             if (isFinalExam && questions.length > 0) {
               const qResults = await getQuestionResults(studentAssessmentId);
-              
+
               questions.forEach((q, idx) => {
                 const result = qResults.results?.find(
                   r => String(r.question?._id) === String(q._id)
                 );
                 scores[`q${idx}`] = result?.is_correct || false;
               });
-              
+
             } else if (!isFinalExam && rubrics.length > 0) {
               const rResults = await getRubricResults(studentAssessmentId);
-              
+
               rubrics.forEach((r, idx) => {
                 const result = rResults.results?.find(
                   rItem => String(rItem.rubric?._id) === String(r._id)
@@ -593,73 +593,73 @@ export default function FacultyPage() {
     }
   };
 
-useEffect(() => {
-  const user = getClientUser();
+  useEffect(() => {
+    const user = getClientUser();
+
+    // ─────────────────────────────────────────────────────────────
+    // FETCH STUDENTS
+    // ─────────────────────────────────────────────────────────────
+
+    getAllStudents()
+      .then((data) => {
+        setMasterlist(data);
+      })
+      .catch((err) => {
+        console.error('getAllStudents error:', err);
+      });
+
+    // ─────────────────────────────────────────────────────────────
+    // FETCH COURSES
+    // ─────────────────────────────────────────────────────────────
+
+    getAllCourses()
+      .then((data) => {
+        const grouped = data.reduce(
+          (acc, course) => {
+            const existing = acc.find(
+              g => g.year === course.year_level
+            );
+
+            if (existing) {
+              existing.courses.push(course);
+            } else {
+              acc.push({
+                year: course.year_level,
+                courses: [course],
+              });
+            }
+
+            return acc;
+          },
+          []
+        );
+
+        setCPE_CURRICULUM(grouped);
+        setALL_COURSES(grouped.flatMap((year) => year.courses));
+      })
+      .catch((err) => {
+        console.error('getAllCourses error:', err);
+      });
+
+    // ─────────────────────────────────────────────────────────────
+    // FETCH FACULTY DATA + ASSESSMENTS + GRADES
+    // ─────────────────────────────────────────────────────────────
+
+    if (currentUser?.link?.roleAccount?._id) {
+      fetchFacultyData();
+    }
+
+  }, [currentUser?.link?.roleAccount?._id]);
 
   // ─────────────────────────────────────────────────────────────
-  // FETCH STUDENTS
+  // ADD RE-FETCH ON TAB CHANGE
   // ─────────────────────────────────────────────────────────────
 
-  getAllStudents()
-    .then((data) => {
-      setMasterlist(data);
-    })
-    .catch((err) => {
-      console.error('getAllStudents error:', err);
-    });
-
-  // ─────────────────────────────────────────────────────────────
-  // FETCH COURSES
-  // ─────────────────────────────────────────────────────────────
-
-  getAllCourses()
-    .then((data) => {
-      const grouped = data.reduce(
-        (acc, course) => {
-          const existing = acc.find(
-            g => g.year === course.year_level
-          );
-
-          if (existing) {
-            existing.courses.push(course);
-          } else {
-            acc.push({
-              year: course.year_level,
-              courses: [course],
-            });
-          }
-
-          return acc;
-        },
-        []
-      );
-
-      setCPE_CURRICULUM(grouped);
-      setALL_COURSES(grouped.flatMap((year) => year.courses));
-    })
-    .catch((err) => {
-      console.error('getAllCourses error:', err);
-    });
-
-  // ─────────────────────────────────────────────────────────────
-  // FETCH FACULTY DATA + ASSESSMENTS + GRADES
-  // ─────────────────────────────────────────────────────────────
-
-  if (currentUser?.link?.roleAccount?._id) {
-    fetchFacultyData();
-  }
-
-}, [currentUser?.link?.roleAccount?._id]);
-
-// ─────────────────────────────────────────────────────────────
-// ADD RE-FETCH ON TAB CHANGE
-// ─────────────────────────────────────────────────────────────
-
-useEffect(() => {
-  if (activeTab === 'grading' && facultyCourses.length > 0 && assessments.length > 0) {
-    fetchGradesFromDB();
-  }
-}, [activeTab, facultyCourses, assessments]);
+  useEffect(() => {
+    if (activeTab === 'grading' && facultyCourses.length > 0 && assessments.length > 0) {
+      fetchGradesFromDB();
+    }
+  }, [activeTab, facultyCourses, assessments]);
 
 
   const handleAddCourse = async () => {
@@ -1254,6 +1254,7 @@ useEffect(() => {
     }
   };
 
+  /*
   const handleUploadAssessment = async () => {
 
     // ─────────────────────────────────────────────────────────────
@@ -1415,7 +1416,7 @@ useEffect(() => {
     // ─────────────────────────────────────────────────────────────
     // STEP 3 — Save
     // ─────────────────────────────────────────────────────────────
-
+    
     try {
 
       const res = await createAssessment({
@@ -1472,234 +1473,477 @@ useEffect(() => {
       showToast(e.message);
     }
   };
+  */
 
+  const handleUploadAssessment = async () => {
 
-const handleSaveGrades = async () => {
-  try {
     // ─────────────────────────────────────────────────────────────
-    // STEP 0: VALIDATION
+    // STEP 1 — All validations first, no API calls yet
     // ─────────────────────────────────────────────────────────────
-    
-    const studentId = selectedStudentForGrading;
-    const courseId = selectedCourseForGrading;
-    
-    const selectedBlockObj = facultyCourses
-      ?.find(fc => String(fc._id) === String(selectedCourseForGrading))
-      ?.blocks?.find(b => b.name === selectedBlockForGrading);
 
-    const blockId = selectedBlockObj?._id;
-
-    console.log('🔍 DEBUG - All IDs:');
-    console.log('  studentId:', studentId);
-    console.log('  courseId:', courseId);
-    console.log('  blockId:', blockId);
-
-    if (!studentId || !courseId || !blockId) {
-      showToast('Missing: student, course, or block');
+    if (!selectedCourseForAssessment) {
+      showToast('Please select a course');
       return;
     }
 
-    const assessment = assessments?.find(
-      a => String(a.faculty_course_id) === String(courseId)
-    );
-
-    if (!assessment) {
-      showToast('No assessment found for this course');
+    if (selectedPOs.length === 0) {
+      showToast('Please select at least one Program Outcome');
       return;
     }
 
-    const isFinalExam = assessment.type === 'final_exam';
-    const questions = assessment.questions || [];
-    const rubrics = assessment.rubrics || [];
+    if (!gradingMethod) {
+      showToast('Please select a grading method');
+      return;
+    }
 
-    console.log('🔍 DEBUG - Assessment:');
-    console.log('  assessment._id:', assessment._id);
-    console.log('  type:', assessment.type);
-    console.log('  questions count:', questions.length);
-    console.log('  rubrics count:', rubrics.length);
+    if (gradingMethod === 'finalExam' && questions.length === 0) {
+      showToast('Please add at least one question');
+      return;
+    }
+
+    if (gradingMethod === 'rubrics' && rubrics.length === 0) {
+      showToast('Please add at least one rubric criteria');
+      return;
+    }
+
+    if (!currentUser?.link?.roleAccount?._id) {
+      showToast('User session is invalid. Please log in again.');
+      return;
+    }
 
     // ─────────────────────────────────────────────────────────────
-    // STEP 1: CHECK/CREATE STUDENT ASSESSMENT
+    // FINAL EXAM VALIDATION
     // ─────────────────────────────────────────────────────────────
-    
 
-    const existingSubmissions = await getAllStudentAssessments({
-      assessment_id: assessment._id,
-      block_id: blockId,
-      student_id: studentId,
-    });
+    if (gradingMethod === 'finalExam') {
+
+      for (let i = 0; i < questions.length; i++) {
+
+        const hasWeight = selectedPOs.some(
+          poId => (questionPOs[`${i}-${poId}`] || 0) > 0
+        );
+
+        if (!hasWeight) {
+          showToast(`Q${i + 1} has no PO weights assigned`);
+          return;
+        }
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // RUBRICS VALIDATION
+    // ─────────────────────────────────────────────────────────────
+
+    if (gradingMethod === 'rubrics') {
+
+      console.log('📤 RUBRICS VALIDATION - rubrics:', rubrics);
+      console.log('📤 RUBRICS VALIDATION - selectedPOs:', selectedPOs);
+
+      for (let i = 0; i < rubrics.length; i++) {
+
+        const r = rubrics[i];
+
+        console.log(`📤 Rubric ${i}:`, r);
+        console.log(`📤 Rubric ${i} name:`, r?.name);
+        console.log(`📤 Rubric ${i} poWeights:`, r?.poWeights);
+
+        if (!r.name?.trim()) {
+          showToast(`Rubric ${i + 1} has no criteria name`);
+          return;
+        }
+
+        const hasWeight = selectedPOs.some(
+          poId => (r.poWeights?.[poId] || 0) > 0
+        );
+
+        console.log(`📤 Rubric ${i} hasWeight:`, hasWeight);
+
+        if (!hasWeight) {
+          showToast(`Rubric "${r.name}" has no PO weights assigned`);
+          return;
+        }
+
+        const hasLevels =
+          r.levels?.Excellent &&
+          r.levels?.Good &&
+          r.levels?.Fair &&
+          r.levels?.Poor;
+
+        console.log(`📤 Rubric ${i} hasLevels:`, hasLevels);
+
+        if (!hasLevels) {
+          showToast(
+            `Rubric "${r.name}" must have all four level descriptions filled in`
+          );
+          return;
+        }
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // STEP 2 — Pre-build all payloads before any API call
+    // ─────────────────────────────────────────────────────────────
+
+    // Distribute PO weights evenly for assessment level
+    const evenWeight = Math.floor(100 / selectedPOs.length);
+    const remainder = 100 - evenWeight * selectedPOs.length;
+
+    const assessmentPOWeights = selectedPOs.reduce((acc, po, idx) => {
+      acc[po] = idx === 0 ? evenWeight + remainder : evenWeight;
+      return acc;
+    }, {});
+
+    console.log('📤 assessmentPOWeights:', assessmentPOWeights);
+
+    // Pre-build question payloads
+    const questionPayloads = gradingMethod === 'finalExam'
+      ? questions.map((q, i) => {
+
+        const pos = {};
+
+        selectedPOs.forEach(poId => {
+          const weight = questionPOs[`${i}-${poId}`] || 0;
+
+          if (weight > 0) {
+            pos[poId] = weight;
+          }
+        });
+
+        return {
+          question: q.text,
+          program_outcomes: pos,
+          order: i + 1,
+        };
+      })
+      : [];
+
+    // Pre-build rubric payloads
+    const rubricPayloads = gradingMethod === 'rubrics'
+      ? rubrics.map((r, i) => {
+
+        const pos = {};
+
+        selectedPOs.forEach(poId => {
+          const weight = r.poWeights?.[poId] || 0;
+
+          if (weight > 0) {
+            pos[poId] = weight;
+          }
+        });
+
+        const payload = {
+          criteria: r.name,
+          program_outcomes: pos,
+          levels: {
+            excellent: r.levels?.Excellent || '',
+            good: r.levels?.Good || '',
+            fair: r.levels?.Fair || '',
+            poor: r.levels?.Poor || '',
+          },
+          order: i + 1,
+        };
+
+        console.log(`📤 Rubric payload ${i}:`, payload);
+
+        return payload;
+      })
+      : [];
+
+    console.log('📤 rubricPayloads:', JSON.stringify(rubricPayloads, null, 2));
 
 
-    let studentAssessmentId;
+    // ─────────────────────────────────────────────────────────────
+    // STEP 3 — Save
+    // ─────────────────────────────────────────────────────────────
 
-    if (existingSubmissions.length > 0) {
-      studentAssessmentId = existingSubmissions[0]._id;
-    } else {
+    try {
 
-      const newSubmission = await createStudentAssessment({
+      console.log('📤 Creating assessment...');
+      
+      const res = await createAssessment({
+        faculty_course_id: selectedCourseForAssessment,
+        type: gradingMethod === 'finalExam'
+          ? 'final_exam'
+          : 'rubric',
+        program_outcomes: assessmentPOWeights,
+        created_by: currentUser?.link?.roleAccount?._id?.toString(),
+      });
+
+      console.log('📤 Assessment created:', res);
+
+      const savedAssessmentId = res.id;
+
+      if (gradingMethod === 'finalExam') {
+
+        for (const payload of questionPayloads) {
+          console.log('📤 Creating question:', payload);
+          await createQuestion({
+            assessment_id: savedAssessmentId,
+            selectedPOs,
+            ...payload
+          });
+        }
+
+      } else if (gradingMethod === 'rubrics') {
+
+        console.log('📤 Creating rubrics... rubrics.length:', rubrics.length);
+        
+        for (const payload of rubricPayloads) {
+          console.log('📤 Creating rubric with payload:', payload);
+          await createRubric({
+            assessment_id: savedAssessmentId,
+            ...payload
+          });
+          console.log('📤 Rubric created successfully');
+        }
+      }
+
+      showToast('Assessment setup saved successfully!');
+
+      setQuestions([]);
+      setRubrics([]);
+      setQuestionPOs({});
+      setSelectedPOs([]);
+      setGradingMethod('');
+      setSelectedCourseForAssessment('');
+      setAssessmentStep(1);
+
+      setActiveTab('viewAssessments');
+
+      fetchFacultyData();
+
+    } catch (e) {
+      console.error('📤 ERROR:', e);
+      showToast(e.message);
+    }
+  };
+
+  const handleSaveGrades = async () => {
+    try {
+      // ─────────────────────────────────────────────────────────────
+      // STEP 0: VALIDATION
+      // ─────────────────────────────────────────────────────────────
+
+      const studentId = selectedStudentForGrading;
+      const courseId = selectedCourseForGrading;
+
+      const selectedBlockObj = facultyCourses
+        ?.find(fc => String(fc._id) === String(selectedCourseForGrading))
+        ?.blocks?.find(b => b.name === selectedBlockForGrading);
+
+      const blockId = selectedBlockObj?._id;
+
+      console.log('🔍 DEBUG - All IDs:');
+      console.log('  studentId:', studentId);
+      console.log('  courseId:', courseId);
+      console.log('  blockId:', blockId);
+
+      if (!studentId || !courseId || !blockId) {
+        showToast('Missing: student, course, or block');
+        return;
+      }
+
+      const assessment = assessments?.find(
+        a => String(a.faculty_course_id) === String(courseId)
+      );
+
+      if (!assessment) {
+        showToast('No assessment found for this course');
+        return;
+      }
+
+      const isFinalExam = assessment.type === 'final_exam';
+      const questions = assessment.questions || [];
+      const rubrics = assessment.rubrics || [];
+
+      console.log('🔍 DEBUG - Assessment:');
+      console.log('  assessment._id:', assessment._id);
+      console.log('  type:', assessment.type);
+      console.log('  questions count:', questions.length);
+      console.log('  rubrics count:', rubrics.length);
+
+      // ─────────────────────────────────────────────────────────────
+      // STEP 1: CHECK/CREATE STUDENT ASSESSMENT
+      // ─────────────────────────────────────────────────────────────
+
+
+      const existingSubmissions = await getAllStudentAssessments({
         assessment_id: assessment._id,
         block_id: blockId,
         student_id: studentId,
       });
 
-      studentAssessmentId = newSubmission.id;
-    }
 
-    // ─────────────────────────────────────────────────────────────
-    // STEP 3: SAVE QUESTION RESULTS (Final Exam)
-    // ─────────────────────────────────────────────────────────────
-    
-    if (isFinalExam && questions.length > 0) {
+      let studentAssessmentId;
 
-      for (let i = 0; i < questions.length; i++) {
-        const question = questions[i];
-        
-        // Get score by index - defaults to false if unchecked
-        const isCorrect = questionScores[`q${i}`] === true;
+      if (existingSubmissions.length > 0) {
+        studentAssessmentId = existingSubmissions[0]._id;
+      } else {
+
+        const newSubmission = await createStudentAssessment({
+          assessment_id: assessment._id,
+          block_id: blockId,
+          student_id: studentId,
+        });
+
+        studentAssessmentId = newSubmission.id;
+      }
+
+      // ─────────────────────────────────────────────────────────────
+      // STEP 3: SAVE QUESTION RESULTS (Final Exam)
+      // ─────────────────────────────────────────────────────────────
+
+      if (isFinalExam && questions.length > 0) {
+
+        for (let i = 0; i < questions.length; i++) {
+          const question = questions[i];
+
+          // Get score by index - defaults to false if unchecked
+          const isCorrect = questionScores[`q${i}`] === true;
 
 
-        // Check if result exists
-        const existingResults = await getQuestionResults(studentAssessmentId);
-        const existingResult = existingResults.results?.find(
-          (r) => String(r.question?._id) === String(question._id)
-        );
+          // Check if result exists
+          const existingResults = await getQuestionResults(studentAssessmentId);
+          const existingResult = existingResults.results?.find(
+            (r) => String(r.question?._id) === String(question._id)
+          );
 
-        const payload = {
-          student_assessment_id: studentAssessmentId,
-          question_id: question._id,
-          is_correct: isCorrect,
-        };
+          const payload = {
+            student_assessment_id: studentAssessmentId,
+            question_id: question._id,
+            is_correct: isCorrect,
+          };
 
 
-        if (existingResult) {
-          // Update existing (even if false!)
-          await updateQuestionResult(existingResult._id, isCorrect);
-        } else {
-          // Create new (even if false!)
-          await createQuestionResult(payload);
+          if (existingResult) {
+            // Update existing (even if false!)
+            await updateQuestionResult(existingResult._id, isCorrect);
+          } else {
+            // Create new (even if false!)
+            await createQuestionResult(payload);
+          }
         }
       }
-    }
 
-    // ─────────────────────────────────────────────────────────────
-    // STEP 3b: SAVE RUBRIC RESULTS (Rubrics)
-    // ─────────────────────────────────────────────────────────────
-    
-    if (!isFinalExam && rubrics.length > 0) {
+      // ─────────────────────────────────────────────────────────────
+      // STEP 3b: SAVE RUBRIC RESULTS (Rubrics)
+      // ─────────────────────────────────────────────────────────────
 
-      for (let i = 0; i < rubrics.length; i++) {
-        const rubric = rubrics[i];
-        const level = rubricScores[`r${i}`];
+      if (!isFinalExam && rubrics.length > 0) {
 
-        if (!level) continue;
+        for (let i = 0; i < rubrics.length; i++) {
+          const rubric = rubrics[i];
+          const level = rubricScores[`r${i}`];
 
-
-        // Check if result exists
-        const existingResults = await getRubricResults(studentAssessmentId);
-        const existingResult = existingResults.results?.find(
-          (r) => String(r.rubric?._id) === String(rubric._id)
-        );
-
-        const payload = {
-          student_assessment_id: studentAssessmentId,
-          rubric_id: rubric._id,
-          level: level,
-        };
+          if (!level) continue;
 
 
-        if (existingResult) {
-          await updateRubricResult(existingResult._id, level);
-        } else {
-          await createRubricResult(payload);
+          // Check if result exists
+          const existingResults = await getRubricResults(studentAssessmentId);
+          const existingResult = existingResults.results?.find(
+            (r) => String(r.rubric?._id) === String(rubric._id)
+          );
+
+          const payload = {
+            student_assessment_id: studentAssessmentId,
+            rubric_id: rubric._id,
+            level: level,
+          };
+
+
+          if (existingResult) {
+            await updateRubricResult(existingResult._id, level);
+          } else {
+            await createRubricResult(payload);
+          }
         }
       }
-    }
 
-    // ─────────────────────────────────────────────────────────────
-    // STEP 4: CALCULATE & SAVE GRADE
-    // ─────────────────────────────────────────────────────────────
-    
-    const gradeKey = `${courseId}_${studentId}`;
-    
-    // Calculate percentage for display (from scores)
-    let totalScore = 0;
-    let totalItems = 0;
+      // ─────────────────────────────────────────────────────────────
+      // STEP 4: CALCULATE & SAVE GRADE
+      // ─────────────────────────────────────────────────────────────
 
-    if (isFinalExam) {
-      // Count all questions (including unchecked = false)
-      for (let i = 0; i < questions.length; i++) {
-        if (questionScores[`q${i}`] === true) totalScore++;
-        totalItems++;
-      }
-    } else {
-      const levelValues = { Excellent: 100, Good: 85, Fair: 70, Poor: 50 };
-      for (let i = 0; i < rubrics.length; i++) {
-        const level = rubricScores[`r${i}`];
-        if (level) {
-          totalScore += levelValues[level] || 0;
+      const gradeKey = `${courseId}_${studentId}`;
+
+      // Calculate percentage for display (from scores)
+      let totalScore = 0;
+      let totalItems = 0;
+
+      if (isFinalExam) {
+        // Count all questions (including unchecked = false)
+        for (let i = 0; i < questions.length; i++) {
+          if (questionScores[`q${i}`] === true) totalScore++;
           totalItems++;
         }
+      } else {
+        const levelValues = { Excellent: 100, Good: 85, Fair: 70, Poor: 50 };
+        for (let i = 0; i < rubrics.length; i++) {
+          const level = rubricScores[`r${i}`];
+          if (level) {
+            totalScore += levelValues[level] || 0;
+            totalItems++;
+          }
+        }
       }
-    }
 
-    const percentage = totalItems > 0 ? Math.round((totalScore / totalItems) * 100) : 0;
+      const percentage = totalItems > 0 ? Math.round((totalScore / totalItems) * 100) : 0;
 
-    // Convert 0-100% to 1.0-5.0 grade
-    let overallGrade;
-    if (percentage >= 75) overallGrade = 1.0;
-    else if (percentage >= 60) overallGrade = 2.5;
-    else if (percentage >= 50) overallGrade = 3.5;
-    else overallGrade = 5.0;
+      // Convert 0-100% to 1.0-5.0 grade
+      let overallGrade;
+      if (percentage >= 75) overallGrade = 1.0;
+      else if (percentage >= 60) overallGrade = 2.5;
+      else if (percentage >= 50) overallGrade = 3.5;
+      else overallGrade = 5.0;
 
-    const remarks = overallGrade <= 3.0 ? 'PASSED' : 'FAILED';
+      const remarks = overallGrade <= 3.0 ? 'PASSED' : 'FAILED';
 
-    // Check if grade already exists
-    const existingGrades = await getAllGrades({
-      student_assessment_id: studentAssessmentId,
-    });
-
-    if (existingGrades.length > 0) {
-      await updateGrade(existingGrades[0]._id, {
-        overall_grade: overallGrade,
-        outcome_grades: {},
-        remarks: remarks
-      });
-    } else {
-      await createGrade({
+      // Check if grade already exists
+      const existingGrades = await getAllGrades({
         student_assessment_id: studentAssessmentId,
-        overall_grade: overallGrade,
-        outcome_grades: {},
-        remarks: remarks
       });
+
+      if (existingGrades.length > 0) {
+        await updateGrade(existingGrades[0]._id, {
+          overall_grade: overallGrade,
+          outcome_grades: {},
+          remarks: remarks
+        });
+      } else {
+        await createGrade({
+          student_assessment_id: studentAssessmentId,
+          overall_grade: overallGrade,
+          outcome_grades: {},
+          remarks: remarks
+        });
+      }
+
+
+      // ─────────────────────────────────────────────────────────────
+      // STEP 5: UPDATE LOCAL STATE & UI
+      // ─────────────────────────────────────────────────────────────
+
+      const updatedGrades = { ...studentGrades };
+      updatedGrades[gradeKey] = {
+        ...updatedGrades[gradeKey],
+        scores: isFinalExam ? questionScores : rubricScores,
+        overall_grade: overallGrade,
+        percentage: percentage,
+        savedAt: new Date().toISOString(),
+      };
+
+      setStudentGrades(updatedGrades);
+      localStorage.setItem('faculty_grades', JSON.stringify(updatedGrades));
+
+      showToast('Grades saved successfully!');
+      setGradingView('list');
+      setSelectedStudentForGrading('');
+      setQuestionScores({});
+      setRubricScores({});
+
+    } catch (error) {
+      showToast(error.message || 'Failed to save grades');
     }
-
-
-    // ─────────────────────────────────────────────────────────────
-    // STEP 5: UPDATE LOCAL STATE & UI
-    // ─────────────────────────────────────────────────────────────
-    
-    const updatedGrades = { ...studentGrades };
-    updatedGrades[gradeKey] = {
-      ...updatedGrades[gradeKey],
-      scores: isFinalExam ? questionScores : rubricScores,
-      overall_grade: overallGrade,
-      percentage: percentage,
-      savedAt: new Date().toISOString(),
-    };
-    
-    setStudentGrades(updatedGrades);
-    localStorage.setItem('faculty_grades', JSON.stringify(updatedGrades));
-
-    showToast('Grades saved successfully!');
-    setGradingView('list');
-    setSelectedStudentForGrading('');
-    setQuestionScores({});
-    setRubricScores({});
-
-  } catch (error) {
-    showToast(error.message || 'Failed to save grades');
-  }
-};
+  };
   return (
     <div className="portal-layout">
       <aside className="sidebar">
@@ -2827,172 +3071,172 @@ const handleSaveGrades = async () => {
                 {selectedCourseForGrading && selectedBlockForGrading && (
                   <div className="students-grading-list">
                     <h3>Students in {selectedBlockForGrading}</h3>
-                              <div className="student-list-grading">
-                                {facultyCourses
-                                  ?.find(fc => fc._id === selectedCourseForGrading)
-                                  ?.blocks
-                                  ?.find(b => b.name === selectedBlockForGrading)
-                                  ?.students
-                                  ?.map(studentId => {
+                    <div className="student-list-grading">
+                      {facultyCourses
+                        ?.find(fc => fc._id === selectedCourseForGrading)
+                        ?.blocks
+                        ?.find(b => b.name === selectedBlockForGrading)
+                        ?.students
+                        ?.map(studentId => {
 
-                                    const student = masterlist.find(
-                                      s => s._id === studentId || s.id === studentId
-                                    );
+                          const student = masterlist.find(
+                            s => s._id === studentId || s.id === studentId
+                          );
 
-                                    if (!student) return null;
+                          if (!student) return null;
 
-                                    const assessment = assessments.find(
-                                      a => a.faculty_course_id?.toString() === selectedCourseForGrading
-                                    );
+                          const assessment = assessments.find(
+                            a => a.faculty_course_id?.toString() === selectedCourseForGrading
+                          );
 
-                                    // ─────────────────────────────────────────────────────────────
-                                    // Get grade from studentGrades state (loaded from DB)
-                                    // ─────────────────────────────────────────────────────────────
-                                    const gradeKey = `${selectedCourseForGrading}_${studentId}`;
-                                    const savedGrade = studentGrades[gradeKey];
+                          // ─────────────────────────────────────────────────────────────
+                          // Get grade from studentGrades state (loaded from DB)
+                          // ─────────────────────────────────────────────────────────────
+                          const gradeKey = `${selectedCourseForGrading}_${studentId}`;
+                          const savedGrade = studentGrades[gradeKey];
 
-                                    console.log('🔍 RENDER - gradeKey:', gradeKey);
-                                    console.log('🔍 RENDER - savedGrade:', savedGrade);
-                                    console.log('🔍 RENDER - scores:', savedGrade?.scores);
+                          console.log('🔍 RENDER - gradeKey:', gradeKey);
+                          console.log('🔍 RENDER - savedGrade:', savedGrade);
+                          console.log('🔍 RENDER - scores:', savedGrade?.scores);
 
-                                    let gradeNumber = null;
-                                    let gradeColor = '#94a3b8';
+                          let gradeNumber = null;
+                          let gradeColor = '#94a3b8';
 
-                                    // Calculate from SCORES only
-                                    if (savedGrade?.scores && Object.keys(savedGrade.scores).length > 0) {
-                                      const isFinalExam = assessment?.type === 'final_exam';
-                                      
-                                      if (isFinalExam) {
-                                        // Get TOTAL from ASSESSMENT questions, not from scores!
-                                        const totalQuestions = assessment?.questions?.length || 0;
-                                        
-                                        // Count correct from scores (true values)
-                                        const scoreValues = Object.values(savedGrade.scores);
-                                        const correctCount = scoreValues.filter(v => v === true).length;
-                                        
-                                        console.log('🔍 RENDER - totalQuestions:', totalQuestions);
-                                        console.log('🔍 RENDER - correctCount:', correctCount);
-                                        
-                                        gradeNumber = totalQuestions > 0 
-                                          ? Math.round((correctCount / totalQuestions) * 100) 
-                                          : null;
-                                          
-                                        console.log('🔍 RENDER - gradeNumber:', gradeNumber);
-                                      } else {
-                                        // Rubric - calculate average
-                                        const levelValues = { Excellent: 100, Good: 85, Fair: 70, Poor: 50 };
-                                        const scoreValues = Object.values(savedGrade.scores)
-                                          .map(l => levelValues[l] || 0)
-                                          .filter(v => v > 0);
-                                        
-                                        gradeNumber = scoreValues.length > 0 
-                                          ? Math.round(scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length)
-                                          : null;
-                                      }
-                                    } else {
-                                      console.log('🔍 RENDER - No scores found, showing Not Graded');
-                                    }
+                          // Calculate from SCORES only
+                          if (savedGrade?.scores && Object.keys(savedGrade.scores).length > 0) {
+                            const isFinalExam = assessment?.type === 'final_exam';
 
-                                    // Set color based on grade
-                                    if (gradeNumber !== null) {
-                                      gradeColor = gradeNumber >= 75 ? '#10b981' : gradeNumber >= 60 ? '#f59e0b' : '#ef4444';
-                                    }
+                            if (isFinalExam) {
+                              // Get TOTAL from ASSESSMENT questions, not from scores!
+                              const totalQuestions = assessment?.questions?.length || 0;
 
-                                    return (
-                                      <div
-                                        key={studentId}
-                                        className="student-grading-item"
-                                        onClick={() => {
-                                          setSelectedStudentForGrading(studentId);
+                              // Count correct from scores (true values)
+                              const scoreValues = Object.values(savedGrade.scores);
+                              const correctCount = scoreValues.filter(v => v === true).length;
 
-                                          const gradeKey = `${selectedCourseForGrading}_${studentId}`;
+                              console.log('🔍 RENDER - totalQuestions:', totalQuestions);
+                              console.log('🔍 RENDER - correctCount:', correctCount);
 
-                                          if (studentGrades[gradeKey]) {
-                                            setQuestionScores(studentGrades[gradeKey].scores || {});
-                                            setRubricScores(studentGrades[gradeKey].scores || {});
-                                          } else {
-                                            setQuestionScores({});
-                                            setRubricScores({});
-                                          }
+                              gradeNumber = totalQuestions > 0
+                                ? Math.round((correctCount / totalQuestions) * 100)
+                                : null;
 
-                                          setGradingView('grade');
-                                        }}
-                                      >
-                                        <div className="student-grading-info">
-                                          <h4>{student?.name}</h4>
-                                          <p>{student?.student_number || student?.id}</p>
-                                        </div>
+                              console.log('🔍 RENDER - gradeNumber:', gradeNumber);
+                            } else {
+                              // Rubric - calculate average
+                              const levelValues = { Excellent: 100, Good: 85, Fair: 70, Poor: 50 };
+                              const scoreValues = Object.values(savedGrade.scores)
+                                .map(l => levelValues[l] || 0)
+                                .filter(v => v > 0);
 
-                                        <div
-                                          className="student-grade-display"
-                                          style={{ borderColor: gradeColor }}
-                                        >
-                                          {gradeNumber !== null ? (
-                                            <>
-                                              <div
-                                                className="grade-circle"
-                                                style={{ background: gradeColor }}
-                                              >
-                                                {gradeNumber}
-                                              </div>
-                                              <span className="grade-label">Grade</span>
-                                            </>
-                                          ) : (
-                                            <>
-                                              <div
-                                                className="grade-circle"
-                                                style={{ background: gradeColor }}
-                                              >
-                                                ?
-                                              </div>
-                                              <span className="grade-label">Not Graded</span>
-                                            </>
-                                          )}
-                                        </div>
-                                      </div>
-                                    );
-                                  })
-                                  .filter(Boolean)}
+                              gradeNumber = scoreValues.length > 0
+                                ? Math.round(scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length)
+                                : null;
+                            }
+                          } else {
+                            console.log('🔍 RENDER - No scores found, showing Not Graded');
+                          }
+
+                          // Set color based on grade
+                          if (gradeNumber !== null) {
+                            gradeColor = gradeNumber >= 75 ? '#10b981' : gradeNumber >= 60 ? '#f59e0b' : '#ef4444';
+                          }
+
+                          return (
+                            <div
+                              key={studentId}
+                              className="student-grading-item"
+                              onClick={() => {
+                                setSelectedStudentForGrading(studentId);
+
+                                const gradeKey = `${selectedCourseForGrading}_${studentId}`;
+
+                                if (studentGrades[gradeKey]) {
+                                  setQuestionScores(studentGrades[gradeKey].scores || {});
+                                  setRubricScores(studentGrades[gradeKey].scores || {});
+                                } else {
+                                  setQuestionScores({});
+                                  setRubricScores({});
+                                }
+
+                                setGradingView('grade');
+                              }}
+                            >
+                              <div className="student-grading-info">
+                                <h4>{student?.name}</h4>
+                                <p>{student?.student_number || student?.id}</p>
                               </div>
-                                </div>
-                              )}
-                                            </div>
-                                          ) : (
-                                            <div className="grading-form-container">
-                                              {selectedStudentForGrading && selectedCourseForGrading && (
-                                                <div className="grading-form">
-                                                  {(() => {
-                                                    const student = masterlist.find(s => s.id === selectedStudentForGrading);
-                                                    const assessment = courseAssessments[selectedCourseForGrading];
-                              const gradeKey = `${selectedCourseForGrading}_${selectedStudentForGrading}`;
-                              const currentGrade = studentGrades[gradeKey];
-                              let currentGradePercent = null;
 
-                              if (currentGrade?.overall_grade) {
-                                const g = currentGrade.overall_grade;
-                                if (g === 1.0) currentGradePercent = 100;
-                                else if (g === 2.5) currentGradePercent = 75;
-                                else if (g === 3.5) currentGradePercent = 50;
-                                else currentGradePercent = 25;
-                              }
-                                                    return (
-                                                      <>
-                                                        <div className="grading-header">
-                                                          <button
-                                                            onClick={() => {
-                                                              setGradingView('list');
-                                                              setSelectedStudentForGrading('');
-                                                            }}
-                                                            className="back-link"
-                                                          >
-                                                            ← Back to Student List
-                                                          </button>
-                                                          <div className="student-grading-header">
-                                                            <div>
-                                                              <h2>{student?.name}</h2>
-                                                              <p>{student?.id} • {student?.batch}</p>
-                                                            </div>
-                                                            <div className="grade-preview">
+                              <div
+                                className="student-grade-display"
+                                style={{ borderColor: gradeColor }}
+                              >
+                                {gradeNumber !== null ? (
+                                  <>
+                                    <div
+                                      className="grade-circle"
+                                      style={{ background: gradeColor }}
+                                    >
+                                      {gradeNumber}
+                                    </div>
+                                    <span className="grade-label">Grade</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div
+                                      className="grade-circle"
+                                      style={{ background: gradeColor }}
+                                    >
+                                      ?
+                                    </div>
+                                    <span className="grade-label">Not Graded</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                        .filter(Boolean)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="grading-form-container">
+                {selectedStudentForGrading && selectedCourseForGrading && (
+                  <div className="grading-form">
+                    {(() => {
+                      const student = masterlist.find(s => s.id === selectedStudentForGrading);
+                      const assessment = courseAssessments[selectedCourseForGrading];
+                      const gradeKey = `${selectedCourseForGrading}_${selectedStudentForGrading}`;
+                      const currentGrade = studentGrades[gradeKey];
+                      let currentGradePercent = null;
+
+                      if (currentGrade?.overall_grade) {
+                        const g = currentGrade.overall_grade;
+                        if (g === 1.0) currentGradePercent = 100;
+                        else if (g === 2.5) currentGradePercent = 75;
+                        else if (g === 3.5) currentGradePercent = 50;
+                        else currentGradePercent = 25;
+                      }
+                      return (
+                        <>
+                          <div className="grading-header">
+                            <button
+                              onClick={() => {
+                                setGradingView('list');
+                                setSelectedStudentForGrading('');
+                              }}
+                              className="back-link"
+                            >
+                              ← Back to Student List
+                            </button>
+                            <div className="student-grading-header">
+                              <div>
+                                <h2>{student?.name}</h2>
+                                <p>{student?.id} • {student?.batch}</p>
+                              </div>
+                              <div className="grade-preview">
                                 {currentGradePercent !== null ? (
                                   <div className="preview-grade">
                                     <span className="preview-label">Current Grade:</span>
@@ -3709,7 +3953,7 @@ const handleSaveGrades = async () => {
             borderRadius: '8px', boxShadow: '0 10px 25px rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', gap: '15px',
             zIndex: 1000, fontWeight: 'bold', animation: 'fadeIn 0.3s ease'
           }}>
-             {toastMessage}
+            {toastMessage}
           </div>
         )}
       </main>
