@@ -380,7 +380,7 @@ export async function deleteAllRubrics(assessment_id: string): Promise<{ message
 // STUDENT ASSESSMENTS  →  /api/assessments/student-assessments
 // ═════════════════════════════════════════════════════════════
 
-const STUDENT_ASSESSMENTS_URL = '/api/assessments/student-assessments';
+const STUDENT_ASSESSMENTS_URL = '/api/assessments/students_assessment';
 
 /**
  * Fetch student assessment submissions.
@@ -502,10 +502,10 @@ export async function deleteAllStudentAssessments(
 }
 
 // ═════════════════════════════════════════════════════════════
-// QUESTION RESULTS  →  /api/assessments/question/question-results
+// QUESTION RESULTS  →  /api/assessments/questions/question-results
 // ═════════════════════════════════════════════════════════════
 
-const QUESTION_RESULTS_URL = '/api/assessments/question/question-results';
+const QUESTION_RESULTS_URL = '/api/assessments/questions/questions_result';
 
 /**
  * Fetch all question results for a student submission.
@@ -622,7 +622,7 @@ export async function deleteAllQuestionResults(
 // RUBRIC RESULTS  →  /api/assessments/rubrics/rubric-results
 // ═════════════════════════════════════════════════════════════
 
-const RUBRIC_RESULTS_URL = '/api/assessments/rubrics/rubric-results';
+const RUBRIC_RESULTS_URL = '/api/assessments/rubrics/rubrics_results';
 
 /**
  * Fetch all rubric results for a student submission.
@@ -734,5 +734,120 @@ export async function deleteAllRubricResults(
     `${RUBRIC_RESULTS_URL}?student_assessment_id=${student_assessment_id}`,
     { method: 'DELETE' }
   );
+  return handleResponse(res);
+}
+
+// ═════════════════════════════════════════════════════════════
+// GRADES  →  /api/masterlist/grades
+// ═════════════════════════════════════════════════════════════
+
+const GRADES_URL = '/api/masterlist/grades';
+
+/**
+ * Fetch all grades.
+ * Optionally filter by student_assessment_id.
+ *
+ * @param params.student_assessment_id - (optional) Filter by student_assessment ObjectId
+ *
+ * @example
+ * // All grades
+ * getAllGrades()
+ *
+ * // Grades for a specific student assessment
+ * getAllGrades({ student_assessment_id: '665f...' })
+ */
+export async function getAllGrades(
+  params: { student_assessment_id?: string } = {}
+): Promise<any[]> {
+  const query = new URLSearchParams();
+  if (params.student_assessment_id) query.set('student_assessment_id', params.student_assessment_id);
+
+  const url = query.toString() ? `${GRADES_URL}?${query}` : GRADES_URL;
+  const res = await fetch(url, { method: 'GET' });
+  return handleResponse<any[]>(res);
+}
+
+/**
+ * Fetch a single grade by ID.
+ *
+ * @param id - ObjectId of the grade
+ *
+ * @example
+ * getGradeById('665f...')
+ */
+export async function getGradeById(id: string): Promise<any> {
+  const res = await fetch(`${GRADES_URL}?id=${id}`, { method: 'GET' });
+  return handleResponse<any>(res);
+}
+
+/**
+ * Submit a grade for a student assessment.
+ * Auto-derives remarks if not provided.
+ *
+ * @param data.student_assessment_id - ObjectId of the student_assessment
+ * @param data.overall_grade      - Grade value (1.0 - 5.0)
+ * @param data.outcome_grades     - (optional) Detailed PO scores e.g. { A: { po_score: 85 }, B: { po_score: 90 } }
+ * @param data.remarks           - (optional) "PASSED", "FAILED", or "INCOMPLETE"
+ *
+ * @example
+ * createGrade({
+ *   student_assessment_id: '665f...',
+ *   overall_grade: 1.25,
+ *   outcome_grades: { A: { po_score: 85 }, B: { po_score: 90 } },
+ *   remarks: 'PASSED',
+ * })
+ */
+export async function createGrade(
+  data: {
+    student_assessment_id: string;
+    overall_grade: number;
+    outcome_grades?: Record<string, { po_score: number }>;
+    remarks?: string;
+  }
+): Promise<{ message: string; id: string }> {
+  const res = await fetch(GRADES_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+}
+
+/**
+ * Update a grade.
+ * Auto-derives new remarks if grade is updated and remarks not provided.
+ *
+ * @param id   - ObjectId of the grade to update
+ * @param data - { overall_grade, outcome_grades, remarks }
+ *
+ * @example
+ * updateGrade('665f...', { overall_grade: 1.5, outcome_grades: { A: { po_score: 80 } } })
+ */
+export async function updateGrade(
+  id: string,
+  data: {
+    overall_grade?: number;
+    outcome_grades?: Record<string, { po_score: number }>;
+    remarks?: string;
+  }
+): Promise<{ message: string; grade: any }> {
+  const res = await fetch(`${GRADES_URL}?id=${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+}
+
+/**
+ * Delete a grade by ID.
+ *
+ * @param id - ObjectId of the grade to delete
+ *
+ * @example
+ * deleteGrade('665f...')
+ */
+export async function deleteGrade(id: string): Promise<{ message: string }> {
+  const res = await fetch(`${GRADES_URL}?id=${id}`, { method: 'DELETE' });
   return handleResponse(res);
 }

@@ -2,44 +2,47 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
-// POST - Submit a grade for a student in a block
+// POST - Submit a grade for a student assessment
 export async function POST(req: NextRequest) {
   try {
-    const { block_id, student_id, grade, remarks } = await req.json();
+    const { student_assessment_id, overall_grade, outcome_grades, remarks } = await req.json();
 
-    if (!block_id || !student_id || grade === undefined || grade === null) {
-      return NextResponse.json({ error: 'block_id, student_id, and grade are required' }, { status: 400 });
+    if (!student_assessment_id || overall_grade === undefined) {
+      return NextResponse.json({ error: 'student_assessment_id and overall_grade are required' }, { status: 400 });
     }
 
-    if (!ObjectId.isValid(block_id) || !ObjectId.isValid(student_id)) {
-      return NextResponse.json({ error: 'Invalid block_id or student_id' }, { status: 400 });
+    if (!ObjectId.isValid(student_assessment_id)) {
+      return NextResponse.json({ error: 'Invalid student_assessment_id' }, { status: 400 });
     }
 
-    if (typeof grade !== 'number' || grade < 0 || grade > 5) {
-      return NextResponse.json({ error: 'Grade must be a number between 0 and 5' }, { status: 400 });
+    // Assuming a 1.0-5.0 grading scale. Adjust max if needed.
+    if (typeof overall_grade !== 'number' || overall_grade < 1.0 || overall_grade > 5.0) {
+      return NextResponse.json({ error: 'overall_grade must be a number between 1.0 and 5.0' }, { status: 400 });
     }
 
     const db = await connectDB();
     const grades = db.collection('grades');
 
-    // Prevent duplicate grade for the same student in the same block
+    // Prevent duplicate grade for the same student assessment
     const existing = await grades.findOne({
-      block_id: new ObjectId(block_id),
-      student_id: new ObjectId(student_id),
+      student_assessment_id: new ObjectId(student_assessment_id),
     });
 
     if (existing) {
       return NextResponse.json(
-        { error: 'A grade for this student in this block already exists. Use PUT to update it.' },
+        { error: 'A grade for this student_assessment already exists. Use PUT to update it.' },
         { status: 409 }
       );
     }
 
+    // Auto-generate remarks if not provided
+    const finalRemarks = remarks || deriveRemarks(overall_grade);
+
     const result = await grades.insertOne({
-      block_id: new ObjectId(block_id),
-      student_id: new ObjectId(student_id),
-      grade,
-      remarks: remarks || deriveRemarks(grade),
+      student_assessment_id: new ObjectId(student_assessment_id),
+      overall_grade,
+      outcome_grades: outcome_grades || {}, // Stores detailed PO scores e.g., { "A": { "po_score": 85 } }
+      remarks: finalRemarks,
       submitted_at: new Date(),
       createdAt: new Date(),
     });
@@ -54,58 +57,19 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET - Fetch all grades or a single grade by id (?id=...)
-//       Filter by block    (?block_id=...)
-//       Filter by student  (?student_id=...)
-//       Filter by both     (?block_id=...&student_id=...)
+// GET - Fetch all grades or a single grade by id
+//       Filter by student_assessment_id 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
-    const block_id = searchParams.get('block_id');
-    const student_id = searchParams.get('student_id');
+    const student_assessment_id = searchParams.get('student_assessment_id');
 
     const db = await connectDB();
     const grades = db.collection('grades');
 
-    const aggregatePipeline = [
-      {
-        $lookup: {
-          from: 'blocks',
-          localField: 'block_id',
-          foreignField: '_id',
-          as: 'block',
-        },
-      },
-      { $unwind: { path: '$block', preserveNullAndEmpty: true } },
-      {
-        $lookup: {
-          from: 'students',
-          localField: 'student_id',
-          foreignField: '_id',
-          as: 'student',
-        },
-      },
-      { $unwind: { path: '$student', preserveNullAndEmpty: true } },
-      {
-        $lookup: {
-          from: 'faculty_courses',
-          localField: 'block.faculty_course_id',
-          foreignField: '_id',
-          as: 'block.faculty_course',
-        },
-      },
-      { $unwind: { path: '$block.faculty_course', preserveNullAndEmpty: true } },
-      {
-        $lookup: {
-          from: 'courses',
-          localField: 'block.faculty_course.course_id',
-          foreignField: '_id',
-          as: 'block.faculty_course.course',
-        },
-      },
-      { $unwind: { path: '$block.faculty_course.course', preserveNullAndEmpty: true } },
-    ];
+    // We might want to look up details about the assessment or student in a real app, 
+    // but we will keep it simple here to match the JSON structure provided.
 
     // Single record
     if (id) {
@@ -113,40 +77,28 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
       }
 
-      const record = await grades
-        .aggregate([{ $match: { _id: new ObjectId(id) } }, ...aggregatePipeline])
-        .toArray();
+      const record = await grades.findOne({ _id: new ObjectId(id) });
 
-      if (!record.length) {
+      if (!record) {
         return NextResponse.json({ error: 'Grade not found' }, { status: 404 });
       }
 
-      return NextResponse.json(record[0], { status: 200 });
+      return NextResponse.json(record, { status: 200 });
     }
 
-    // Build filter from optional query params
+    // Build filter
     const filter: Record<string, any> = {};
 
-    if (block_id) {
-      if (!ObjectId.isValid(block_id)) {
-        return NextResponse.json({ error: 'Invalid block_id' }, { status: 400 });
+    if (student_assessment_id) {
+      if (!ObjectId.isValid(student_assessment_id)) {
+        return NextResponse.json({ error: 'Invalid student_assessment_id' }, { status: 400 });
       }
-      filter.block_id = new ObjectId(block_id);
-    }
-
-    if (student_id) {
-      if (!ObjectId.isValid(student_id)) {
-        return NextResponse.json({ error: 'Invalid student_id' }, { status: 400 });
-      }
-      filter.student_id = new ObjectId(student_id);
+      filter.student_assessment_id = new ObjectId(student_assessment_id);
     }
 
     const records = await grades
-      .aggregate([
-        { $match: filter },
-        ...aggregatePipeline,
-        { $sort: { submitted_at: -1 } },
-      ])
+      .find(filter)
+      .sort({ submitted_at: -1 })
       .toArray();
 
     return NextResponse.json(records, { status: 200 });
@@ -155,7 +107,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// PUT - Update a grade by id (?id=...)
+// PUT - Update a grade by id
 export async function PUT(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -165,32 +117,35 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Valid ID is required' }, { status: 400 });
     }
 
-    const { block_id, student_id, grade, remarks } = await req.json();
+    const { overall_grade, outcome_grades, remarks } = await req.json();
 
-    if (!block_id || !student_id || grade === undefined || grade === null) {
-      return NextResponse.json({ error: 'block_id, student_id, and grade are required' }, { status: 400 });
+    if (!overall_grade && !outcome_grades && !remarks) {
+      return NextResponse.json({ error: 'At least one detail to update is required' }, { status: 400 });
     }
 
-    if (!ObjectId.isValid(block_id) || !ObjectId.isValid(student_id)) {
-      return NextResponse.json({ error: 'Invalid block_id or student_id' }, { status: 400 });
-    }
-
-    if (typeof grade !== 'number' || grade < 0 || grade > 5) {
-      return NextResponse.json({ error: 'Grade must be a number between 0 and 5' }, { status: 400 });
+    if (overall_grade && (typeof overall_grade !== 'number' || overall_grade < 1.0 || overall_grade > 5.0)) {
+      return NextResponse.json({ error: 'overall_grade must be between 1.0 and 5.0' }, { status: 400 });
     }
 
     const db = await connectDB();
     const grades = db.collection('grades');
 
+    // Calculate new remarks if grade is being updated and remarks aren't manually set
+    let finalRemarks = remarks;
+    if (overall_grade && !remarks) {
+        finalRemarks = deriveRemarks(overall_grade);
+    }
+
+    const updateFields: any = {};
+    if (overall_grade !== undefined) updateFields.overall_grade = overall_grade;
+    if (outcome_grades) updateFields.outcome_grades = outcome_grades;
+    if (finalRemarks) updateFields.remarks = finalRemarks;
+
     const result = await grades.findOneAndUpdate(
       { _id: new ObjectId(id) },
       {
         $set: {
-          block_id: new ObjectId(block_id),
-          student_id: new ObjectId(student_id),
-          grade,
-          remarks: remarks || deriveRemarks(grade),
-          submitted_at: new Date(),
+          ...updateFields,
           updatedAt: new Date(),
         },
       },
@@ -211,7 +166,7 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-// DELETE - Delete a grade by id (?id=...)
+// DELETE - Delete a grade by id
 export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -237,10 +192,10 @@ export async function DELETE(req: NextRequest) {
   }
 }
 
-// Helper - Auto-derive remarks from grade value (Philippine grading system)
+// Helper - Auto-derive remarks from grade value (Philippine 1.0-5.0 scale)
 function deriveRemarks(grade: number): string {
-  if (grade === 0) return 'INCOMPLETE';
   if (grade <= 3.0) return 'PASSED';
-  if (grade === 5.0) return 'FAILED';
-  return 'PASSED';
+  if (grade >= 3.1 && grade <= 5.0) return 'FAILED';
+  // Incomplete is usually for missing grades, assuming 0 or incomplete.
+  return 'INCOMPLETE';
 }
