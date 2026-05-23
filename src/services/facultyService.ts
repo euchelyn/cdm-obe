@@ -14,10 +14,10 @@
 // ─────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────
-import { FacultyCourse } from "@/types/FacultyCourse";
-import { Block } from "@/types/Block";
-import { BlockStudent } from "@/types/BlockStudent";
-import { Grade } from "@/types/Grade";
+import { FacultyCourse } from "@/shared/types/FacultyCourse";
+import { Block } from "@/shared/types/Block";
+import { BlockStudent } from "@/shared/types/BlockStudent";
+import { Grade } from "@/shared/types/Grade";
 
 // ─────────────────────────────────────────────────────────────
 // Helpers

@@ -415,183 +415,139 @@ export default function FacultyPage() {
   const gradedList = Object.entries(studentGrades).filter(([key, val]) => val.scores);
   const gradedCount = gradedList.length;
 
-  const fetchGradesFromDB = async () => {
-    try {
-      const facultyAssessments = assessments.filter(a =>
-        String(a.created_by) === String(currentUser?.link?.roleAccount?._id)
-      );
-      if (facultyAssessments.length === 0) return;
+const fetchGradesFromDB = async (facultyAssessmentsData, facultyCoursesData) => {
+  try {
+    if (!facultyAssessmentsData || facultyAssessmentsData.length === 0) return;
 
-      const gradesMap = {};
+const facultyAssessments = facultyAssessmentsData.filter(a =>
+  a.created_by?.toString() === currentUser?.link?.roleAccount?._id?.toString()
+);
+    if (facultyAssessments.length === 0) return;
 
-      for (const assessment of facultyAssessments) {
-        const assessmentId = assessment._id;
-        const isFinalExam = assessment.type === 'final_exam';
-        const questions = assessment.questions || [];
-        const rubrics = assessment.rubrics || [];
+    const gradesMap = {};
 
-        const submissions = await getAllStudentAssessments({
-          assessment_id: assessmentId,
+    for (const assessment of facultyAssessments) {
+      const assessmentId = assessment._id;
+      const isFinalExam = assessment.type === 'final_exam';
+      const questions = assessment.questions || [];
+      const rubrics = assessment.rubrics || [];
+
+      const submissions = await getAllStudentAssessments({
+        assessment_id: assessmentId,
+      });
+
+      for (const submission of submissions) {
+        const studentAssessmentId = submission._id;
+        const studentId = submission.student_id;
+
+        // ✅ Use passed-in data instead of state
+const fc = facultyCoursesData.find(fc =>
+  fc._id?.toString() === assessment.faculty_course_id?.toString()
+);
+        if (!fc) continue;
+
+        const courseId = fc._id;
+        const gradeKey = `${courseId}_${studentId}`;
+
+        const grades = await getAllGrades({
+          student_assessment_id: studentAssessmentId,
         });
 
-        for (const submission of submissions) {
-          const studentAssessmentId = submission._id;
-          const studentId = submission.student_id;
+        if (grades.length > 0) {
+          const grade = grades[0];
+          let scores = {};
 
-          const fc = facultyCourses.find(fc =>
-            String(fc._id) === String(assessment.faculty_course_id)
-          );
-
-          if (!fc) continue;
-
-          const courseId = fc._id;
-          const gradeKey = `${courseId}_${studentId}`;
-
-          const grades = await getAllGrades({
-            student_assessment_id: studentAssessmentId,
-          });
-
-          if (grades.length > 0) {
-            const grade = grades[0];
-
-            let scores = {};
-
-            if (isFinalExam && questions.length > 0) {
-              const qResults = await getQuestionResults(studentAssessmentId);
-
-              questions.forEach((q, idx) => {
-                const result = qResults.results?.find(
-                  r => String(r.question?._id) === String(q._id)
-                );
-                scores[`q${idx}`] = result?.is_correct || false;
-              });
-
-            } else if (!isFinalExam && rubrics.length > 0) {
-              const rResults = await getRubricResults(studentAssessmentId);
-
-              rubrics.forEach((r, idx) => {
-                const result = rResults.results?.find(
-                  rItem => String(rItem.rubric?._id) === String(r._id)
-                );
-                if (result?.level) {
-                  scores[`r${idx}`] = result.level;
-                }
-              });
-            }
-
-            gradesMap[gradeKey] = {
-              scores: scores,
-              overall_grade: grade.overall_grade,
-              savedAt: grade.submitted_at,
-              grade_id: grade._id,
-              student_assessment_id: studentAssessmentId,
-            };
-
+          if (isFinalExam && questions.length > 0) {
+            const qResults = await getQuestionResults(studentAssessmentId);
+            questions.forEach((q, idx) => {
+              const result = qResults.results?.find(
+                r => String(r.question?._id) === String(q._id)
+              );
+              scores[`q${idx}`] = result?.is_correct || false;
+            });
+          } else if (!isFinalExam && rubrics.length > 0) {
+            const rResults = await getRubricResults(studentAssessmentId);
+            rubrics.forEach((r, idx) => {
+              const result = rResults.results?.find(
+                rItem => String(rItem.rubric?._id) === String(r._id)
+              );
+              if (result?.level) {
+                scores[`r${idx}`] = result.level;
+              }
+            });
           }
+          
+          console.log('🔥 facultyCoursesData IDs:', facultyCoursesData.map(fc => fc._id));
+console.log('🔥 Looking for faculty_course_id:', assessment.faculty_course_id);
+
+          gradesMap[gradeKey] = {
+            scores,
+            overall_grade: grade.overall_grade,
+            savedAt: grade.submitted_at,
+            grade_id: grade._id,
+            student_assessment_id: studentAssessmentId,
+          };
         }
       }
-
-      setStudentGrades(gradesMap);
-      localStorage.setItem('faculty_grades', JSON.stringify(gradesMap));
-    } catch (error) {
     }
-  };
 
-  const fetchFacultyData = async () => {
-    try {
-      const [
-        fcData,
-        blockData,
-        bsData,
-        assessmentData
-      ] = await Promise.all([
-        getAllFacultyCourses({
-          faculty_id: currentUser?.link?.roleAccount?._id?.toString(),
-        }),
+    setStudentGrades(gradesMap);
+    localStorage.setItem('faculty_grades', JSON.stringify(gradesMap));
+    console.log('✅ Grades loaded:', gradesMap);
+  } catch (error) {
+    console.error('fetchGradesFromDB error:', error);
+  }
+};
 
-        getAllBlocks(),
-        getAllBlockStudents(),
 
-        getAllAssessments({
-          created_by: currentUser?.link?.roleAccount?._id?.toString(),
-        }),
-      ]);
+const fetchFacultyData = async () => {
+  try {
+    const [fcData, blockData, bsData, assessmentData] = await Promise.all([
+      getAllFacultyCourses({
+        faculty_id: currentUser?.link?.roleAccount?._id?.toString(),
+      }),
+      getAllBlocks(),
+      getAllBlockStudents(),
+      getAllAssessments({
+        created_by: currentUser?.link?.roleAccount?._id?.toString(),
+      }),
+    ]);
 
-      // ─────────────────────────────────────────────────────────────
-      // MAP BLOCKS + STUDENTS TO FACULTY COURSES
-      // ─────────────────────────────────────────────────────────────
-
-      const fcWithBlocks = fcData.map(fc => {
-        const blocks = blockData.filter(
-          b => b.faculty_course_id?.toString() === fc._id?.toString()
-        );
-
-        const blocksWithStudents = blocks.map(block => {
-          const enrolledStudents = bsData
-            .filter(
-              bs =>
-                bs.block?._id?.toString() ===
-                block._id?.toString()
-            )
-            .map(
-              bs =>
-                bs.student?._id?.toString() ||
-                bs.student?._id
-            );
-
-          return {
-            ...block,
-            students: enrolledStudents,
-          };
-        });
-
-        return {
-          ...fc,
-          blocks: blocksWithStudents,
-        };
-      });
-
-      // ─────────────────────────────────────────────────────────────
-      // 🔥 BUILD FAST LOOKUP MAP
-      // ─────────────────────────────────────────────────────────────
-
-      const facultyCourseMap = new Map(
-        fcData.map(fc => [String(fc._id), fc])
+    const fcWithBlocks = fcData.map(fc => {
+      const blocks = blockData.filter(
+        b => b.faculty_course_id?.toString() === fc._id?.toString()
       );
 
-      // ─────────────────────────────────────────────────────────────
-      // 🔥 ATTACH COURSE INFO INTO ASSESSMENTS
-      // ─────────────────────────────────────────────────────────────
+      const blocksWithStudents = blocks.map(block => {
+        const enrolledStudents = bsData
+          .filter(bs => bs.block?._id?.toString() === block._id?.toString())
+          .map(bs => bs.student?._id?.toString() || bs.student?._id);
 
-      const assessmentsWithCourse = assessmentData.map(a => {
-        const fc = facultyCourseMap.get(String(a.faculty_course_id));
-
-        return {
-          ...a,
-          faculty_course: fc || null,
-          course: fc?.course || null,
-        };
+        return { ...block, students: enrolledStudents };
       });
 
-      // ─────────────────────────────────────────────────────────────
-      // SAVE STATES FIRST
-      // ─────────────────────────────────────────────────────────────
+      return { ...fc, blocks: blocksWithStudents };
+    });
 
-      setFacultyCourses(fcWithBlocks);
-      setAssessments(assessmentsWithCourse);
-      setBlockStudents(bsData);
+    const facultyCourseMap = new Map(fcData.map(fc => [String(fc._id), fc]));
 
-      // ─────────────────────────────────────────────────────────────
-      // THEN FETCH GRADES (after courses & assessments are set)
-      // ─────────────────────────────────────────────────────────────
+    const assessmentsWithCourse = assessmentData.map(a => {
+      const fc = facultyCourseMap.get(String(a.faculty_course_id));
+      return { ...a, faculty_course: fc || null, course: fc?.course || null };
+    });
 
-      await fetchGradesFromDB();
+    setFacultyCourses(fcWithBlocks);
+    setAssessments(assessmentsWithCourse);
+    setBlockStudents(bsData);
 
-    } catch (e) {
-      console.error(e);
-      showToast(e.message || 'Failed to fetch faculty data');
-    }
-  };
+    // ✅ Pass fresh data directly — don't read from state
+    await fetchGradesFromDB(assessmentsWithCourse, fcWithBlocks);
+
+  } catch (e) {
+    console.error(e);
+    showToast(e.message || 'Failed to fetch faculty data');
+  }
+};
 
   useEffect(() => {
     const user = getClientUser();
@@ -655,12 +611,11 @@ export default function FacultyPage() {
   // ADD RE-FETCH ON TAB CHANGE
   // ─────────────────────────────────────────────────────────────
 
-  useEffect(() => {
-    if (activeTab === 'grading' && facultyCourses.length > 0 && assessments.length > 0) {
-      fetchGradesFromDB();
-    }
-  }, [activeTab, facultyCourses, assessments]);
-
+useEffect(() => {
+  if (activeTab === 'grading' && facultyCourses.length > 0 && assessments.length > 0) {
+    fetchGradesFromDB(assessments, facultyCourses); // ✅ pass current state
+  }
+}, [activeTab, facultyCourses, assessments]);
 
   const handleAddCourse = async () => {
     try {

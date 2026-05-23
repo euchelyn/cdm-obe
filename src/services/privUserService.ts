@@ -1,4 +1,4 @@
-import { UserPayload, PrivRole } from "@/types/PrivUser";
+import { UserPayload, PrivRole } from "@/shared/types/PrivUser";
 import { getStudentById } from "./masterlistService";
 import { createAccountLink } from "./accountLinkService";
 import { api_register } from "./authService";

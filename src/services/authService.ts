@@ -1,5 +1,5 @@
-import { api_links } from "../types/links";
-import { page_links } from "../types/links";
+import { api_links } from "../shared/types/links";
+import { page_links } from "../shared/types/links";
 
 type Role = keyof typeof page_links;
 

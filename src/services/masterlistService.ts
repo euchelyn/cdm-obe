@@ -11,8 +11,8 @@
 // ─────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────
-import { Student } from "@/types/Student";
-import { StudentPaginatedResponse } from "@/types/StudentPaginatedResponse";
+import { Student } from "@/shared/types/Student";
+import { StudentPaginatedResponse } from "@/shared/types/StudentPaginatedResponse";
 
 // ─────────────────────────────────────────────────────────────
 // Helpers

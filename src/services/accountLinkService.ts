@@ -1,4 +1,4 @@
-import { AccountLinkPayload } from "@/types/AccountLinkPayload";
+import { AccountLinkPayload } from "@/shared/types/AccountLinkPayload";
 import { UserRole } from "@/lib/session";
 
 const BASE_PATH = "/api/auth/register/account_links";

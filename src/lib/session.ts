@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
-import { SessionPayload } from "../types/SessionToken";
-import { UserRole } from "@/types/UserRole";
+import { SessionPayload } from "../shared/types/SessionToken";
+import { UserRole } from "@/shared/types/UserRole";
 
 
 const SESSION_COOKIE = "session";

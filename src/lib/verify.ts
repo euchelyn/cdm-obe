@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 import { setSession } from "./session";
-import { SessionPayload } from "@/types/SessionToken";
+import { SessionPayload } from "@/shared/types/SessionToken";
 const COOKIE_NAME = "session";
 
 export async function getSession(): Promise<SessionPayload | null> {

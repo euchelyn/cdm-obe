@@ -1,4 +1,4 @@
-import { Student } from "@/types/Student";
+import { Student } from "@/shared/types/Student";
 
 export type StudentPaginatedResponse = {
     data: Student[];

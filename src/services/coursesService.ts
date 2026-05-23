@@ -1,15 +1,6 @@
-const BASE_URL = '/api/courses';
+import { Course } from "@/shared/types/Course";
 
-export interface Course {
-  _id?: string;
-  version: string;
-  program: string;
-  code: string;
-  course: string;
-  year_level: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
+const BASE_URL = '/api/courses';
 
 // GET - Fetch all courses
 export async function getAllCourses(): Promise<Course[]> {

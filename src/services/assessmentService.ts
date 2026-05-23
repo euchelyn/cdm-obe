@@ -16,12 +16,12 @@
 // ─────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────
-import { Assessment } from "@/types/Assessment";
-import { Question } from "@/types/Question";
-import { Rubric } from "@/types/StudentAssessment";
-import { StudentAssessment } from "@/types/StudentAssess";
-import { QuestionResult } from "@/types/QuestionResult";
-import { RubricResult } from "@/types/RubricResult";
+import { Assessment } from "@/shared/types/Assessment";
+import { Question } from "@/shared/types/Question";
+import { Rubric } from "@/shared/types/StudentAssessment";
+import { StudentAssessment } from "@/shared/types/StudentAssess";
+import { QuestionResult } from "@/shared/types/QuestionResult";
+import { RubricResult } from "@/shared/types/RubricResult";
 
 // ─────────────────────────────────────────────────────────────
 // Helpers
