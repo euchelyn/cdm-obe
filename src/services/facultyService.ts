@@ -138,6 +138,45 @@ export async function deleteFacultyCourse(id: string): Promise<{ message: string
   return handleResponse(res);
 }
 
+/**
+ * Count faculty course assignments.
+ *
+ * Optional filters:
+ * - faculty_id
+ * - course_id
+ *
+ * @example
+ * // Count all faculty course assignments
+ * countFacultyCourses()
+ *
+ * // Count assignments of one faculty
+ * countFacultyCourses({ faculty_id: '665f...' })
+ */
+
+export async function countFacultyCourses(
+  params: { faculty_id?: string; course_id?: string } = {}
+): Promise<{ count: number }> {
+  const query = new URLSearchParams();
+
+  query.set('countOnly', 'true');
+
+  if (params.faculty_id) {
+    query.set('faculty_id', params.faculty_id);
+  }
+
+  if (params.course_id) {
+    query.set('course_id', params.course_id);
+  }
+
+  const url = `${FACULTY_COURSES_URL}?${query.toString()}`;
+
+  const res = await fetch(url, {
+    method: 'GET',
+  });
+
+  return handleResponse<{ count: number }>(res);
+}
+
 // ═════════════════════════════════════════════════════════════
 // BLOCKS  →  /api/blocks
 // ═════════════════════════════════════════════════════════════

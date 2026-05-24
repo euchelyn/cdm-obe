@@ -54,12 +54,18 @@ export async function POST(req: NextRequest) {
 // GET - Fetch all faculty_courses or a single one by id (?id=...)
 //       Filter by faculty  (?faculty_id=...)
 //       Filter by course   (?course_id=...)
+// GET - Fetch all faculty_courses or a single one by id (?id=...)
+//       Filter by faculty  (?faculty_id=...)
+//       Filter by course   (?course_id=...)
+//       Count only         (?countOnly=true)
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
+
     const id = searchParams.get('id');
     const faculty_id = searchParams.get('faculty_id');
     const course_id = searchParams.get('course_id');
+    const countOnly = searchParams.get('countOnly');
 
     const db = await connectDB();
     const facultyCourses = db.collection('faculty_courses');
@@ -108,6 +114,7 @@ export async function GET(req: NextRequest) {
       if (!ObjectId.isValid(faculty_id)) {
         return NextResponse.json({ error: 'Invalid faculty_id' }, { status: 400 });
       }
+
       filter.faculty_id = new ObjectId(faculty_id);
     }
 
@@ -115,9 +122,21 @@ export async function GET(req: NextRequest) {
       if (!ObjectId.isValid(course_id)) {
         return NextResponse.json({ error: 'Invalid course_id' }, { status: 400 });
       }
+
       filter.course_id = new ObjectId(course_id);
     }
 
+    // Count only endpoint
+    if (countOnly === 'true') {
+      const count = await facultyCourses.countDocuments(filter);
+
+      return NextResponse.json(
+        { count },
+        { status: 200 }
+      );
+    }
+
+    // Fetch records
     const records = await facultyCourses
       .aggregate([
         { $match: filter },

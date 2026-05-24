@@ -7,9 +7,9 @@
  *   /api/assessments
  *   /api/assessments/questions
  *   /api/assessments/rubrics
- *   /api/assessments/student-assessments
- *   /api/assessments/question/question-results
- *   /api/assessments/rubcrics/rubric-results
+ *   /api/assessments/student_assessments
+ *   /api/assessments/question/question_results
+ *   /api/assessments/rubcrics/rubric_results
  * ─────────────────────────────────────────────────────────────
  */
 
@@ -257,6 +257,30 @@ export async function deleteAllQuestions(assessment_id: string): Promise<{ messa
   return handleResponse(res);
 }
 
+
+export async function getQuestionsByAssessmentId(assessmentId: string) {
+  try {
+    const res = await fetch(
+      `${QUESTIONS_URL}?assessment_id=${assessmentId}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || 'Failed to fetch questions');
+    }
+
+    return data;
+  } catch (error: any) {
+    throw new Error(error.message);
+  }
+}
 // ═════════════════════════════════════════════════════════════
 // RUBRICS  →  /api/assessments/rubrics
 // ═════════════════════════════════════════════════════════════
@@ -622,7 +646,7 @@ export async function deleteAllQuestionResults(
 // RUBRIC RESULTS  →  /api/assessments/rubrics/rubric-results
 // ═════════════════════════════════════════════════════════════
 
-const RUBRIC_RESULTS_URL = '/api/assessments/rubrics/rubrics_results';
+const RUBRIC_RESULTS_URL = '/api/assessments/rubrics/rubrics_result';
 
 /**
  * Fetch all rubric results for a student submission.
@@ -850,4 +874,92 @@ export async function updateGrade(
 export async function deleteGrade(id: string): Promise<{ message: string }> {
   const res = await fetch(`${GRADES_URL}?id=${id}`, { method: 'DELETE' });
   return handleResponse(res);
+}
+
+export async function getAssessmentCountByFaculty(
+  facultyId: string
+): Promise<number> {
+  const assessments = await getAllAssessments({
+    created_by: facultyId,
+  });
+
+  return assessments.length;
+}
+
+export async function getGrades(studentId: string) {
+    console.log("DEBUG getGrades - studentId:", studentId);
+
+    const studentAssessments = await getAllStudentAssessments({ 
+        student_id: studentId 
+    });
+
+    console.log("DEBUG getGrades - studentAssessments:", studentAssessments);
+
+    const allGrades: any[] = [];
+
+    if (!studentAssessments || studentAssessments.length === 0) {
+        console.log("DEBUG getGrades - No student assessments found");
+        return allGrades;
+    }
+
+    for (const assessment of studentAssessments) {
+        const studentAssessmentId = assessment._id;
+        
+        console.log("DEBUG getGrades - studentAssessmentId:", studentAssessmentId);
+
+        // ✅ Get question results
+        const questionResultsData = await getQuestionResults(studentAssessmentId);
+        console.log("DEBUG getGrades - questionResultsData:", questionResultsData);
+
+        // ✅ Get rubric results (THIS WAS MISSING!)
+        const rubricResultsData = await getRubricResults(studentAssessmentId);
+        console.log("DEBUG getGrades - rubricResultsData:", rubricResultsData);
+
+        // Calculate from question_results
+        const questionResults = questionResultsData.results || [];
+        const totalQuestions = questionResults.length;
+        const correctAnswers = questionResults.filter(q => q.is_correct === true).length;
+        const gradePercent = totalQuestions > 0 
+            ? Math.round((correctAnswers / totalQuestions) * 100) 
+            : 0;
+
+        // ✅ Calculate from rubric_results
+        const rubricResults = rubricResultsData.results || [];
+        let rubricPercent = 0;
+        if (rubricResults.length > 0) {
+            const levelValues = { excellent: 100, good: 85, fair: 70, poor: 50 };
+            const rubricScores = rubricResults
+                .map(r => levelValues[r.level?.toLowerCase()] || 0)
+                .filter(s => s > 0);
+            
+            rubricPercent = rubricScores.length > 0
+                ? Math.round(rubricScores.reduce((a, b) => a + b, 0) / rubricScores.length)
+                : 0;
+        }
+
+        // ✅ Use whichever has data (prefer question results if both exist)
+        const finalGradePercent = gradePercent > 0 ? gradePercent : rubricPercent;
+
+        console.log("DEBUG getGrades - totalQuestions:", totalQuestions);
+        console.log("DEBUG getGrades - correctAnswers:", correctAnswers);
+        console.log("DEBUG getGrades - totalRubrics:", rubricResults.length);
+        console.log("DEBUG getGrades - finalGradePercent:", finalGradePercent);
+
+        allGrades.push({
+            student_assessment_id: studentAssessmentId,
+            assessment_id: assessment.assessment_id,
+            block_id: assessment.block_id,
+            student_id: studentId,
+            total_questions: totalQuestions,
+            correct_answers: correctAnswers,
+            total_rubrics: rubricResults.length,
+            grade_percent: finalGradePercent,
+            question_results: questionResults,
+            rubric_results: rubricResults,
+            po_scores: questionResultsData.po_scores || {}
+        });
+    }
+
+    console.log("DEBUG getGrades - Final allGrades:", allGrades);
+    return allGrades;
 }
