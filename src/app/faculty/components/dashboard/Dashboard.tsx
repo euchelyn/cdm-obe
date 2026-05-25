@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 
 //=======================================
@@ -6,6 +5,7 @@ import { useEffect, useState } from "react";
 //=======================================
 import { countFacultyCourses } from "@/services/facultyService";
 import { getAllAssessments, getAssessmentCountByFaculty } from "@/services/assessmentService";
+import { getStudentAssessmentsByStudentId } from "@/services/assessmentService";
 
 //=======================================
 // COMPONENTS
@@ -14,6 +14,7 @@ import DashboardButton from "./DashboardButton";
 import DashboardModal from "./DashboardModal";
 import QuickActionButton from "./QuickActionButton";
 import { error } from "node:console";
+import CourseOverview from "./CourseOverview";
 
 export default function Dashboard({
     activeTab,
@@ -35,7 +36,10 @@ export default function Dashboard({
     assessment_count: 0,
     graded_count: 0,
     student_count: 0,
+    course_graded_count: {} as Record<string, number>
   });
+
+  const [isLoadingGraded, setIsLoadingGraded] = useState(false);  // Loading state for graded students
 
 
 
@@ -46,6 +50,30 @@ export default function Dashboard({
       loadAssessmentCount();
     }
   }, [faculty_id]);
+
+  useEffect(() => {
+    if (courses.length > 0) {
+      loadTotalStudents();
+    }
+  }, [courses]);
+
+  useEffect(() => {
+    const handleGradesUpdated = () => {
+      loadTotalStudents();
+    };
+
+    window.addEventListener('grades-updated', handleGradesUpdated);
+    
+    return () => {
+      window.removeEventListener('grades-updated', handleGradesUpdated);
+    };
+  }, [courses]);
+
+  useEffect(() => {
+    if (courses.length > 0) {
+      loadTotalStudents();
+    }
+  }, [courses]);
 
   async function loadFacultyCourseCount() {
     try {
@@ -76,6 +104,48 @@ export default function Dashboard({
     }
   }
   
+
+// Fix the loadTotalStudents function
+const loadTotalStudents = async () => {
+  setIsLoadingGraded(true);  // Set loading to true
+  
+  const courseGradedCount: Record<string, number> = {};
+  
+  let totalStudents = 0;
+  let totalGraded = 0;
+
+  for (const fc of courses) {
+    const courseId = fc.course._id;
+    courseGradedCount[courseId] = 0;
+    
+    for (const block of fc.blocks || []) {
+      for (const studentId of block.students || []) {
+        totalStudents++;
+        
+        try {
+          const assessments = await getStudentAssessmentsByStudentId(studentId);
+          
+          if (assessments && assessments.length > 0) {
+            totalGraded++;
+            courseGradedCount[courseId] = (courseGradedCount[courseId] || 0) + 1;
+          }
+        } catch (err) {
+          console.error(`Error fetching assessments for student ${studentId}:`, err);
+        }
+      }
+    }
+  }
+
+  setDashboardCount(prev => ({
+    ...prev,
+    student_count: totalStudents,
+    graded_count: totalGraded,
+    course_graded_count: courseGradedCount,
+  }));
+
+  setIsLoadingGraded(false);  // Set loading to false when done
+};
+
   return (
         <>
             {activeTab === 'dashboard' && (
@@ -168,45 +238,14 @@ export default function Dashboard({
                         </div>
                       </div>
         
-                      <div className="dashboard-section">
-                        <h2>Course Overview</h2>
-                        {courses.length > 0 ? (
-                          <div className="course-overview-list">
-                            {courses.map(course => {
-                              const assessment = courseAssessments[course.id];
-                              const totalStudents = course.blocks.reduce((sum, b) => sum + b.students.length, 0);
-                              const gradedCount = course.blocks.reduce((sum, b) => {
-                                return sum + b.students.filter(sid => {
-                                  const gradeKey = `${course.id}_${sid}`;
-                                  return studentGrades[gradeKey]?.scores;
-                                }).length;
-                              }, 0);
-        
-                              return (
-                                <div key={course._id} className="course-overview-item">
-                                  <div className="overview-header">
-                                    <h4>{course.courseName}</h4>
-                                    <div className="overview-badges">
-                                      {assessment && <span className="badge assessment-badge">Assessment ✓</span>}
-                                      {gradedCount > 0 && <span className="badge graded-badge">{gradedCount}/{totalStudents} Graded</span>}
-                                    </div>
-                                  </div>
-                                  <div className="overview-progress">
-                                    <div className="progress-bar">
-                                      <div className="progress-fill" style={{ width: `${totalStudents > 0 ? (gradedCount / totalStudents) * 100 : 0}%` }}></div>
-                                    </div>
-                                    <span className="progress-text">{gradedCount}/{totalStudents} students graded</span>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div className="empty-state compact">
-                            <p>No courses yet. Create one to get started!</p>
-                          </div>
-                        )}
-                      </div>
+                      <CourseOverview 
+                        courses={courses}
+                        courseAssessments={courseAssessments}
+                        studentGrades={studentGrades}
+                        courseGradedCount={dashboardCount.course_graded_count}
+                        isLoading={isLoadingGraded}  // Pass loading state
+                      />
+                      
                     </div>
                   </div>
                 )}

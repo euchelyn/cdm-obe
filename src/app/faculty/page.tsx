@@ -550,7 +550,7 @@ const fetchFacultyData = async () => {
     
   };
 
-console.log("rubrics from assessment:", assessments.find(a => a.type === 'rubric')?.rubrics);
+console.log("Faculty: ", facultyCourses);
 
   return (
     <div className="portal-layout">

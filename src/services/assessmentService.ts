@@ -963,3 +963,105 @@ export async function getGrades(studentId: string) {
     console.log("DEBUG getGrades - Final allGrades:", allGrades);
     return allGrades;
 }
+
+// lib/api/studentAssessments.ts
+
+/**
+ * Fetch student assessments by student_id
+ * @param student_id - The student ID to filter by (required)
+ * @param assessment_id - Optional: filter by specific assessment
+ * @param block_id - Optional: filter by specific block
+ * @returns Array of student assessment records with PO scores
+ */
+export async function getStudentAssessmentsByStudentId(
+  studentId: string,
+  options?: {
+    assessmentId?: string;
+    blockId?: string;
+  }
+) {
+  const params = new URLSearchParams();
+  params.set('student_id', studentId);
+
+  if (options?.assessmentId) {
+    params.set('assessment_id', options.assessmentId);
+  }
+
+  if (options?.blockId) {
+    params.set('block_id', options.blockId);
+  }
+
+  const response = await fetch(
+    `/api/assessments/students_assessment?${params.toString()}`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to fetch student assessments');
+  }
+
+  const data = await response.json();
+  return data;
+}
+
+/**
+ * Fetch all student assessments for a specific assessment
+ * @param assessmentId - The assessment ID
+ * @returns Array of student assessment records
+ */
+export async function getStudentAssessmentsByAssessmentId(assessmentId: string) {
+  const params = new URLSearchParams();
+  params.set('assessment_id', assessmentId);
+
+  const response = await fetch(
+    `/api/student-assessments?${params.toString()}`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to fetch assessments');
+  }
+
+  const data = await response.json();
+  return data;
+}
+
+/**
+ * Fetch all student assessments for a specific block
+ * @param blockId - The block ID
+ * @returns Array of student assessment records
+ */
+export async function getStudentAssessmentsByBlockId(blockId: string) {
+  const params = new URLSearchParams();
+  params.set('block_id', blockId);
+
+  const response = await fetch(
+    `/api/student-assessments?${params.toString()}`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to fetch assessments');
+  }
+
+  const data = await response.json();
+  return data;
+}

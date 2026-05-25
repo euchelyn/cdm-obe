@@ -348,6 +348,7 @@ export default function Grading({
       setRubricScores({});
 
       await fetchGradesFromDB();
+      window.dispatchEvent(new Event('grades-updated'));
     } catch (error) {
       showToast(error.message || 'Failed to save grades');
       console.error('handleSaveGrades error:', error);
