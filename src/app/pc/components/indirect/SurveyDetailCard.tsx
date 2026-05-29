@@ -3,7 +3,8 @@ import { useEffect } from "react"
 
 export default function SurveyDetailCard({
     surveyPayload, setSurveyPayload,
-    saveFormToDatabase
+    saveFormToDatabase,
+    setCurrentVersion
 }) {
 
     useEffect(() => {
@@ -20,10 +21,14 @@ export default function SurveyDetailCard({
                     className="correction-textbox" 
                     style={{ width: 'max-content', minWidth: '150px', marginBottom: '25px', fontWeight: 'bold' }}
                     value={surveyPayload.version}
-                    onChange={(e) => setSurveyPayload(prev => ({
-                        ...prev,
-                        version: e.target.value
-                    }))}
+                    onChange={(e) => {
+                            const newVersion = e.target.value;
+                            setSurveyPayload(prev => ({
+                                ...prev,
+                                version: newVersion
+                            }));
+                            setCurrentVersion(newVersion);
+                        }}
                 >
                     <option value="2024">2024 Version</option>
                     <option value="2025">2025 Version</option>

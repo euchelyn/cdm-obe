@@ -15,7 +15,7 @@ import { PO_DEFINITIONS } from "@/shared/constants/constants";
 export default function POQuestionCard({
     surveyPayload,
     setSurveyPayload,
-}) {
+}: any) {
 
     //=======================================
     // STATES
@@ -26,9 +26,9 @@ export default function POQuestionCard({
     //=======================================
     // DERIVED DATA
     //=======================================
-    const allQuestions = surveyPayload?.questions
-        ? Object.values(surveyPayload.questions)
-        : [];
+    const questionsObject = surveyPayload?.questions || {};
+
+    const allQuestions = Object.values(questionsObject);
 
     //=======================================
     // FUNCTIONS
@@ -36,25 +36,21 @@ export default function POQuestionCard({
 
     const addPOQuestion = (poId: string) => {
 
-        // Get all questions under this PO
         const poQuestions = allQuestions.filter(
-            (q: any) => q.poId === poId
+            (q: any) => q && q.poId === poId
         );
 
-        // Extract existing numbers from ids like qA1, qA2
         const existingNumbers = poQuestions.map((q: any) => {
-            const match = q.id.match(/^q[A-Z](\d+)$/);
+            const match = q.id?.match(/^q[A-Z](\d+)$/);
 
             return match ? parseInt(match[1]) : 0;
         });
 
-        // Find next available number
         const nextNumber =
             existingNumbers.length > 0
                 ? Math.max(...existingNumbers) + 1
                 : 1;
 
-        // Generate conventional ID
         const newId = `q${poId}${nextNumber}`;
 
         const newQuestion = {
@@ -69,7 +65,7 @@ export default function POQuestionCard({
         setSurveyPayload((prev: any) => ({
             ...prev,
             questions: {
-                ...prev.questions,
+                ...(prev.questions || {}),
                 [newId]: newQuestion,
             },
         }));
@@ -82,12 +78,14 @@ export default function POQuestionCard({
         key: string,
         value: any
     ) => {
+
         setSurveyPayload((prev: any) => {
-            const currentQuestion = prev.questions[id];
+
+            const currentQuestion = prev.questions?.[id];
 
             if (!currentQuestion) return prev;
 
-            let updatedQuestion = {
+            const updatedQuestion = {
                 ...currentQuestion,
                 [key]: value,
             };
@@ -104,7 +102,7 @@ export default function POQuestionCard({
             return {
                 ...prev,
                 questions: {
-                    ...prev.questions,
+                    ...(prev.questions || {}),
                     [id]: updatedQuestion,
                 },
             };
@@ -112,8 +110,12 @@ export default function POQuestionCard({
     };
 
     const deleteQuestion = (id: string) => {
+
         setSurveyPayload((prev: any) => {
-            const updatedQuestions = { ...prev.questions };
+
+            const updatedQuestions = {
+                ...(prev.questions || {}),
+            };
 
             delete updatedQuestions[id];
 
@@ -133,19 +135,23 @@ export default function POQuestionCard({
         optionIndex: number,
         value: string
     ) => {
+
         setSurveyPayload((prev: any) => {
-            const question = prev.questions[questionId];
+
+            const question = prev.questions?.[questionId];
 
             if (!question) return prev;
 
-            const updatedOptions = [...(question.options || [])];
+            const updatedOptions = [
+                ...(question.options || []),
+            ];
 
             updatedOptions[optionIndex] = value;
 
             return {
                 ...prev,
                 questions: {
-                    ...prev.questions,
+                    ...(prev.questions || {}),
                     [questionId]: {
                         ...question,
                         options: updatedOptions,
@@ -159,19 +165,21 @@ export default function POQuestionCard({
         questionId: string,
         optionIndex: number
     ) => {
+
         setSurveyPayload((prev: any) => {
-            const question = prev.questions[questionId];
+
+            const question = prev.questions?.[questionId];
 
             if (!question) return prev;
 
-            const updatedOptions = question.options.filter(
+            const updatedOptions = (question.options || []).filter(
                 (_: any, index: number) => index !== optionIndex
             );
 
             return {
                 ...prev,
                 questions: {
-                    ...prev.questions,
+                    ...(prev.questions || {}),
                     [questionId]: {
                         ...question,
                         options: updatedOptions,
@@ -182,15 +190,17 @@ export default function POQuestionCard({
     };
 
     const handleAddOption = (questionId: string) => {
+
         setSurveyPayload((prev: any) => {
-            const question = prev.questions[questionId];
+
+            const question = prev.questions?.[questionId];
 
             if (!question) return prev;
 
             return {
                 ...prev,
                 questions: {
-                    ...prev.questions,
+                    ...(prev.questions || {}),
                     [questionId]: {
                         ...question,
                         options: [
@@ -215,10 +225,12 @@ export default function POQuestionCard({
                     gap: "40px",
                 }}
             >
-                {PO_DEFINITIONS.map((po) => {
+                {PO_DEFINITIONS.map((po: any) => {
 
                     const poQuestions = allQuestions.filter(
-                        (q: any) => q.poId === po.id
+                        (q: any) =>
+                            q &&
+                            q.poId === po.id
                     );
 
                     const currentPoWeight = poQuestions.reduce(
@@ -246,6 +258,7 @@ export default function POQuestionCard({
 
                             {/* EMPTY STATE */}
                             {poQuestions.length === 0 ? (
+
                                 <div
                                     style={{
                                         border:
@@ -255,6 +268,7 @@ export default function POQuestionCard({
                                         textAlign: "center",
                                     }}
                                 >
+
                                     <p
                                         style={{
                                             color: "var(--text-sub)",
@@ -282,8 +296,11 @@ export default function POQuestionCard({
                                     >
                                         + Add First Question
                                     </button>
+
                                 </div>
+
                             ) : (
+
                                 <>
                                     {/* QUESTIONS */}
                                     {poQuestions.map((q: any, index: number) => {
@@ -332,6 +349,7 @@ export default function POQuestionCard({
                                                         marginBottom: "15px",
                                                     }}
                                                 >
+
                                                     <div
                                                         style={{
                                                             color:
@@ -355,8 +373,7 @@ export default function POQuestionCard({
                                                                 updateQuestion(
                                                                     q.id,
                                                                     "text",
-                                                                    e.target
-                                                                        .value
+                                                                    e.target.value
                                                                 )
                                                             }
                                                             placeholder="Type question title here..."
@@ -392,8 +409,9 @@ export default function POQuestionCard({
                                                                 updateQuestion(
                                                                     q.id,
                                                                     "weight",
-                                                                    e.target
-                                                                        .value
+                                                                    Number(
+                                                                        e.target.value
+                                                                    )
                                                                 )
                                                             }
                                                             style={{
@@ -408,6 +426,7 @@ export default function POQuestionCard({
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
+
                                                             deleteQuestion(
                                                                 q.id
                                                             );
@@ -415,6 +434,7 @@ export default function POQuestionCard({
                                                     >
                                                         🗑️
                                                     </button>
+
                                                 </div>
 
                                                 {/* OPTIONS */}
@@ -427,11 +447,13 @@ export default function POQuestionCard({
                                                         gap: "10px",
                                                     }}
                                                 >
+
                                                     {(q.options || []).map(
                                                         (
                                                             opt: string,
                                                             optIndex: number
                                                         ) => (
+
                                                             <div
                                                                 key={optIndex}
                                                                 style={{
@@ -442,6 +464,7 @@ export default function POQuestionCard({
                                                                         "center",
                                                                 }}
                                                             >
+
                                                                 <input
                                                                     type="text"
                                                                     value={opt}
@@ -451,9 +474,7 @@ export default function POQuestionCard({
                                                                         handleOptionTextChange(
                                                                             q.id,
                                                                             optIndex,
-                                                                            e
-                                                                                .target
-                                                                                .value
+                                                                            e.target.value
                                                                         )
                                                                     }
                                                                     style={{
@@ -465,6 +486,7 @@ export default function POQuestionCard({
                                                                     onClick={(
                                                                         e
                                                                     ) => {
+
                                                                         e.stopPropagation();
 
                                                                         handleRemoveOption(
@@ -475,6 +497,7 @@ export default function POQuestionCard({
                                                                 >
                                                                     ×
                                                                 </button>
+
                                                             </div>
                                                         )
                                                     )}
@@ -483,6 +506,7 @@ export default function POQuestionCard({
                                                     {isActive && (
                                                         <button
                                                             onClick={(e) => {
+
                                                                 e.stopPropagation();
 
                                                                 handleAddOption(
@@ -493,6 +517,7 @@ export default function POQuestionCard({
                                                             + Add Sub-item
                                                         </button>
                                                     )}
+
                                                 </div>
                                             </div>
                                         );
@@ -506,6 +531,7 @@ export default function POQuestionCard({
                                     >
                                         ➕ Add New Question to PO-{po.id}
                                     </button>
+
                                 </>
                             )}
                         </div>
