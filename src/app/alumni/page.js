@@ -1,8 +1,23 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, act } from 'react';
 import { useRouter } from 'next/navigation';
 import './alumni-globals.css';
+
+//==================================
+// COMPONENTS
+//==================================
+import AlumniSidebar from './components/AlumniSidebar';
+
+//==================================
+// SERVICES
+//==================================
+import { getAccountLink } from '@/services/accountLinkService';
+
+//==================================
+// HOOKS
+//==================================
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 const PO_DEFINITIONS = [
     { id: 'A', title: 'Engineering Knowledge', desc: 'Apply knowledge of mathematics, natural science, engineering fundamentals and an engineering specialization to the solution of complex engineering problems.' },
@@ -22,28 +37,30 @@ const PO_DEFINITIONS = [
 export default function AlumniDashboard() {
     const router = useRouter();
     const [isDarkMode, setIsDarkMode] = useState(true);
-    
+
     const [activeTab, setActiveTab] = useState('dashboard');
-    const [surveyTab, setSurveyTab] = useState('po'); 
+    const [surveyTab, setSurveyTab] = useState('po');
 
     const [surveyModalType, setSurveyModalType] = useState(null);
     const [surveyModalQuestions, setSurveyModalQuestions] = useState([]);
     const [surveyModalAnswers, setSurveyModalAnswers] = useState({});
-    
+
     const [activeModal, setActiveModal] = useState(null);
     const [isInviteOpen, setIsInviteOpen] = useState(false);
-    
+
     const [dbUser, setDbUser] = useState(null);
     const [courseMappings, setCourseMappings] = useState({});
     const [courseWeights, setCourseWeights] = useState({});
 
     const [employerStatus, setEmployerStatus] = useState('Pending');
-    const [employmentStatus, setEmploymentStatus] = useState(''); 
+    const [employmentStatus, setEmploymentStatus] = useState('');
     const [jobTitle, setJobTitle] = useState('');
     const [companyName, setCompanyName] = useState('');
     const [savedJobStatus, setSavedJobStatus] = useState('Not Updated');
     const [showInviteBtn, setShowInviteBtn] = useState(true);
     const [toastMessage, setToastMessage] = useState(null);
+    const [accountLink, setAccountLink] = useState(null);
+    const [loadingAccountLink, setLoadingAccountLink] = useState(true);
 
     const [userData, setUserData] = useState({
         name: 'Loading...',
@@ -51,6 +68,59 @@ export default function AlumniDashboard() {
         program: 'Loading...',
         initials: '...'
     });
+
+    const currentUser = useCurrentUser();
+
+    useEffect(() => {
+        if (!currentUser?.auth?.id) return;
+
+        const loadAccountLink = async () => {
+            try {
+                const res = await getAccountLink({
+                    user_account_id: currentUser.auth.id,
+                });
+
+                setAccountLink(res);
+
+                const roleAccount = res?.roleAccount;
+
+                if (roleAccount) {
+                    const nameParts = (roleAccount.name || '').split(' ').filter(Boolean);
+                    let initials = 'AL';
+                    if (nameParts.length >= 2) {
+                        initials = nameParts[0][0].toUpperCase() + nameParts[nameParts.length - 1][0].toUpperCase();
+                    } else if (nameParts.length === 1) {
+                        initials = nameParts[0].substring(0, 2).toUpperCase();
+                    }
+
+                    setUserData({
+                        name: res?.roleAccount?.name || 'Unknown',
+                        batch: res?.roleAccount?.batch || '2026',
+                        program: res?.roleAccount?.batch || 'BS Computer Engineering',
+                        initials,
+                    });
+
+                    setDbUser(roleAccount);
+                }
+
+                console.log('✅ Account Link loaded:', res);
+                console.log('✅ roleAccount:', res?.roleAccount);
+                console.log('✅ userData set:', {
+                    name: res?.roleAccount?.name,
+                    batch: res?.roleAccount?.batch,
+                    program: res?.roleAccount?.program,
+                });
+                
+                console.log('TEST', res)
+            } catch (err) {
+                console.error('❌ loadAccountLink error:', err);
+            } finally {
+                setLoadingAccountLink(false);
+            }
+        };
+
+        loadAccountLink();
+    }, [currentUser?.auth?.id]);
 
     useEffect(() => {
         const savedTheme = localStorage.getItem('theme');
@@ -63,12 +133,12 @@ export default function AlumniDashboard() {
 
         const session = JSON.parse(localStorage.getItem('current_user') || '{}');
         const db = JSON.parse(localStorage.getItem('obe_masterlist') || '[]');
-        
+
         const savedMappings = localStorage.getItem('obe_course_mappings');
         if (savedMappings) {
             setCourseMappings(JSON.parse(savedMappings));
         }
-        
+
         const savedWeights = localStorage.getItem('obe_course_weights');
         if (savedWeights) {
             setCourseWeights(JSON.parse(savedWeights));
@@ -129,7 +199,7 @@ export default function AlumniDashboard() {
 
     const handleSaveJobUpdate = () => {
         if (!dbUser) return;
-        
+
         const db = JSON.parse(localStorage.getItem('obe_masterlist') || '[]');
         const updatedDb = db.map(student => {
             if (student.id === dbUser.id) {
@@ -144,7 +214,7 @@ export default function AlumniDashboard() {
         });
 
         localStorage.setItem('obe_masterlist', JSON.stringify(updatedDb));
-        
+
         setSavedJobStatus(employmentStatus);
         setDbUser({ ...dbUser, employmentStatus: employmentStatus, jobTitle, companyName });
         setActiveModal(null);
@@ -223,7 +293,7 @@ export default function AlumniDashboard() {
     if (isPOCompleted) completedTasks++; else pendingList.push('1st Year (PO Survey)');
     if (isGTSCompleted) completedTasks++; else pendingList.push('Graduate Tracer Study');
     if (isYearlyCompleted) completedTasks++; else pendingList.push(`Yearly Update (${currentYear})`);
-    
+
     if (isPEORequired) {
         if (isPEOCompleted) completedTasks++; else pendingList.push('3-5 Year (PEO Survey)');
     }
@@ -243,7 +313,7 @@ export default function AlumniDashboard() {
         const parts = course.split(' ');
         const code = parts.length > 1 ? `${parts[0]} ${parts[1]}` : course;
         const name = parts.length > 2 ? parts.slice(2).join(' ') : course;
-        
+
         return {
             code: code,
             name: name,
@@ -290,7 +360,7 @@ export default function AlumniDashboard() {
                 </div>
             );
         }
-        
+
         if (surveyTab === 'peo') {
             return (
                 <div style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column' }}>
@@ -385,40 +455,17 @@ export default function AlumniDashboard() {
 
     return (
         <div className="portal-layout" style={{ height: '100vh', overflow: 'hidden' }}>
-            <aside className="sidebar">
-                <div className="brand">
-                    <img src="/cdm-logo.png" alt="CDM Logo" className="school-logo-side" />
-                    <div className="brand-text">
-                        <h3>CDM-OBE System</h3>
-                        <span>Alumni</span>
-                    </div>
-                </div>
 
-                <nav className="nav-menu">
-                    <button className={`nav-btn ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
-                        📊 Dashboard
-                    </button>
-                    <button className={`nav-btn ${activeTab === 'employer' ? 'active' : ''}`} onClick={() => setActiveTab('employer')}>
-                        💼 PEO Employer Tracker
-                    </button>
-                    <button className={`nav-btn ${activeTab === 'determinants' ? 'active' : ''}`} onClick={() => setActiveTab('determinants')}>
-                        📚 Determinant Courses
-                    </button>
-
-                    <div style={{ margin: '20px 0', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '10px' }}></div>
-                    
-                    <button className="nav-btn" onClick={() => setActiveModal('guide')}>System Guide / FAQs</button>
-                    <button className="nav-btn" onClick={() => setActiveModal('correction')}>🛠️ Data Correction</button>
-                </nav>
-
-                <div className="sidebar-bottom">
-                    <button className="nav-btn theme-switch" onClick={toggleTheme}>
-                        {isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
-                    </button>
-                    <button className="nav-btn logout" onClick={handleLogout}>Log Out</button>
-                </div>
-            </aside>
-
+            {/* Alumni Sidebar */}
+            <AlumniSidebar
+                isDarkMode={isDarkMode}
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                activeModal={activeModal}
+                setActiveModal={setActiveModal}
+                toggleTheme={toggleTheme}
+                handleLogout={handleLogout}
+            />
             <main className="main-content" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflowY: 'auto', padding: '40px', position: 'relative' }}>
                 <header className="alumni-header">
                     <div className="profile-ring">
@@ -435,27 +482,27 @@ export default function AlumniDashboard() {
                 {activeTab === 'dashboard' && (
                     <div style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                         <div style={{ display: 'flex', gap: '15px', flexShrink: 0, overflowX: 'auto', paddingBottom: '5px' }}>
-                            <button 
-                                onClick={() => setSurveyTab('po')} 
+                            <button
+                                onClick={() => setSurveyTab('po')}
                                 style={surveyTab === 'po' ? activeTabStyle : inactiveTabStyle}
                             >
-                                📊 PO Survey 
+                                📊 PO Survey
                             </button>
-                            <button 
-                                onClick={() => setSurveyTab('peo')} 
+                            <button
+                                onClick={() => setSurveyTab('peo')}
                                 style={surveyTab === 'peo' ? activeTabStyle : inactiveTabStyle}
                             >
                                 📈 PEO Survey
                                 {!isPEORequired && <span style={{ marginLeft: '4px', fontSize: '0.8rem', opacity: 0.7 }}>🔒</span>}
                             </button>
-                            <button 
-                                onClick={() => setSurveyTab('yearly')} 
+                            <button
+                                onClick={() => setSurveyTab('yearly')}
                                 style={surveyTab === 'yearly' ? activeTabStyle : inactiveTabStyle}
                             >
                                 📅 Yearly Update
                             </button>
-                            <button 
-                                onClick={() => setSurveyTab('gts')} 
+                            <button
+                                onClick={() => setSurveyTab('gts')}
                                 style={surveyTab === 'gts' ? activeTabStyle : inactiveTabStyle}
                             >
                                 🎓 Tracer Study
@@ -472,7 +519,7 @@ export default function AlumniDashboard() {
                                     <span style={{ fontSize: '1.2rem' }}>⚙️</span>
                                     <h3 style={{ margin: 0, color: 'var(--text-main)', fontSize: '1.1rem' }}>Completion Progress</h3>
                                 </div>
-                                
+
                                 <div style={{ fontSize: '4.5rem', fontWeight: 'bold', color: progressPercent === 100 ? '#10b981' : 'var(--text-main)', lineHeight: '1', marginBottom: '15px' }}>
                                     {progressPercent}<span style={{ fontSize: '1.8rem', color: 'var(--text-sub)' }}>%</span>
                                 </div>
@@ -545,31 +592,31 @@ export default function AlumniDashboard() {
                                         {(savedJobStatus === 'unemployed' || savedJobStatus === 'Not Updated') ? '🚫' : employerStatus === 'Pending' ? '⏳' : employerStatus === 'sent' ? '✉️' : '✅'}
                                     </span>
                                 </div>
-                                
+
                                 {(savedJobStatus === 'unemployed' || savedJobStatus === 'self-employed' || savedJobStatus === 'Not Updated') ? (
                                     <div style={{ backgroundColor: 'rgba(0,0,0,0.2)', padding: '20px', borderRadius: '12px', border: '1px dashed rgba(255,255,255,0.1)' }}>
                                         <p style={{ margin: '0 0 8px 0', color: 'var(--text-main)', fontSize: '1rem' }}><strong>Status:</strong> Not Applicable</p>
                                         <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-sub)', lineHeight: '1.5' }}>
-                                            {savedJobStatus === 'self-employed' 
-                                                ? "Employer evaluation is not required for self-employed alumni or business owners." 
-                                                : savedJobStatus === 'Not Updated' 
-                                                ? "Please update your employment status to determine if this section is applicable." 
-                                                : "Employer evaluation is not required for your current employment status."}
+                                            {savedJobStatus === 'self-employed'
+                                                ? "Employer evaluation is not required for self-employed alumni or business owners."
+                                                : savedJobStatus === 'Not Updated'
+                                                    ? "Please update your employment status to determine if this section is applicable."
+                                                    : "Employer evaluation is not required for your current employment status."}
                                         </p>
                                     </div>
                                 ) : (
                                     <div style={{ backgroundColor: 'rgba(0,0,0,0.2)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                                             <p style={{ margin: 0, color: 'var(--text-main)', fontSize: '0.95rem' }}><strong>Status:</strong> {
-                                                employerStatus === 'Pending' ? <span style={{ color: '#f59e0b' }}>Waiting to invite employer</span> : 
-                                                employerStatus === 'sent' ? <span style={{ color: '#3b82f6' }}>Invitation Sent!</span> : 
-                                                <span style={{ color: '#10b981' }}>Evaluation Completed!</span>
+                                                employerStatus === 'Pending' ? <span style={{ color: '#f59e0b' }}>Waiting to invite employer</span> :
+                                                    employerStatus === 'sent' ? <span style={{ color: '#3b82f6' }}>Invitation Sent!</span> :
+                                                        <span style={{ color: '#10b981' }}>Evaluation Completed!</span>
                                             }</p>
-                                            
+
                                             {showInviteBtn && employerStatus === 'Pending' && (
-                                                <button 
-                                                    className="primary-btn" 
-                                                    onClick={() => { setIsInviteOpen(true); setShowInviteBtn(false); }} 
+                                                <button
+                                                    className="primary-btn"
+                                                    onClick={() => { setIsInviteOpen(true); setShowInviteBtn(false); }}
                                                     style={{ padding: '8px 12px', fontSize: '0.85rem', borderRadius: '6px', border: 'none', fontWeight: 'bold' }}
                                                 >
                                                     + Send Invitation
@@ -587,7 +634,7 @@ export default function AlumniDashboard() {
                                             <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                                 <input type="text" placeholder="HR / Supervisor Name" className="correction-textbox" style={{ height: '40px', padding: '0 15px', fontSize: '0.9rem', backgroundColor: 'var(--bg-main)' }} />
                                                 <input type="email" placeholder="Company Email Address" className="correction-textbox" style={{ height: '40px', padding: '0 15px', fontSize: '0.9rem', backgroundColor: 'var(--bg-main)' }} />
-                                                
+
                                                 <div style={{ display: 'flex', gap: '8px', marginTop: '5px' }}>
                                                     <button className="outline-btn cancel-btn" onClick={() => { setIsInviteOpen(false); setTimeout(() => setShowInviteBtn(true), 400); }} style={{ padding: '10px', borderRadius: '6px', flex: 1, fontSize: '0.9rem', fontWeight: 'bold' }}>Cancel</button>
                                                     <button className="primary-btn" onClick={handleSendInvite} style={{ padding: '10px', borderRadius: '6px', flex: 1, border: 'none', fontSize: '0.9rem', fontWeight: 'bold' }}>Send Link</button>
@@ -626,7 +673,7 @@ export default function AlumniDashboard() {
                                     </div>
                                     <h3 style={{ margin: '0 0 5px 0', fontSize: '1.2rem', color: 'var(--text-main)' }}>{course.code}</h3>
                                     <p style={{ margin: '0 0 25px 0', fontSize: '0.9rem', color: 'var(--text-sub)' }}>{course.name} ({course.po})</p>
-                                    
+
                                     <div style={{ padding: '15px', backgroundColor: course.grade ? 'rgba(16, 185, 129, 0.05)' : 'rgba(0,0,0,0.3)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: course.grade ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(255,255,255,0.05)' }}>
                                         <span style={{ fontSize: '0.9rem', color: 'var(--text-sub)' }}>Evaluated Grade:</span>
                                         <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: course.grade ? '#10b981' : 'var(--text-main)' }}>
@@ -646,7 +693,7 @@ export default function AlumniDashboard() {
                             {PO_DEFINITIONS.map(po => {
                                 const mappedCourses = Object.keys(courseMappings).filter(course => courseMappings[course][po.id]);
                                 if (mappedCourses.length === 0) return null;
-                                
+
                                 return (
                                     <div key={po.id} className="portal-card" style={{ padding: '25px', borderTop: '4px solid var(--gold)', display: 'flex', flexDirection: 'column' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
@@ -705,7 +752,7 @@ export default function AlumniDashboard() {
                                 surveyModalQuestions.map((q, idx) => (
                                     <div key={q.id} style={{ backgroundColor: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
                                         <p style={{ margin: '0 0 10px 0', color: 'var(--text-main)', fontSize: '1rem' }}>{idx + 1}. {q.text}</p>
-                                        
+
                                         {q.type === 'text' || q.type === 'email' || q.type === 'date' ? (
                                             <input type={q.type === 'date' ? 'date' : 'text'} className="correction-textbox" style={{ width: '100%', padding: '10px', backgroundColor: 'var(--bg-main)', opacity: 0.7 }} disabled value={surveyModalAnswers[q.id] || ''} />
                                         ) : q.type === 'textarea' ? (
@@ -713,7 +760,7 @@ export default function AlumniDashboard() {
                                         ) : q.type === 'likert' ? (
                                             <select className="correction-textbox" style={{ width: '100%', padding: '10px', backgroundColor: 'var(--bg-main)', opacity: 0.7 }} disabled value={surveyModalAnswers[q.id] || ''}>
                                                 <option value="">Select rating...</option>
-                                                {[1,2,3,4,5].map(v => <option key={v} value={v}>{v}</option>)}
+                                                {[1, 2, 3, 4, 5].map(v => <option key={v} value={v}>{v}</option>)}
                                             </select>
                                         ) : q.type === 'yesno' ? (
                                             <select className="correction-textbox" style={{ width: '100%', padding: '10px', backgroundColor: 'var(--bg-main)', opacity: 0.7 }} disabled value={surveyModalAnswers[q.id] || ''}>
@@ -759,7 +806,7 @@ export default function AlumniDashboard() {
                         <div style={{ marginBottom: '25px', lineHeight: '1.6', fontSize: '0.9rem', color: 'var(--text-main)' }}>
                             <p style={{ marginBottom: '5px', color: 'var(--gold)' }}><strong>How are surveys unlocked?</strong></p>
                             <p style={{ margin: '0 0 15px 0', color: 'var(--text-sub)' }}>The system automatically unlocks specific surveys based on your graduation batch. The PEO survey will only be available 3 years after your graduation year.</p>
-                            
+
                             <p style={{ marginBottom: '5px', color: 'var(--gold)' }}><strong>Why is my Employer Tracker pending?</strong></p>
                             <p style={{ margin: 0, color: 'var(--text-sub)' }}>If you are currently employed in a company, you need to provide your HR or Supervisor's email so the system can send them a brief feedback form regarding your performance.</p>
                         </div>
@@ -789,8 +836,8 @@ export default function AlumniDashboard() {
                         <p style={{ margin: '0 0 20px 0', fontSize: '0.85rem', color: 'var(--text-sub)' }}>Please update your current employment details to keep the alumni records accurate.</p>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '25px' }}>
-                            <select 
-                                className="correction-textbox" 
+                            <select
+                                className="correction-textbox"
                                 style={{ height: '45px', padding: '0 15px', color: 'var(--text-main)', backgroundColor: 'var(--bg-main)' }}
                                 value={employmentStatus}
                                 onChange={(e) => setEmploymentStatus(e.target.value)}
@@ -803,19 +850,19 @@ export default function AlumniDashboard() {
 
                             {employmentStatus === 'employed' && (
                                 <div style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                    <input 
-                                        type="text" 
-                                        placeholder="Current Job Title (e.g., Software Engineer)" 
-                                        className="correction-textbox" 
-                                        style={{ height: '45px', padding: '0 15px', backgroundColor: 'var(--bg-main)' }} 
+                                    <input
+                                        type="text"
+                                        placeholder="Current Job Title (e.g., Software Engineer)"
+                                        className="correction-textbox"
+                                        style={{ height: '45px', padding: '0 15px', backgroundColor: 'var(--bg-main)' }}
                                         value={jobTitle}
                                         onChange={(e) => setJobTitle(e.target.value)}
                                     />
-                                    <input 
-                                        type="text" 
-                                        placeholder="Company Name" 
-                                        className="correction-textbox" 
-                                        style={{ height: '45px', padding: '0 15px', backgroundColor: 'var(--bg-main)' }} 
+                                    <input
+                                        type="text"
+                                        placeholder="Company Name"
+                                        className="correction-textbox"
+                                        style={{ height: '45px', padding: '0 15px', backgroundColor: 'var(--bg-main)' }}
                                         value={companyName}
                                         onChange={(e) => setCompanyName(e.target.value)}
                                     />
