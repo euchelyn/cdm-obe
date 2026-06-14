@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import './tracer.css';
 import '../alumni-globals.css';
 
+import { getSurveysByVersionAndType } from '@/services/surveyServices';
+import { createAnsweredSurvey } from '@/services/answeredSurveyService';
+
 export default function DynamicTracerStudy() {
     const router = useRouter();
     const [answers, setAnswers] = useState({});
@@ -15,32 +18,35 @@ export default function DynamicTracerStudy() {
     const [isLoading, setIsLoading] = useState(true);
     const [isDarkMode, setIsDarkMode] = useState(true);
 
-    useEffect(() => {
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'light') {
-            setIsDarkMode(false);
-            document.documentElement.removeAttribute('data-theme');
-        } else {
-            document.documentElement.setAttribute('data-theme', 'dark');
-        }
+    const [survey, setSurvey] = useState(null);
 
-        const existingSchema = localStorage.getItem('obe_form_gts');
-        
-        if (existingSchema) {
-            const parsed = JSON.parse(existingSchema);
-            setSurveyTitle(parsed.title || 'Graduate Tracer Study');
-            setSurveyDesc(parsed.desc || 'Please answer the following questions.');
-            setSurveyQuestions(parsed.questions || []);
-        } else {
-            setSurveyTitle('Graduate Tracer Study');
-            setSurveyDesc('Please complete this tracer survey.');
-            setSurveyQuestions([
-                { id: 'q1', type: 'yesno', text: 'Are you currently employed?' },
-                { id: 'q2', type: 'text', text: 'What is your current job title?' }
-            ]);
+useEffect(() => {
+    async function fetchSurvey() {
+        try {
+            const currentYear = new Date().getFullYear().toString();
+
+            const response = await getSurveysByVersionAndType(
+                currentYear,
+                "tracer_study" // or whatever your tracer type is
+            );
+
+            setSurvey(response[0]);
+        } catch (error) {
+            console.error("Failed to fetch Tracer Survey:", error);
         }
-        setIsLoading(false);
-    }, []);
+    }
+
+    fetchSurvey();
+}, []);
+
+useEffect(() => {
+    if (!survey) return;
+
+    setSurveyTitle(survey.title || 'Graduate Tracer Study');
+    setSurveyDesc(survey.description || 'Please answer the following questions.');
+    setSurveyQuestions(Object.values(survey.questions || {}));
+    setIsLoading(false);
+}, [survey]);
 
     const toggleTheme = () => {
         const newTheme = !isDarkMode;
@@ -88,33 +94,48 @@ export default function DynamicTracerStudy() {
     
     const progressPercent = totalQuestions === 0 ? 0 : Math.round((answeredQuestions / totalQuestions) * 100);
 
-    const handleSubmit = () => {
-        if (answeredQuestions < totalQuestions) {
-            alert('Please complete all required questions before submitting.');
+const handleSubmit = async () => {
+    if (answeredQuestions < totalQuestions) {
+        alert('Please complete all required questions before submitting.');
+        return;
+    }
+
+    try {
+        const session = JSON.parse(localStorage.getItem('current_user') || '{}');
+
+        if (!session.id) {
+            alert('Session expired. Please log in again.');
+            router.push('/');
             return;
         }
 
-        const session = JSON.parse(localStorage.getItem('current_user') || '{}');
-        const db = JSON.parse(localStorage.getItem('obe_masterlist') || '[]');
+        const currentYear = new Date().getFullYear().toString();
 
-        if (session && session.id) {
-            const updatedDb = db.map(student => {
-                if (student.id === session.id) {
-                    const currentAnswers = student.surveyAnswers || {};
-                    return { ...student, surveyAnswers: { ...currentAnswers, gts: answers }, tracerProgress: '100%', jobTitle: answers['q19'] || answers['q3'] || student.jobTitle };
-                }
-                return student;
-            });
+        const payload = {
+            student_id: session.id,
+            batch: session.batch,
+            program: session.program,
+            name: session.name,
 
-            localStorage.setItem('obe_masterlist', JSON.stringify(updatedDb));
-            
-            alert('Graduate Tracer Study Submitted Successfully! Your progress is now 100%.');
-            router.push('/alumni');
-        } else {
-            alert('Session expired. Please log in again.');
-            router.push('/');
-        }
-    };
+            survey_type: "tracer_study",
+            survey_version: currentYear,
+            survey_id: survey._id,
+            answers: answers,
+            status: "answered"
+        };
+
+        console.log("Submitting Tracer Survey:", payload);
+
+        await createAnsweredSurvey(payload);
+
+        alert("Tracer Study submitted successfully!");
+        router.push('/alumni');
+
+    } catch (error) {
+        console.error("Failed to submit tracer:", error);
+        alert("Failed to submit survey. Please try again.");
+    }
+};
 
     if (isLoading) return <div style={{ color: 'white', padding: '50px', textAlign: 'center' }}>Loading Tracer Configuration...</div>;
 

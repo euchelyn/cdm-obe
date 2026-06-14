@@ -45,7 +45,7 @@ export default function DynamicPOSurvey() {
 
                 const response = await getSurveysByVersionAndType(
                     currentYear,
-                    "so_survey"
+                    "graduate_survey"
                 );
 
                 setSurvey(response[0]);
@@ -121,10 +121,10 @@ const handleSubmit = async () => {
             program: session.program,
             name: session.name,
 
-            survey_type: "so_survey",
+            survey_type: "graduate_survey",
             survey_version: currentYear,
             survey_id: survey._id,
-            answers: answers, 
+            answers: answers,
             status: "answered"
         };
 

@@ -8,16 +8,22 @@ import './alumni-globals.css';
 // COMPONENTS
 //==================================
 import AlumniSidebar from './components/AlumniSidebar';
+import DataCorrection from './components/DataCorrection';
+import StartPEO from './components/StartPEO';
 
 //==================================
 // SERVICES
 //==================================
 import { getAccountLink } from '@/services/accountLinkService';
+import { getSurveysByVersionAndType } from '@/services/surveyServices';
+import { getAnsweredSurveysByTypeAndVersion } from '@/services/answeredSurveyService';
+import { createAnsweredSurvey } from '@/services/answeredSurveyService';
 
 //==================================
 // HOOKS
 //==================================
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+
 
 const PO_DEFINITIONS = [
     { id: 'A', title: 'Engineering Knowledge', desc: 'Apply knowledge of mathematics, natural science, engineering fundamentals and an engineering specialization to the solution of complex engineering problems.' },
@@ -39,7 +45,7 @@ export default function AlumniDashboard() {
     const [isDarkMode, setIsDarkMode] = useState(true);
 
     const [activeTab, setActiveTab] = useState('dashboard');
-    const [surveyTab, setSurveyTab] = useState('po');
+    const [surveyTab, setSurveyTab] = useState('peo');
 
     const [surveyModalType, setSurveyModalType] = useState(null);
     const [surveyModalQuestions, setSurveyModalQuestions] = useState([]);
@@ -63,12 +69,26 @@ export default function AlumniDashboard() {
     const [loadingAccountLink, setLoadingAccountLink] = useState(true);
 
     const [userData, setUserData] = useState({
+        id: '',
         name: 'Loading...',
         batch: '2026',
         program: 'Loading...',
         initials: '...'
     });
 
+    const [surveys, setSurveys] = useState({
+        so_survey: null,
+        graduate_survey: null,
+        tracer_study: null,
+    });
+
+    const [surveyStatus, setSurveyStatus] = useState({
+    so_survey: false,
+    graduate_survey: false,
+    tracer_study: false
+});
+
+const [surveyInitLoading, setSurveyInitLoading] = useState(true);
     const currentUser = useCurrentUser();
 
     useEffect(() => {
@@ -94,9 +114,10 @@ export default function AlumniDashboard() {
                     }
 
                     setUserData({
+                        id: res?.roleAccount?._id || '',
                         name: res?.roleAccount?.name || 'Unknown',
                         batch: res?.roleAccount?.batch || '2026',
-                        program: res?.roleAccount?.batch || 'BS Computer Engineering',
+                        program: res?.roleAccount?.program || 'BS Computer Engineering',
                         initials,
                     });
 
@@ -112,6 +133,9 @@ export default function AlumniDashboard() {
                 });
                 
                 console.log('TEST', res)
+
+
+
             } catch (err) {
                 console.error('❌ loadAccountLink error:', err);
             } finally {
@@ -122,57 +146,86 @@ export default function AlumniDashboard() {
         loadAccountLink();
     }, [currentUser?.auth?.id]);
 
+useEffect(() => {
+    if (!userData?.id) return;
+
+    if (typeof window === "undefined") return;
+
+    window.localStorage.setItem(
+        "current_user",
+        JSON.stringify(userData)
+    );
+}, [userData]);
+
     useEffect(() => {
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'light') {
-            setIsDarkMode(false);
-            document.documentElement.removeAttribute('data-theme');
-        } else {
-            document.documentElement.setAttribute('data-theme', 'dark');
-        }
+        async function initSurveys() {
+            try {
+                setSurveyInitLoading(true);
 
-        const session = JSON.parse(localStorage.getItem('current_user') || '{}');
-        const db = JSON.parse(localStorage.getItem('obe_masterlist') || '[]');
+                const currentYear = new Date().getFullYear().toString();
 
-        const savedMappings = localStorage.getItem('obe_course_mappings');
-        if (savedMappings) {
-            setCourseMappings(JSON.parse(savedMappings));
-        }
+                const session = JSON.parse(localStorage.getItem('current_user') || '{}');
 
-        const savedWeights = localStorage.getItem('obe_course_weights');
-        if (savedWeights) {
-            setCourseWeights(JSON.parse(savedWeights));
-        }
+                if (!session?.id) return;
 
-        /*
-        if (session && session.id) {
-            const fullUser = db.find(student => student.id === session.id);
-            
-            if (fullUser) {
-                setDbUser(fullUser);
-                setEmployerStatus(fullUser.employerStatus || 'Pending');
-                setSavedJobStatus(fullUser.employmentStatus || 'Not Updated');
+                const surveyTypes = [
+                    'so_survey',
+                    'graduate_survey',
+                    'tracer_study'
+                ];
 
-                const nameParts = fullUser.name.split(' ').filter(n => n);
-                let generatedInitials = 'AL';
-                if (nameParts.length >= 2) {
-                    generatedInitials = nameParts[0][0].toUpperCase() + nameParts[nameParts.length - 1][0].toUpperCase();
-                } else if (nameParts.length === 1) {
-                    generatedInitials = nameParts[0].substring(0, 2).toUpperCase();
-                }
+                const resultMap = {
+                    so_survey: false,
+                    graduate_survey: false,
+                    tracer_study: false
+                };
 
-                setUserData({
-                    name: fullUser.name,
-                    batch: fullUser.batch,
-                    program: fullUser.program || 'B.S. Computer Engineering',
-                    initials: generatedInitials
-                });
+                await Promise.all(
+                    surveyTypes.map(async (type) => {
+                        const data = await getAnsweredSurveysByTypeAndVersion(
+                            type,
+                            currentYear
+                        );
+
+                        // No record → create one
+                        if (!data || data.length === 0) {
+                            await createAnsweredSurvey({
+                                student_id: session.id,
+                                batch: session.batch,
+                                program: session.program,
+                                name: session.name,
+                                survey_id: null,
+                                survey_type: type,
+                                survey_version: currentYear,
+                                answers: null,
+                                status: "pending"
+                            });
+
+                            resultMap[type] = false;
+                            return;
+                        }
+
+                        // Check if ANY record is answered
+                        const isAnswered = data.some((item) => {
+                            return item.status === "answered";
+                        });
+
+                        resultMap[type] = isAnswered;
+                    })
+                );
+
+                setSurveyStatus(resultMap);
+
+            } catch (error) {
+                console.error("Survey init failed:", error);
+            } finally {
+                setSurveyInitLoading(false);
             }
-        } else {
-            router.push('/');
-        } */
-    }, [router]);
+        }
 
+        initSurveys();
+    }, []);
+        
     const toggleTheme = () => {
         const newTheme = !isDarkMode;
         setIsDarkMode(newTheme);
@@ -290,12 +343,11 @@ export default function AlumniDashboard() {
     let completedTasks = 0;
     let pendingList = [];
 
-    if (isPOCompleted) completedTasks++; else pendingList.push('1st Year (PO Survey)');
-    if (isGTSCompleted) completedTasks++; else pendingList.push('Graduate Tracer Study');
-    if (isYearlyCompleted) completedTasks++; else pendingList.push(`Yearly Update (${currentYear})`);
+    if (surveyStatus.tracer_study) completedTasks++; else pendingList.push('Graduate Tracer Study');
+    if (surveyStatus.so_survey) completedTasks++; else pendingList.push(`Yearly Update (${currentYear})`);
 
     if (isPEORequired) {
-        if (isPEOCompleted) completedTasks++; else pendingList.push('3-5 Year (PEO Survey)');
+        if (surveyStatus.graduate_survey) completedTasks++; else pendingList.push('3-5 Year (PEO Survey)');
     }
 
     if (savedJobStatus === 'Not Updated') {
@@ -374,26 +426,12 @@ export default function AlumniDashboard() {
                         Evaluates career progression and advanced professional skills 3 to 5 years after graduation.
                     </p>
 
-                    {!isPEORequired ? (
-                        <div style={{ backgroundColor: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px', textAlign: 'center', border: '1px dashed rgba(255,255,255,0.2)', marginBottom: '5px' }}>
-                            <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>⏳</div>
-                            <h3 style={{ margin: '0 0 5px 0', color: 'var(--text-main)', fontSize: '1.1rem' }}>Not Yet Applicable</h3>
-                            <p style={{ margin: 0, color: 'var(--text-sub)', fontSize: '0.9rem' }}>Unlocks automatically in the year <strong>{peoUnlockYear}</strong>.</p>
-                        </div>
-                    ) : (
-                        <>
-                            <div style={{ backgroundColor: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '5px' }}>
-                                <h4 style={{ margin: '0 0 8px 0', color: 'var(--gold)', fontSize: '0.95rem' }}>📋 Details</h4>
-                                <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--text-main)', fontSize: '0.9rem', lineHeight: '1.6' }}>
-                                    <li>Focuses on leadership and professional ethics.</li>
-                                    <li>Coordinates directly with Employer feedback.</li>
-                                </ul>
-                            </div>
-                            <button className={isPEOCompleted ? 'outline-btn' : 'primary-btn'} onClick={() => isPEOCompleted ? openReviewModal('peo') : router.push('/alumni/survey')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.95rem', border: isPEOCompleted ? '1px solid rgba(255,255,255,0.2)' : 'none', cursor: 'pointer', marginTop: '20px' }}>
-                                {isPEOCompleted ? 'Review Responses' : 'Start PEO Survey'}
-                            </button>
-                        </>
-                    )}
+                   <StartPEO 
+                        isPEOAnswered={surveyStatus.graduate_survey}
+                        batch={userData.batch}
+                        openReviewModal={openReviewModal}
+                        router={router}
+                   />
                 </div>
             );
         }
@@ -453,6 +491,9 @@ export default function AlumniDashboard() {
         }
     };
 
+    console.log("User Data", userData);
+    
+    console.log("Survey", surveys)
     return (
         <div className="portal-layout" style={{ height: '100vh', overflow: 'hidden' }}>
 
@@ -482,12 +523,14 @@ export default function AlumniDashboard() {
                 {activeTab === 'dashboard' && (
                     <div style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                         <div style={{ display: 'flex', gap: '15px', flexShrink: 0, overflowX: 'auto', paddingBottom: '5px' }}>
+                            {/*
                             <button
                                 onClick={() => setSurveyTab('po')}
                                 style={surveyTab === 'po' ? activeTabStyle : inactiveTabStyle}
                             >
                                 📊 PO Survey
                             </button>
+                            */}
                             <button
                                 onClick={() => setSurveyTab('peo')}
                                 style={surveyTab === 'peo' ? activeTabStyle : inactiveTabStyle}
@@ -814,20 +857,17 @@ export default function AlumniDashboard() {
                     </div>
                 </div>
             )}
-
-            {activeModal === 'correction' && (
-                <div className="modal-overlay">
-                    <div className="modal-box portal-card" style={{ maxWidth: '450px' }}>
-                        <h2 style={{ margin: '0 0 10px 0', color: 'var(--gold)' }}>Data Correction Request</h2>
-                        <p style={{ margin: '0 0 20px 0', fontSize: '0.85rem', color: 'var(--text-sub)' }}>Is there an error in your name, batch year, or contact info? Send a correction request to your Program Chair.</p>
-                        <textarea className="correction-textbox" placeholder="Halimbawa: Ang batch year ko po dapat ay 2026, hindi 2025..." style={{ height: '100px', padding: '15px', resize: 'none', marginBottom: '20px' }}></textarea>
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                            <button className="outline-btn cancel-btn" onClick={() => setActiveModal(null)} style={{ padding: '10px', borderRadius: '8px', flex: 1 }}>Cancel</button>
-                            <button className="primary-btn" onClick={() => { showToast('Request Sent to Program Chair!'); setActiveModal(null); }} style={{ padding: '10px', borderRadius: '8px', flex: 1, border: 'none' }}>Submit</button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            
+            {/* DATA CORRECTION MODAL */}
+            <DataCorrection 
+                activeModal={activeModal}
+                setActiveModal={setActiveModal}
+                showToast={showToast}
+                student_id={userData.id}
+                batch={userData.batch}
+                program={userData.program}
+                name={userData.name}
+            />
 
             {activeModal === 'jobUpdate' && (
                 <div className="modal-overlay">
