@@ -16,9 +16,16 @@ import Indirect from './components/indirect/Indirect';
 import Determinants from './components/determinants/Determinants';
 
 //==================================================
+// SERVICES
+//==================================================
+import { getObeAttainment } from '@/services/obeAttainmentService';
+import { getAnsweredSurveysByStudent } from '@/services/answeredSurveyService';
+import { getPcReports } from '@/services/pcReportsService';
+
+//==================================================
 // CONSTANTS
 //==================================================
-import { 
+import {
     PO_DEFINITIONS,
     CPE_CURRICULUM,
 } from '@/shared/constants/constants';
@@ -33,6 +40,11 @@ export default function ProgramChairDashboard() {
     const [selectedBatch, setSelectedBatch] = useState('All');
     const [students, setStudents] = useState([]);
     const [selectedStudent, setSelectedStudent] = useState(null);
+    const [evalAttainment, setEvalAttainment] = useState(null);
+    const [evalSurveys, setEvalSurveys] = useState(null);
+    const [evalLoading, setEvalLoading] = useState(false);
+    const [reportData, setReportData] = useState(null);
+    const [reportLoading, setReportLoading] = useState(false);
     const [toastMessage, setToastMessage] = useState(null);
 
     const [selectedMappingCourse, setSelectedMappingCourse] = useState(null);
@@ -139,16 +151,76 @@ export default function ProgramChairDashboard() {
             setActiveQuestionId(null);
             setHoveredQuestionId(null);
         }
-        
-        if (activeMenu === 'analytics') {
-            const existingGts = localStorage.getItem('obe_form_gts');
-            if (existingGts) {
-                setTracerSchema(JSON.parse(existingGts).questions || []);
-            } else {
-                setTracerSchema(DEFAULT_GTS_QUESTIONS);
-            }
-        }
     }, [activeMenu, selectedSurveyView, surveySubTab, formBatchYear]);
+
+    // ─── Load the real evaluation record when a student is opened ────────────
+    useEffect(() => {
+        if (!selectedStudent?._id) {
+            setEvalAttainment(null);
+            setEvalSurveys(null);
+            return;
+        }
+
+        let cancelled = false;
+
+        (async () => {
+            setEvalLoading(true);
+            try {
+                const [att, surveys] = await Promise.all([
+                    getObeAttainment(selectedStudent._id),
+                    getAnsweredSurveysByStudent(selectedStudent._id),
+                ]);
+
+                if (cancelled) return;
+
+                setEvalAttainment(att);
+
+                // Map survey_type -> 'answered' if any record is answered
+                const map = {};
+                (Array.isArray(surveys) ? surveys : []).forEach((s) => {
+                    if (map[s.survey_type] !== 'answered') {
+                        map[s.survey_type] = s.status;
+                    }
+                });
+                setEvalSurveys(map);
+            } catch (e) {
+                console.error('Failed to load evaluation record:', e);
+            } finally {
+                if (!cancelled) setEvalLoading(false);
+            }
+        })();
+
+        return () => { cancelled = true; };
+    }, [selectedStudent?._id]);
+
+    // ─── Load Reports & Analytics data when that tab is opened ───────────────
+    useEffect(() => {
+        if (activeMenu !== 'analytics') return;
+
+        let cancelled = false;
+        (async () => {
+            setReportLoading(true);
+            try {
+                const d = await getPcReports();
+                if (cancelled) return;
+                setReportData(d);
+
+                // Default the analytics variable to the first categorical question
+                const vars = (d?.gts?.schema || []).filter(q =>
+                    ['radio', 'dropdown', 'yesno', 'checkbox'].includes(q.type)
+                );
+                setGtsAnalyticsField(prev =>
+                    vars.find(v => v.id === prev) ? prev : (vars[0]?.id || '')
+                );
+            } catch (e) {
+                console.error('Failed to load reports:', e);
+            } finally {
+                if (!cancelled) setReportLoading(false);
+            }
+        })();
+
+        return () => { cancelled = true; };
+    }, [activeMenu]);
 
     const toggleTheme = () => {
         const newTheme = !isDarkMode;
@@ -269,6 +341,62 @@ export default function ProgramChairDashboard() {
 
     const surveyDetailStudents = surveyDetailBatch === 'All' ? activeStudents : activeStudents.filter(s => s.batch === surveyDetailBatch);
 
+    // ─── Direct Assessment determinant groups (computed from PO attainment) ───
+    const DET_GROUPS = [
+        { label: 'Det 1', range: 'PO A–D', pos: ['A', 'B', 'C', 'D'] },
+        { label: 'Det 2', range: 'PO E–H', pos: ['E', 'F', 'G', 'H'] },
+        { label: 'Det 3', range: 'PO I–L', pos: ['I', 'J', 'K', 'L'] },
+    ];
+    const detAverage = (poIds) => {
+        const pos = evalAttainment?.pos || {};
+        const vals = poIds.map(p => pos[p]?.attainment).filter(v => v != null);
+        if (!vals.length) return null;
+        return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+    };
+    const surveyStatusLabel = (type) => {
+        const s = evalSurveys?.[type];
+        return s === 'answered' ? 'Completed' : 'Pending';
+    };
+
+    // ─── Reports & Analytics derived data (from the DB) ──────────────────────
+    const reportStudents = reportData?.students || [];
+    const reportFiltered = checklistBatch === 'All'
+        ? reportStudents
+        : reportStudents.filter(s => s.batch === checklistBatch);
+
+    const r_total = reportFiltered.length;
+    const r_soCompleted = reportFiltered.filter(s => s.so_answered).length;
+    const r_peoCompleted = reportFiltered.filter(s => s.peo_answered).length;
+    const r_soRate = r_total ? Math.round((r_soCompleted / r_total) * 100) : 0;
+
+    const gtsSchema = reportData?.gts?.schema || [];
+    const gtsResponses = reportData?.gts?.responses || [];
+    const gtsAnalyticsVariables = gtsSchema.filter(q =>
+        ['radio', 'dropdown', 'yesno', 'checkbox'].includes(q.type)
+    );
+
+    const gtsAnalyticsResults = (() => {
+        const counts = {};
+        let total = 0;
+        gtsResponses.forEach(r => {
+            const val = r.answers?.[gtsAnalyticsField];
+            if (val == null || val === '') return;
+            (Array.isArray(val) ? val : [val]).forEach(v => {
+                counts[v] = (counts[v] || 0) + 1;
+                total++;
+            });
+        });
+        return Object.entries(counts).map(([k, v]) => ({
+            _id: k,
+            frequency: v,
+            percent: total ? (v / total) * 100 : 0,
+        }));
+    })();
+    const gtsTotalRespondents = gtsResponses.length;
+    const gtsAnswerTotal = gtsAnalyticsResults.reduce((sum, r) => sum + r.frequency, 0);
+
+    const fmtPct = (v) => (v == null ? 'N/A' : `${v}%`);
+
     return (
         <div className="portal-layout">
 
@@ -337,8 +465,35 @@ export default function ProgramChairDashboard() {
         
                 {activeMenu === 'analytics' && (
                     <div id="printable-report" style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        
-                        <div className="pc-header" style={{ marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+
+                        {/* Print-only letterhead (hidden on screen) */}
+                        <div className="print-only report-letterhead">
+                            <div className="letterhead-top">
+                                <img src="/cdm-logo.png" alt="CDM Logo" className="letterhead-logo" />
+                                <div className="letterhead-titles">
+                                    <p className="lh-republic">Republic of the Philippines</p>
+                                    <h2 className="lh-school">COLEGIO DE MUNTINLUPA</h2>
+                                    <p className="lh-dept">Department of Computer Engineering</p>
+                                    <p className="lh-system">Outcomes-Based Education Management System</p>
+                                </div>
+                                <img src="/cpe-logo.png" alt="CpE Logo" className="letterhead-logo" />
+                            </div>
+                            <div className="letterhead-divider" />
+                            <div className="letterhead-meta">
+                                <h1 className="lh-report-title">
+                                    {reportType === 'direct' ? 'Direct Assessment Report'
+                                        : reportType === 'indirect' ? 'Indirect Assessment Report'
+                                        : 'Graduate Tracer Study Report'}
+                                </h1>
+                                <div className="lh-report-sub">
+                                    <span>B.S. Computer Engineering</span>
+                                    <span>A.Y. 2025–2026</span>
+                                    <span>Generated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pc-header screen-only" style={{ marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
                                 <h1 style={{ fontSize: '2.2rem', marginBottom: '5px' }}>Reports & Analytics</h1>
                                 <p style={{ color: 'var(--text-sub)' }}>Select a report module to view collected data and export to PDF.</p>
@@ -348,7 +503,7 @@ export default function ProgramChairDashboard() {
                             </button>
                         </div>
 
-                        <div className="tab-container" style={{ marginBottom: '20px' }}>
+                        <div className="tab-container screen-only" style={{ marginBottom: '20px' }}>
                             <button className={`tab-btn ${reportType === 'direct' ? 'active' : ''}`} onClick={() => setReportType('direct')}>
                                 📝 Direct Assessment
                             </button>
@@ -392,25 +547,32 @@ export default function ProgramChairDashboard() {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {filteredChecklist.map((student, idx) => (
+                                                {reportFiltered.map((student, idx) => (
                                                     <tr key={idx}>
                                                         <td style={{ color: 'var(--text-sub)' }}>{student.id}</td>
                                                         <td style={{ fontWeight: '600' }}>{student.name}</td>
                                                         <td>{student.batch}</td>
-                                                        <td style={{ color: 'var(--gold)', fontWeight: 'bold' }}>{student.det1Grade || 'N/A'}</td>
-                                                        <td style={{ color: 'var(--gold)', fontWeight: 'bold' }}>{student.det2Grade || 'N/A'}</td>
-                                                        <td style={{ color: 'var(--gold)', fontWeight: 'bold' }}>{student.det3Grade || 'N/A'}</td>
+                                                        <td style={{ color: 'var(--gold)', fontWeight: 'bold' }}>{fmtPct(student.det1)}</td>
+                                                        <td style={{ color: 'var(--gold)', fontWeight: 'bold' }}>{fmtPct(student.det2)}</td>
+                                                        <td style={{ color: 'var(--gold)', fontWeight: 'bold' }}>{fmtPct(student.det3)}</td>
                                                         <td>
-                                                            <span className={`status-badge ${student.obeStatus === 'Pending' ? 'badge-pending' : 'badge-passed'}`}>
-                                                                {student.obeStatus}
+                                                            <span className={`status-badge ${student.directStatus === 'Pending' ? 'badge-pending' : 'badge-passed'}`}>
+                                                                {student.directStatus}
                                                             </span>
                                                         </td>
                                                     </tr>
                                                 ))}
-                                                {filteredChecklist.length === 0 && (
+                                                {!reportLoading && reportFiltered.length === 0 && (
                                                     <tr>
                                                         <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-sub)' }}>
                                                             No records found for this batch.
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                                {reportLoading && (
+                                                    <tr>
+                                                        <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-sub)' }}>
+                                                            Loading…
                                                         </td>
                                                     </tr>
                                                 )}
@@ -469,11 +631,11 @@ export default function ProgramChairDashboard() {
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px', marginBottom: '20px' }}>
                                                 <div style={{ backgroundColor: 'rgba(0,0,0,0.2)', padding: '20px', borderRadius: '8px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
                                                     <h4 style={{ color: 'var(--text-sub)', fontSize: '0.85rem', marginBottom: '10px' }}>Total Target Respondents</h4>
-                                                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--text-main)' }}>{totalChecklist}</div>
+                                                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--text-main)' }}>{r_total}</div>
                                                 </div>
                                                 <div style={{ backgroundColor: 'rgba(0,0,0,0.2)', padding: '20px', borderRadius: '8px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
                                                     <h4 style={{ color: 'var(--text-sub)', fontSize: '0.85rem', marginBottom: '10px' }}>SO Survey Completion Rate</h4>
-                                                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#3b82f6' }}>{c_poRate}%</div>
+                                                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#3b82f6' }}>{r_soRate}%</div>
                                                 </div>
                                             </div>
 
@@ -488,19 +650,19 @@ export default function ProgramChairDashboard() {
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {filteredChecklist.map((student, idx) => (
+                                                        {reportFiltered.map((student, idx) => (
                                                             <tr key={idx}>
                                                                 <td style={{ color: 'var(--text-sub)' }}>{student.id}</td>
                                                                 <td style={{ fontWeight: '600' }}>{student.name}</td>
                                                                 <td>{student.batch}</td>
                                                                 <td>
-                                                                    <span className={`status-badge ${student.surveyProgress === '100%' ? 'badge-passed' : 'badge-pending'}`}>
-                                                                        {student.surveyProgress === '100%' ? 'Completed' : 'Pending'}
+                                                                    <span className={`status-badge ${student.so_answered ? 'badge-passed' : 'badge-pending'}`}>
+                                                                        {student.so_answered ? 'Completed' : 'Pending'}
                                                                     </span>
                                                                 </td>
                                                             </tr>
                                                         ))}
-                                                        {filteredChecklist.length === 0 && (
+                                                        {!reportLoading && reportFiltered.length === 0 && (
                                                             <tr>
                                                                 <td colSpan="4" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-sub)' }}>
                                                                     No records found for this batch.
@@ -540,16 +702,25 @@ export default function ProgramChairDashboard() {
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {filteredChecklist.map((student, idx) => (
+                                                        {reportFiltered.map((student, idx) => (
                                                             <tr key={idx}>
                                                                 <td style={{ color: 'var(--text-sub)' }}>{student.id}</td>
                                                                 <td style={{ fontWeight: '600' }}>{student.name}</td>
                                                                 <td>{student.batch}</td>
                                                                 <td>
-                                                                    <span className="status-badge badge-pending">Pending</span>
+                                                                    <span className={`status-badge ${student.peo_answered ? 'badge-passed' : 'badge-pending'}`}>
+                                                                        {student.peo_answered ? 'Completed' : 'Pending'}
+                                                                    </span>
                                                                 </td>
                                                             </tr>
                                                         ))}
+                                                        {!reportLoading && reportFiltered.length === 0 && (
+                                                            <tr>
+                                                                <td colSpan="4" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-sub)' }}>
+                                                                    No records found for this batch.
+                                                                </td>
+                                                            </tr>
+                                                        )}
                                                     </tbody>
                                                 </table>
                                             </div>
@@ -577,7 +748,7 @@ export default function ProgramChairDashboard() {
                                         <div style={{ marginBottom: '20px', backgroundColor: 'rgba(0,0,0,0.2)', padding: '20px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', animation: 'fadeIn 0.3s ease' }}>
                                             <h4 style={{ margin: '0 0 15px 0', color: 'var(--gold)', fontSize: '1.1rem' }}>Select Columns to Display</h4>
                                             <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', maxHeight: '200px', overflowY: 'auto', paddingRight: '10px' }}>
-                                                {tracerSchema.map(q => (
+                                                {gtsSchema.map(q => (
                                                     <label key={q.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text-main)', cursor: 'pointer', backgroundColor: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: '6px', border: selectedGtsCols.includes(q.id) ? '1px solid var(--gold)' : '1px solid transparent' }}>
                                                         <input 
                                                             type="checkbox" 
@@ -604,8 +775,9 @@ export default function ProgramChairDashboard() {
                                                     value={gtsAnalyticsField}
                                                     onChange={(e) => setGtsAnalyticsField(e.target.value)}
                                                 >
-                                                    {GTS_ANALYTICS_VARIABLES.map(v => (
-                                                        <option key={v.value} value={v.value}>{v.label}</option>
+                                                    {gtsAnalyticsVariables.length === 0 && <option value="">No categorical questions</option>}
+                                                    {gtsAnalyticsVariables.map(v => (
+                                                        <option key={v.id} value={v.id}>{v.text}</option>
                                                     ))}
                                                 </select>
                                             </div>
@@ -626,12 +798,19 @@ export default function ProgramChairDashboard() {
                                                                 <td style={{ padding: '12px 20px', textAlign: 'center' }}>{item.percent.toFixed(2)}%</td>
                                                             </tr>
                                                         ))}
+                                                        {gtsAnalyticsResults.length === 0 && (
+                                                            <tr>
+                                                                <td colSpan={3} style={{ padding: '20px', textAlign: 'center', color: 'var(--text-sub)' }}>
+                                                                    No responses for this question yet.
+                                                                </td>
+                                                            </tr>
+                                                        )}
                                                     </tbody>
                                                     <tfoot>
                                                         <tr style={{ backgroundColor: 'rgba(0,0,0,0.2)' }}>
-                                                            <td style={{ padding: '15px 20px', fontWeight: 'bold' }}>Total Respondents (N)</td>
-                                                            <td style={{ padding: '15px 20px', textAlign: 'center', fontWeight: 'bold' }}>70</td>
-                                                            <td style={{ padding: '15px 20px', textAlign: 'center', fontWeight: 'bold' }}>100.00%</td>
+                                                            <td style={{ padding: '15px 20px', fontWeight: 'bold' }}>Total Responses (N)</td>
+                                                            <td style={{ padding: '15px 20px', textAlign: 'center', fontWeight: 'bold' }}>{gtsAnswerTotal}</td>
+                                                            <td style={{ padding: '15px 20px', textAlign: 'center', fontWeight: 'bold' }}>{gtsAnswerTotal ? '100.00%' : '0.00%'}</td>
                                                         </tr>
                                                     </tfoot>
                                                 </table>
@@ -646,23 +825,23 @@ export default function ProgramChairDashboard() {
                                                     <tr>
                                                         <th style={{ padding: '15px 20px', minWidth: '200px', borderBottom: '2px solid rgba(255,255,255,0.1)', color: 'var(--gold)', whiteSpace: 'nowrap' }}>Alumni Name</th>
                                                         <th style={{ padding: '15px 20px', minWidth: '120px', borderBottom: '2px solid rgba(255,255,255,0.1)', color: 'var(--gold)', whiteSpace: 'nowrap' }}>Batch</th>
-                                                        {(gtsReportTab === 'custom' ? tracerSchema.filter(q => selectedGtsCols.includes(q.id)) : tracerSchema).map(q => (
+                                                        {(gtsReportTab === 'custom' ? gtsSchema.filter(q => selectedGtsCols.includes(q.id)) : gtsSchema).map(q => (
                                                             <th key={q.id} style={{ padding: '15px 20px', minWidth: '220px', borderBottom: '2px solid rgba(255,255,255,0.1)', color: 'var(--gold)', whiteSpace: 'nowrap' }}>{q.text}</th>
                                                         ))}
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {MOCK_GTS_RESPONSES.map((response, idx) => (
-                                                        <tr 
-                                                            key={idx} 
+                                                    {gtsResponses.map((response, idx) => (
+                                                        <tr
+                                                            key={idx}
                                                             style={{ backgroundColor: idx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent', transition: 'background-color 0.2s' }}
                                                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)'}
                                                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = idx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent'}
                                                         >
-                                                            <td style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 'bold', color: 'var(--text-main)' }}>{response.q1}</td>
-                                                            <td style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-sub)' }}>Batch 2026</td>
-                                                            {(gtsReportTab === 'custom' ? tracerSchema.filter(q => selectedGtsCols.includes(q.id)) : tracerSchema).map(q => {
-                                                                const ans = response[q.id];
+                                                            <td style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 'bold', color: 'var(--text-main)' }}>{response.name}</td>
+                                                            <td style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-sub)' }}>Batch {response.batch}</td>
+                                                            {(gtsReportTab === 'custom' ? gtsSchema.filter(q => selectedGtsCols.includes(q.id)) : gtsSchema).map(q => {
+                                                                const ans = response.answers?.[q.id];
                                                                 const displayAns = Array.isArray(ans) ? ans.join(', ') : (ans || '-');
                                                                 return (
                                                                     <td key={q.id} style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-sub)' }}>
@@ -672,12 +851,38 @@ export default function ProgramChairDashboard() {
                                                             })}
                                                         </tr>
                                                     ))}
+                                                    {!reportLoading && gtsResponses.length === 0 && (
+                                                        <tr>
+                                                            <td colSpan={2 + (gtsReportTab === 'custom' ? gtsSchema.filter(q => selectedGtsCols.includes(q.id)).length : gtsSchema.length)} style={{ padding: '25px', textAlign: 'center', color: 'var(--text-sub)' }}>
+                                                                No tracer study responses submitted yet.
+                                                            </td>
+                                                        </tr>
+                                                    )}
                                                 </tbody>
                                             </table>
                                         </div>
                                     )}
                                 </>
                             )}
+                        </div>
+
+                        {/* Print-only footer / signatories */}
+                        <div className="print-only report-footer">
+                            <div className="footer-signatories">
+                                <div className="sign-block">
+                                    <div className="sign-line" />
+                                    <p className="sign-name">Program Chair</p>
+                                    <p className="sign-role">Department of Computer Engineering</p>
+                                </div>
+                                <div className="sign-block">
+                                    <div className="sign-line" />
+                                    <p className="sign-name">Dean</p>
+                                    <p className="sign-role">College of Engineering</p>
+                                </div>
+                            </div>
+                            <p className="footer-note">
+                                This report was generated by the CDM-OBE Centralized Management System. Figures are computed from official records as of the generation date.
+                            </p>
                         </div>
                     </div>
                 )}
@@ -717,27 +922,31 @@ export default function ProgramChairDashboard() {
                             <div style={{ flex: '1 1 200px', backgroundColor: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '8px' }}>
                                 <h4 style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '10px' }}>Employment Profile</h4>
                                 <p style={{ fontSize: '1rem', fontWeight: '500', textTransform: 'capitalize' }}>
-                                    {selectedStudent.employmentStatus}
+                                    {selectedStudent.employment_status || 'Not Updated'}
                                 </p>
-                                {selectedStudent.employmentStatus === 'employed' && (
+                                {selectedStudent.employment_status === 'employed' && (
                                     <p style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginTop: '5px' }}>
-                                        {selectedStudent.jobTitle || 'No title'} @ {selectedStudent.companyName || 'No company'}
+                                        {selectedStudent.job_title || 'No title'} @ {selectedStudent.company_name || 'No company'}
                                     </p>
                                 )}
                             </div>
                             <div style={{ flex: '1 1 200px', backgroundColor: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '8px' }}>
-                                <h4 style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '10px' }}>Indirect Assessment</h4>
+                                <h4 style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '10px' }}>Indirect Assessment {evalLoading && <span style={{ fontWeight: 'normal', fontStyle: 'italic' }}>· loading…</span>}</h4>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                                    <span style={{ fontSize: '0.9rem' }}>Alumni Survey:</span>
-                                    <span style={{ fontSize: '0.9rem', color: 'var(--gold)', fontWeight: 'bold' }}>{selectedStudent.surveyProgress}</span>
+                                    <span style={{ fontSize: '0.9rem' }}>Yearly (SO) Survey:</span>
+                                    <span style={{ fontSize: '0.9rem', color: surveyStatusLabel('so_survey') === 'Completed' ? '#10b981' : '#f59e0b', fontWeight: 'bold' }}>{surveyStatusLabel('so_survey')}</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
                                     <span style={{ fontSize: '0.9rem' }}>Tracer Study:</span>
-                                    <span style={{ fontSize: '0.9rem', color: '#10b981', fontWeight: 'bold' }}>{selectedStudent.tracerProgress}</span>
+                                    <span style={{ fontSize: '0.9rem', color: surveyStatusLabel('tracer_study') === 'Completed' ? '#10b981' : '#f59e0b', fontWeight: 'bold' }}>{surveyStatusLabel('tracer_study')}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                    <span style={{ fontSize: '0.9rem' }}>PEO Survey:</span>
+                                    <span style={{ fontSize: '0.9rem', color: surveyStatusLabel('graduate_survey') === 'Completed' ? '#10b981' : '#f59e0b', fontWeight: 'bold' }}>{surveyStatusLabel('graduate_survey')}</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <span style={{ fontSize: '0.9rem' }}>Employer Form:</span>
-                                    <span style={{ fontSize: '0.9rem', color: '#3b82f6', fontWeight: 'bold', textTransform: 'capitalize' }}>{selectedStudent.employerStatus}</span>
+                                    <span style={{ fontSize: '0.9rem', color: '#3b82f6', fontWeight: 'bold', textTransform: 'capitalize' }}>{selectedStudent.employer_status || 'Pending'}</span>
                                 </div>
                             </div>
                         </div>
@@ -745,55 +954,41 @@ export default function ProgramChairDashboard() {
                         <div style={{ backgroundColor: 'rgba(255,215,0,0.05)', padding: '20px', borderRadius: '8px', border: '1px solid rgba(255,215,0,0.2)', marginBottom: '25px' }}>
                             <h4 style={{ fontSize: '1rem', color: 'var(--gold)', marginBottom: '10px' }}>Direct Assessment (OBE Grading)</h4>
                             <p style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '15px', lineHeight: '1.4' }}>
-                                Encode the student's evaluated outcome grade for all 3 determinant sets.
+                                Outcome attainment computed from the student's graded determinant courses (weighted per Program Outcome).
                             </p>
-                            
+
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <label style={{ fontSize: '0.9rem', fontWeight: '500' }}>Det. 1 (a-d) Grade:</label>
-                                    <input 
-                                        type="text" className="correction-textbox" placeholder="e.g., 1.25"
-                                        style={{ width: '150px', height: '35px', padding: '0 10px', backgroundColor: 'var(--bg-main)' }}
-                                        value={selectedStudent.det1Grade || ''}
-                                        onChange={e => setSelectedStudent({...selectedStudent, det1Grade: e.target.value})}
-                                    />
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <label style={{ fontSize: '0.9rem', fontWeight: '500' }}>Det. 2 (e-h) Grade:</label>
-                                    <input 
-                                        type="text" className="correction-textbox" placeholder="e.g., 1.50"
-                                        style={{ width: '150px', height: '35px', padding: '0 10px', backgroundColor: 'var(--bg-main)' }}
-                                        value={selectedStudent.det2Grade || ''}
-                                        onChange={e => setSelectedStudent({...selectedStudent, det2Grade: e.target.value})}
-                                    />
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <label style={{ fontSize: '0.9rem', fontWeight: '500' }}>Det. 3 (i-l) Grade:</label>
-                                    <input 
-                                        type="text" className="correction-textbox" placeholder="e.g., 1.00"
-                                        style={{ width: '150px', height: '35px', padding: '0 10px', backgroundColor: 'var(--bg-main)' }}
-                                        value={selectedStudent.det3Grade || ''}
-                                        onChange={e => setSelectedStudent({...selectedStudent, det3Grade: e.target.value})}
-                                    />
-                                </div>
+                                {DET_GROUPS.map(group => {
+                                    const avg = detAverage(group.pos);
+                                    const color = avg == null ? 'var(--text-sub)' : avg >= 75 ? '#10b981' : avg >= 50 ? '#f59e0b' : '#ef4444';
+                                    return (
+                                        <div key={group.label}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                                <label style={{ fontSize: '0.9rem', fontWeight: '500' }}>{group.label} <span style={{ color: 'var(--text-sub)', fontWeight: 'normal' }}>({group.range})</span></label>
+                                                <span style={{ fontSize: '1rem', fontWeight: 'bold', color }}>{avg == null ? 'Pending' : `${avg}%`}</span>
+                                            </div>
+                                            <div style={{ width: '100%', height: '8px', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: '4px', overflow: 'hidden' }}>
+                                                <div style={{ height: '100%', width: `${avg == null ? 0 : Math.min(avg, 100)}%`, backgroundColor: color, transition: 'width 0.4s ease' }} />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                {!evalLoading && !evalAttainment?.hasGrades && (
+                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-sub)', fontStyle: 'italic', margin: '4px 0 0 0' }}>
+                                        No graded determinant courses yet for this student.
+                                    </p>
+                                )}
                             </div>
                         </div>
 
                         <div style={{ display: 'flex', gap: '15px' }}>
-                            <button 
-                                className="cancel-btn outline-btn" 
-                                onClick={() => setSelectedStudent(null)} 
+                            <button
+                                className="cancel-btn outline-btn"
+                                onClick={() => setSelectedStudent(null)}
                                 style={{ padding: '10px 24px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', flex: 1 }}
                             >
-                                Cancel
+                                Close
                             </button>
-                            <button 
-                                className="primary-btn" 
-                                onClick={saveEvaluation} 
-                                style={{ padding: '10px 24px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', flex: 1, border: 'none' }}
-                            >
-                                Save Evaluated Grades
-                            </button>  
                         </div>
                     </div>
                 </div>
@@ -935,6 +1130,9 @@ export default function ProgramChairDashboard() {
                     background: var(--gold);
                 }
 
+                /* Print-only elements are hidden on screen */
+                .print-only { display: none; }
+
                 @media print {
                     @page {
                         margin: 20mm;
@@ -957,8 +1155,53 @@ export default function ProgramChairDashboard() {
                         margin: 0;
                         padding: 0;
                     }
-                    .sidebar, .primary-btn, .outline-btn, .tab-btn {
+                    .sidebar, .primary-btn, .outline-btn, .tab-btn, .screen-only {
                         display: none !important;
+                    }
+
+                    /* ── Print-only branded letterhead ───────────────────── */
+                    .print-only { display: block !important; }
+
+                    .report-letterhead { text-align: center; margin-bottom: 8px; }
+                    .letterhead-top {
+                        display: flex; align-items: center; justify-content: center; gap: 24px;
+                    }
+                    .letterhead-logo {
+                        width: 80px; height: 80px; object-fit: contain;
+                        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+                    }
+                    .letterhead-titles { text-align: center; }
+                    .lh-republic { margin: 0; font-size: 11px; color: #000 !important; }
+                    .lh-school {
+                        margin: 2px 0; font-size: 22px; font-weight: 800;
+                        color: #000 !important; letter-spacing: 1px;
+                    }
+                    .lh-dept { margin: 2px 0; font-size: 13px; color: #000 !important; }
+                    .lh-system { margin: 2px 0; font-size: 11px; font-style: italic; color: #333 !important; }
+                    .letterhead-divider { border-bottom: 3px double #000; margin: 10px 0 12px; }
+                    .letterhead-meta { text-align: center; margin-bottom: 6px; }
+                    .lh-report-title {
+                        margin: 0; font-size: 18px; font-weight: 700;
+                        color: #000 !important; text-transform: uppercase; letter-spacing: 0.5px;
+                    }
+                    .lh-report-sub {
+                        display: flex; justify-content: center; gap: 20px;
+                        font-size: 11px; color: #333 !important; margin-top: 5px;
+                    }
+
+                    /* ── Print-only footer / signatories ─────────────────── */
+                    .report-footer { margin-top: 28px; page-break-inside: avoid; }
+                    .footer-signatories {
+                        display: flex; justify-content: space-around; gap: 50px; margin-top: 45px;
+                    }
+                    .sign-block { text-align: center; flex: 1; }
+                    .sign-line { border-top: 1px solid #000; margin: 0 auto 6px; width: 85%; }
+                    .sign-name { margin: 0; font-weight: bold; font-size: 12px; color: #000 !important; }
+                    .sign-role { margin: 2px 0 0; font-size: 10px; color: #333 !important; }
+                    .footer-note {
+                        margin-top: 24px; font-size: 9px; color: #555 !important;
+                        text-align: center; font-style: italic;
+                        border-top: 1px solid #ccc; padding-top: 8px;
                     }
                     .portal-card, div[style*="overflow"], div[style*="maxHeight"] {
                         box-shadow: none !important;

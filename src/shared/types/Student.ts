@@ -11,4 +11,5 @@ export type Student = {
   program: string;
   birthday: string;
   status: StudentStatus;
+  graduation_year?: number | null;
 };

@@ -15,14 +15,21 @@ import StartPEO from './components/StartPEO';
 // SERVICES
 //==================================
 import { getAccountLink } from '@/services/accountLinkService';
-import { getSurveysByVersionAndType } from '@/services/surveyServices';
+import { getSurveysByVersionAndType, getSurveyById } from '@/services/surveyServices';
 import { getAnsweredSurveysByTypeAndVersion } from '@/services/answeredSurveyService';
 import { createAnsweredSurvey } from '@/services/answeredSurveyService';
+import { updateStudent } from '@/services/masterlistService';
+import { getObeAttainment } from '@/services/obeAttainmentService';
 
 //==================================
 // HOOKS
 //==================================
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+
+//==================================
+// UTILS
+//==================================
+import { isGraduate, getGraduationYear } from '@/shared/utils/graduation';
 
 
 const PO_DEFINITIONS = [
@@ -55,8 +62,10 @@ export default function AlumniDashboard() {
     const [isInviteOpen, setIsInviteOpen] = useState(false);
 
     const [dbUser, setDbUser] = useState(null);
-    const [courseMappings, setCourseMappings] = useState({});
-    const [courseWeights, setCourseWeights] = useState({});
+
+    // Computed PO attainment from the student's actual course grades
+    const [poAttainment, setPoAttainment] = useState({});
+    const [obeHasGrades, setObeHasGrades] = useState(false);
 
     const [employerStatus, setEmployerStatus] = useState('Pending');
     const [employmentStatus, setEmploymentStatus] = useState('');
@@ -122,6 +131,10 @@ const [surveyInitLoading, setSurveyInitLoading] = useState(true);
                     });
 
                     setDbUser(roleAccount);
+
+                    // Hydrate the employment / employer-evaluation state from the DB
+                    setSavedJobStatus(roleAccount.employment_status || 'Not Updated');
+                    setEmployerStatus(roleAccount.employer_status || 'Pending');
                 }
 
                 console.log('✅ Account Link loaded:', res);
@@ -187,8 +200,14 @@ useEffect(() => {
                             currentYear
                         );
 
-                        // No record → create one
-                        if (!data || data.length === 0) {
+                        // Scope to THIS user only — the endpoint returns
+                        // every student's records for the type + version.
+                        const userRecords = (data || []).filter(
+                            (item) => item.student_id === session.id
+                        );
+
+                        // No record for this user → create one
+                        if (userRecords.length === 0) {
                             await createAnsweredSurvey({
                                 student_id: session.id,
                                 batch: session.batch,
@@ -205,10 +224,10 @@ useEffect(() => {
                             return;
                         }
 
-                        // Check if ANY record is answered
-                        const isAnswered = data.some((item) => {
-                            return item.status === "answered";
-                        });
+                        // Mark complete only if THIS user has an answered record
+                        const isAnswered = userRecords.some(
+                            (item) => item.status === "answered"
+                        );
 
                         resultMap[type] = isAnswered;
                     })
@@ -225,7 +244,26 @@ useEffect(() => {
 
         initSurveys();
     }, []);
-        
+
+    // Compute the student's PO attainment from their actual course grades.
+    // This single call also supplies the Curriculum Mapping (course + weight
+    // per PO, sourced from the determinants mapping like the PC Direct page).
+    useEffect(() => {
+        if (!userData?.id) return;
+
+        async function loadAttainment() {
+            try {
+                const result = await getObeAttainment(userData.id);
+                setPoAttainment(result?.pos || {});
+                setObeHasGrades(!!result?.hasGrades);
+            } catch (err) {
+                console.error('Failed to load PO attainment:', err);
+            }
+        }
+
+        loadAttainment();
+    }, [userData?.id]);
+
     const toggleTheme = () => {
         const newTheme = !isDarkMode;
         setIsDarkMode(newTheme);
@@ -250,106 +288,168 @@ useEffect(() => {
         setTimeout(() => setToastMessage(null), 3000);
     };
 
-    const handleSaveJobUpdate = () => {
-        if (!dbUser) return;
-
-        const db = JSON.parse(localStorage.getItem('obe_masterlist') || '[]');
-        const updatedDb = db.map(student => {
-            if (student.id === dbUser.id) {
-                return {
-                    ...student,
-                    employmentStatus: employmentStatus,
-                    jobTitle: employmentStatus === 'employed' ? jobTitle : '',
-                    companyName: employmentStatus === 'employed' ? companyName : ''
-                };
-            }
-            return student;
-        });
-
-        localStorage.setItem('obe_masterlist', JSON.stringify(updatedDb));
-
-        setSavedJobStatus(employmentStatus);
-        setDbUser({ ...dbUser, employmentStatus: employmentStatus, jobTitle, companyName });
-        setActiveModal(null);
-        setEmploymentStatus('');
-        setJobTitle('');
-        setCompanyName('');
-        showToast('Job Status Updated!');
+    // Prefill the modal with the current values, then open it
+    const openJobUpdate = () => {
+        setEmploymentStatus(dbUser?.employment_status || '');
+        setJobTitle(dbUser?.job_title || '');
+        setCompanyName(dbUser?.company_name || '');
+        setActiveModal('jobUpdate');
     };
 
-    const handleSendInvite = () => {
+    const handleSaveJobUpdate = async () => {
         if (!dbUser) return;
 
-        const db = JSON.parse(localStorage.getItem('obe_masterlist') || '[]');
-        const updatedDb = db.map(student => {
-            if (student.id === dbUser.id) {
-                return { ...student, employerStatus: 'sent' };
-            }
-            return student;
-        });
-
-        localStorage.setItem('obe_masterlist', JSON.stringify(updatedDb));
-        setEmployerStatus('sent');
-        setIsInviteOpen(false);
-        showToast('Official Invitation Sent!');
-    };
-
-    const openReviewModal = (sType) => {
-        let dbKey = '';
-        if (sType === 'po') dbKey = 'obe_form_po';
-        else if (sType === 'peo') dbKey = 'obe_form_peo';
-        else if (sType === 'gts') dbKey = 'obe_form_gts';
-        else if (sType === 'yearly') dbKey = 'obe_form_yearly';
-
-        const savedData = localStorage.getItem(dbKey);
-        let parsedQuestions = [];
-        if (savedData) {
-            parsedQuestions = JSON.parse(savedData).questions || [];
-        } else {
-            if (sType === 'po') {
-                parsedQuestions = [
-                    { id: 'q1', type: 'likert', text: '1. How well can you apply mathematics to engineering problems?' },
-                    { id: 'q2', type: 'yesno', text: '2. Did the curriculum prepare you for industrial standards?' },
-                    { id: 'q3', type: 'text', text: '3. What specific skills learned were most useful in your first job?' }
-                ];
-            } else if (sType === 'gts') {
-                parsedQuestions = [
-                    { id: 'q1', type: 'yesno', text: 'Are you currently employed?' },
-                    { id: 'q2', type: 'text', text: 'What is your current job title?' }
-                ];
-            }
+        if (!employmentStatus) {
+            showToast('Please select an employment status.');
+            return;
         }
 
-        setSurveyModalQuestions(parsedQuestions);
-        setSurveyModalAnswers(dbUser?.surveyAnswers?.[sType] || {});
-        setSurveyModalType(sType);
+        const isEmployed = employmentStatus === 'employed';
+
+        // Employer evaluation only applies when employed.
+        // Preserve an in-progress evaluation; otherwise reset to Pending.
+        const nextEmployerStatus = isEmployed
+            ? (dbUser.employer_status || 'Pending')
+            : 'Pending';
+
+        const updates = {
+            employment_status: employmentStatus,
+            job_title: isEmployed ? jobTitle : '',
+            company_name: isEmployed ? companyName : '',
+            employer_status: nextEmployerStatus,
+        };
+
+        try {
+            // Persist to the student document (matched by student-number `id`)
+            await updateStudent(dbUser.id, updates);
+
+            setDbUser({ ...dbUser, ...updates });
+            setSavedJobStatus(employmentStatus);
+            setEmployerStatus(nextEmployerStatus);
+            setActiveModal(null);
+            showToast('Job Status Updated!');
+        } catch (err) {
+            console.error('Failed to update employment status:', err);
+            showToast('Failed to update. Please try again.');
+        }
     };
 
-    const currentYear = 2026;
-    const gradYear = parseInt(userData.batch) || 2026;
+    const handleSendInvite = async () => {
+        if (!dbUser) return;
+
+        try {
+            await updateStudent(dbUser.id, { employer_status: 'sent' });
+
+            setDbUser({ ...dbUser, employer_status: 'sent' });
+            setEmployerStatus('sent');
+            setIsInviteOpen(false);
+            showToast('Official Invitation Sent!');
+        } catch (err) {
+            console.error('Failed to send invitation:', err);
+            showToast('Failed to send invitation. Please try again.');
+        }
+    };
+
+    const openReviewModal = async (sType) => {
+        // Map the dashboard tab to the answered_survey survey_type
+        const typeMap = {
+            po: 'so_survey',
+            yearly: 'so_survey',
+            peo: 'graduate_survey',
+            gts: 'tracer_study',
+        };
+        const surveyType = typeMap[sType];
+
+        // Open the modal right away (questions/answers fill in once loaded)
+        setSurveyModalQuestions([]);
+        setSurveyModalAnswers({});
+        setSurveyModalType(sType);
+
+        if (!surveyType) return;
+
+        try {
+            const currentYear = new Date().getFullYear().toString();
+            const session = JSON.parse(localStorage.getItem('current_user') || '{}');
+
+            // Query answered_survey and keep only THIS user's record
+            const data = await getAnsweredSurveysByTypeAndVersion(
+                surveyType,
+                currentYear
+            );
+
+            const record = (data || []).find(
+                (item) => item.student_id === session.id
+            );
+
+            if (!record) return;
+
+            // Answers come directly from the user's answered_survey record
+            setSurveyModalAnswers(record.answers || {});
+
+            // The question schema lives in the survey template (by survey_id),
+            // falling back to the current year's template for this type.
+            let survey = null;
+            if (record.survey_id) {
+                survey = await getSurveyById(record.survey_id);
+            }
+            if (!survey?.questions) {
+                const fallback = await getSurveysByVersionAndType(
+                    currentYear,
+                    surveyType
+                );
+                survey = fallback?.[0] || null;
+            }
+
+            setSurveyModalQuestions(Object.values(survey?.questions || {}));
+        } catch (err) {
+            console.error('Failed to load review responses:', err);
+        }
+    };
+
+    const currentYear = new Date().getFullYear();
+    const gradYear = parseInt(userData.batch) || currentYear;
     const yearsSinceGrad = currentYear - gradYear;
 
+    // Graduation gate for the Graduate Tracer Study.
+    // GTS unlocks only once the student has graduated
+    // (current year > graduation year, where graduation year
+    //  defaults to batch + 4 unless explicitly set).
+    const studentForGrad = dbUser || userData;
+    const graduationYear = getGraduationYear(studentForGrad);
+    const isGTSAvailable = isGraduate(studentForGrad, currentYear);
+
     const isPOCompleted = dbUser?.surveyProgress === '100%';
-    const isGTSCompleted = dbUser?.tracerProgress === '100%';
-    const isYearlyCompleted = dbUser?.yearlyProgress === '100%';
+    // Driven by the DB answered-status checks (see surveyStatus)
+    const isGTSCompleted = surveyStatus.tracer_study;
+    const isYearlyCompleted = surveyStatus.so_survey;
     const isPEOCompleted = dbUser?.peoProgress === '100%';
 
     const isPEORequired = yearsSinceGrad >= 3;
     const peoUnlockYear = gradYear + 3;
 
-    let requiredTasks = 4;
-    if (isPEORequired) requiredTasks = 5;
+    // Required tasks: Yearly Update + Employment are always required;
+    // GTS only after graduation; PEO only 3+ years after graduation.
+    let requiredTasks = 2;
+    if (isGTSAvailable) requiredTasks++;
+    if (isPEORequired) requiredTasks++;
 
     let completedTasks = 0;
     let pendingList = [];
 
-    if (surveyStatus.tracer_study) completedTasks++; else pendingList.push('Graduate Tracer Study');
+    // Yearly Update (so_survey) — always required
     if (surveyStatus.so_survey) completedTasks++; else pendingList.push(`Yearly Update (${currentYear})`);
 
+    // Graduate Tracer Study — only once the student has graduated
+    if (isGTSAvailable) {
+        if (surveyStatus.tracer_study) completedTasks++; else pendingList.push('Graduate Tracer Study');
+    }
+
+    // PEO survey — only 3+ years after graduation
     if (isPEORequired) {
         if (surveyStatus.graduate_survey) completedTasks++; else pendingList.push('3-5 Year (PEO Survey)');
     }
 
+    // Employment status — always required
     if (savedJobStatus === 'Not Updated') {
         pendingList.push('Update Employment Status');
     } else if (savedJobStatus === 'employed' && employerStatus === 'Pending') {
@@ -358,22 +458,7 @@ useEffect(() => {
         completedTasks++;
     }
 
-    const progressPercent = Math.round((completedTasks / requiredTasks) * 100);
-
-    const dynamicDeterminants = Object.keys(courseMappings).filter(course => Object.values(courseMappings[course]).some(v => v)).map((course, idx) => {
-        const mappedPOs = Object.keys(courseMappings[course]).filter(po => courseMappings[course][po]);
-        const parts = course.split(' ');
-        const code = parts.length > 1 ? `${parts[0]} ${parts[1]}` : course;
-        const name = parts.length > 2 ? parts.slice(2).join(' ') : course;
-
-        return {
-            code: code,
-            name: name,
-            po: `Mapped POs: ${mappedPOs.join(', ')}`,
-            grade: dbUser?.obeStatus === 'Graded' ? 'Evaluated' : null,
-            icon: ['📐', '💻', '⚙️', '📊', '🔬'][idx % 5]
-        };
-    });
+    const progressPercent = requiredTasks === 0 ? 0 : Math.round((completedTasks / requiredTasks) * 100);
 
     const activeTabStyle = {
         padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', fontWeight: 'bold', fontSize: '0.9rem',
@@ -468,8 +553,8 @@ useEffect(() => {
                 <div style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                         <h2 style={{ margin: '0', fontSize: '1.5rem', color: 'var(--text-main)' }}>Graduate Tracer Study (GTS)</h2>
-                        <span style={{ backgroundColor: isGTSCompleted ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)', color: isGTSCompleted ? '#10b981' : '#f59e0b', padding: '6px 16px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold' }}>
-                            {isGTSCompleted ? 'Completed ✅' : 'Pending 🟡'}
+                        <span style={{ backgroundColor: !isGTSAvailable ? 'rgba(255,255,255,0.1)' : isGTSCompleted ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)', color: !isGTSAvailable ? 'var(--text-sub)' : isGTSCompleted ? '#10b981' : '#f59e0b', padding: '6px 16px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                            {!isGTSAvailable ? 'Locked 🔒' : isGTSCompleted ? 'Completed ✅' : 'Pending 🟡'}
                         </span>
                     </div>
                     <p style={{ margin: '0 0 15px 0', color: 'var(--text-sub)', fontSize: '0.95rem', lineHeight: '1.5' }}>
@@ -483,9 +568,15 @@ useEffect(() => {
                             <li>Takes roughly 10-15 minutes.</li>
                         </ul>
                     </div>
-                    <button className={isGTSCompleted ? 'outline-btn' : 'primary-btn'} onClick={() => isGTSCompleted ? openReviewModal('gts') : router.push('/alumni/tracer')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.95rem', border: isGTSCompleted ? '1px solid rgba(255,255,255,0.2)' : 'none', cursor: 'pointer', marginTop: '20px' }}>
-                        {isGTSCompleted ? 'Review Responses' : 'Start Tracer Study'}
-                    </button>
+                    {!isGTSAvailable ? (
+                        <button className="outline-btn" disabled style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.95rem', border: '1px solid rgba(255,255,255,0.1)', cursor: 'not-allowed', opacity: 0.6, marginTop: '20px' }}>
+                            🔒 Unlocks after graduation{graduationYear ? ` (${graduationYear})` : ''}
+                        </button>
+                    ) : (
+                        <button className={isGTSCompleted ? 'outline-btn' : 'primary-btn'} onClick={() => isGTSCompleted ? openReviewModal('gts') : router.push('/alumni/tracer')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.95rem', border: isGTSCompleted ? '1px solid rgba(255,255,255,0.2)' : 'none', cursor: 'pointer', marginTop: '20px' }}>
+                            {isGTSCompleted ? 'Review Responses' : 'Start Tracer Study'}
+                        </button>
+                    )}
                 </div>
             );
         }
@@ -549,6 +640,7 @@ useEffect(() => {
                                 style={surveyTab === 'gts' ? activeTabStyle : inactiveTabStyle}
                             >
                                 🎓 Tracer Study
+                                {!isGTSAvailable && <span style={{ marginLeft: '4px', fontSize: '0.8rem', opacity: 0.7 }}>🔒</span>}
                             </button>
                         </div>
 
@@ -611,7 +703,7 @@ useEffect(() => {
                                     </li>
                                     {savedJobStatus === 'employed' && (
                                         <li style={{ padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-sub)' }}>
-                                            Company: <span style={{ float: 'right', color: 'var(--text-main)', textAlign: 'right', maxWidth: '60%' }}>{dbUser?.companyName || 'Not specified'}</span>
+                                            Company: <span style={{ float: 'right', color: 'var(--text-main)', textAlign: 'right', maxWidth: '60%' }}>{dbUser?.company_name || 'Not specified'}</span>
                                         </li>
                                     )}
                                 </ul>
@@ -623,7 +715,7 @@ useEffect(() => {
                                     </p>
                                 </div>
 
-                                <button className="outline-btn" onClick={() => setActiveModal('jobUpdate')} style={{ padding: '10px 20px', borderRadius: '8px', fontSize: '0.95rem', fontWeight: 'bold', width: '100%', marginTop: '20px' }}>
+                                <button className="outline-btn" onClick={openJobUpdate} style={{ padding: '10px 20px', borderRadius: '8px', fontSize: '0.95rem', fontWeight: 'bold', width: '100%', marginTop: '20px' }}>
                                     ✎ Update Work Status
                                 </button>
                             </div>
@@ -693,40 +785,73 @@ useEffect(() => {
 
                 {activeTab === 'determinants' && (
                     <div style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto', paddingRight: '10px', flex: 1 }}>
-                        <div className="portal-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '30px', flexShrink: 0, borderLeft: dbUser?.obeStatus === 'Graded' ? '6px solid #10b981' : '6px solid #f59e0b' }}>
+                        <div className="portal-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '30px', flexShrink: 0, borderLeft: obeHasGrades ? '6px solid #10b981' : '6px solid #f59e0b' }}>
                             <div>
                                 <h2 style={{ color: 'var(--gold)', margin: '0 0 5px 0', fontSize: '1.5rem' }}>Direct Assessment Portfolio</h2>
                                 <p style={{ color: 'var(--text-sub)', fontSize: '0.95rem', margin: 0 }}>Official Outcome-Based Education (OBE) grades evaluated by the Program Chair.</p>
                                 <p style={{ color: 'var(--text-sub)', fontSize: '0.85rem', margin: '10px 0 0 0', fontStyle: 'italic' }}>Grades are computed based on your performance in the determinant courses mapped to specific Program Outcomes.</p>
                             </div>
                             <div style={{ textAlign: 'right' }}>
-                                <span style={{ backgroundColor: dbUser?.obeStatus === 'Graded' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)', color: dbUser?.obeStatus === 'Graded' ? '#10b981' : '#f59e0b', padding: '8px 16px', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 'bold', border: `1px solid ${dbUser?.obeStatus === 'Graded' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}` }}>
-                                    {dbUser?.obeStatus === 'Graded' ? '✅ Fully Evaluated' : '⏳ Pending Evaluation'}
+                                <span style={{ backgroundColor: obeHasGrades ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)', color: obeHasGrades ? '#10b981' : '#f59e0b', padding: '8px 16px', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 'bold', border: `1px solid ${obeHasGrades ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}` }}>
+                                    {obeHasGrades ? '✅ Fully Evaluated' : '⏳ Pending Evaluation'}
                                 </span>
                             </div>
                         </div>
 
                         <h3 style={{ color: 'var(--gold)', margin: '10px 0 0 0', fontSize: '1.2rem' }}>Evaluated Determinants</h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-                            {dynamicDeterminants.length > 0 ? dynamicDeterminants.map((course, idx) => (
-                                <div key={idx} className="portal-card" style={{ padding: '25px', border: course.grade ? '1px solid rgba(16, 185, 129, 0.3)' : '1px dashed rgba(255,255,255,0.1)', transition: 'all 0.3s' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
-                                        <div style={{ fontSize: '2.5rem' }}>{course.icon || '📘'}</div>
-                                        {course.grade && <span style={{ backgroundColor: '#10b981', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', padding: '4px 8px', borderRadius: '12px' }}>GRADED</span>}
-                                    </div>
-                                    <h3 style={{ margin: '0 0 5px 0', fontSize: '1.2rem', color: 'var(--text-main)' }}>{course.code}</h3>
-                                    <p style={{ margin: '0 0 25px 0', fontSize: '0.9rem', color: 'var(--text-sub)' }}>{course.name} ({course.po})</p>
+                        <p style={{ color: 'var(--text-sub)', fontSize: '0.85rem', margin: '0 0 5px 0' }}>
+                            Each Program Outcome's achievement is the sum of your grade in each determinant course multiplied by the percentage that course occupies on the PO.
+                        </p>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px' }}>
+                            {PO_DEFINITIONS.map(po => {
+                                const data = poAttainment[po.id];
+                                if (!data || !data.courses || data.courses.length === 0) return null;
 
-                                    <div style={{ padding: '15px', backgroundColor: course.grade ? 'rgba(16, 185, 129, 0.05)' : 'rgba(0,0,0,0.3)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: course.grade ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(255,255,255,0.05)' }}>
-                                        <span style={{ fontSize: '0.9rem', color: 'var(--text-sub)' }}>Evaluated Grade:</span>
-                                        <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: course.grade ? '#10b981' : 'var(--text-main)' }}>
-                                            {course.grade || 'Pending'}
-                                        </span>
+                                const attained = data.attainment; // number | null
+                                const barColor = attained == null ? 'var(--text-sub)'
+                                    : attained >= 75 ? '#10b981'
+                                    : attained >= 50 ? '#f59e0b'
+                                    : '#ef4444';
+
+                                return (
+                                    <div key={po.id} className="portal-card" style={{ padding: '25px', borderTop: `4px solid ${barColor}`, display: 'flex', flexDirection: 'column' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <span style={{ backgroundColor: 'var(--gold)', color: '#111827', padding: '4px 10px', borderRadius: '6px', fontWeight: 'bold', fontSize: '0.9rem' }}>PO-{po.id}</span>
+                                                <h3 style={{ margin: 0, color: 'var(--text-main)', fontSize: '1.1rem' }}>{po.title}</h3>
+                                            </div>
+                                            <span style={{ fontSize: '1.4rem', fontWeight: 'bold', color: barColor, whiteSpace: 'nowrap' }}>
+                                                {attained == null ? 'Pending' : `${attained}%`}
+                                            </span>
+                                        </div>
+
+                                        <div style={{ width: '100%', height: '10px', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: '5px', overflow: 'hidden', marginBottom: '15px' }}>
+                                            <div style={{ height: '100%', width: `${attained == null ? 0 : Math.min(attained, 100)}%`, backgroundColor: barColor, transition: 'width 0.4s ease' }} />
+                                        </div>
+
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                            {data.courses.map((c, idx) => (
+                                                <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(0,0,0,0.2)', padding: '12px 15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                    <span style={{ color: 'var(--text-main)', fontSize: '0.88rem', lineHeight: '1.3', flex: 1, paddingRight: '12px' }}>{c.key}</span>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <span title="Weight toward this PO" style={{ color: 'var(--gold)', fontWeight: 'bold', fontSize: '0.8rem', backgroundColor: 'rgba(234, 179, 8, 0.1)', padding: '3px 7px', borderRadius: '4px' }}>{c.weight}%</span>
+                                                        <span title="Your grade" style={{ fontWeight: 'bold', fontSize: '0.85rem', minWidth: '60px', textAlign: 'right', color: c.graded ? '#10b981' : 'var(--text-sub)' }}>
+                                                            {c.graded ? `${c.percentage}%` : 'Pending'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <p style={{ margin: '12px 0 0 0', fontSize: '0.75rem', color: 'var(--text-sub)', fontStyle: 'italic' }}>
+                                            {data.gradedWeight} / {data.totalWeight} weight evaluated · gold = course weight, green = your grade
+                                        </p>
                                     </div>
-                                </div>
-                            )) : (
+                                );
+                            })}
+                            {Object.keys(poAttainment).length === 0 && (
                                 <div style={{ color: 'var(--text-sub)', fontStyle: 'italic', padding: '20px', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px dashed rgba(255,255,255,0.1)' }}>
-                                    No determinant courses mapped yet.
+                                    No determinant grades available yet.
                                 </div>
                             )}
                         </div>
@@ -734,8 +859,8 @@ useEffect(() => {
                         <h3 style={{ color: 'var(--gold)', margin: '20px 0 0 0', fontSize: '1.2rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px' }}>Curriculum Mapping (Synced from PC)</h3>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px', paddingBottom: '40px' }}>
                             {PO_DEFINITIONS.map(po => {
-                                const mappedCourses = Object.keys(courseMappings).filter(course => courseMappings[course][po.id]);
-                                if (mappedCourses.length === 0) return null;
+                                const data = poAttainment[po.id];
+                                if (!data || !data.courses || data.courses.length === 0) return null;
 
                                 return (
                                     <div key={po.id} className="portal-card" style={{ padding: '25px', borderTop: '4px solid var(--gold)', display: 'flex', flexDirection: 'column' }}>
@@ -744,11 +869,11 @@ useEffect(() => {
                                             <h3 style={{ margin: 0, color: 'var(--text-main)', fontSize: '1.1rem' }}>{po.title}</h3>
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                            {mappedCourses.map((course, idx) => (
+                                            {data.courses.map((c, idx) => (
                                                 <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(0,0,0,0.2)', padding: '12px 15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                                    <span style={{ color: 'var(--text-main)', fontSize: '0.9rem', lineHeight: '1.3', flex: 1, paddingRight: '15px' }}>{course}</span>
+                                                    <span style={{ color: 'var(--text-main)', fontSize: '0.9rem', lineHeight: '1.3', flex: 1, paddingRight: '15px' }}>{c.key}</span>
                                                     <span style={{ color: 'var(--gold)', fontWeight: 'bold', fontSize: '0.9rem', backgroundColor: 'rgba(234, 179, 8, 0.1)', padding: '4px 8px', borderRadius: '4px' }}>
-                                                        {courseWeights[po.id]?.[course] || '0'}%
+                                                        {c.weight}%
                                                     </span>
                                                 </div>
                                             ))}
@@ -756,7 +881,7 @@ useEffect(() => {
                                     </div>
                                 );
                             })}
-                            {Object.keys(courseMappings).length === 0 && (
+                            {Object.keys(poAttainment).length === 0 && (
                                 <div style={{ color: 'var(--text-sub)', fontStyle: 'italic', padding: '20px', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px dashed rgba(255,255,255,0.1)' }}>
                                     No curriculum mapping synced from the Program Chair yet.
                                 </div>
@@ -801,10 +926,27 @@ useEffect(() => {
                                         ) : q.type === 'textarea' ? (
                                             <textarea className="correction-textbox" style={{ width: '100%', padding: '10px', backgroundColor: 'var(--bg-main)', height: '80px', resize: 'vertical', opacity: 0.7 }} disabled value={surveyModalAnswers[q.id] || ''} />
                                         ) : q.type === 'likert' ? (
-                                            <select className="correction-textbox" style={{ width: '100%', padding: '10px', backgroundColor: 'var(--bg-main)', opacity: 0.7 }} disabled value={surveyModalAnswers[q.id] || ''}>
-                                                <option value="">Select rating...</option>
-                                                {[1, 2, 3, 4, 5].map(v => <option key={v} value={v}>{v}</option>)}
-                                            </select>
+                                            (q.options && q.options.length > 0) ? (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                                    {q.options.map((opt, oi) => {
+                                                        const subId = `${q.id}_sub_${oi}`;
+                                                        return (
+                                                            <div key={oi} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                                                                <span style={{ color: 'var(--text-main)', fontSize: '0.9rem', flex: 1 }}>{opt}</span>
+                                                                <select className="correction-textbox" style={{ width: '110px', padding: '8px', backgroundColor: 'var(--bg-main)', opacity: 0.7 }} disabled value={surveyModalAnswers[subId] ?? ''}>
+                                                                    <option value="">—</option>
+                                                                    {[1, 2, 3, 4, 5].map(v => <option key={v} value={v}>{v}</option>)}
+                                                                </select>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                <select className="correction-textbox" style={{ width: '100%', padding: '10px', backgroundColor: 'var(--bg-main)', opacity: 0.7 }} disabled value={surveyModalAnswers[q.id] ?? ''}>
+                                                    <option value="">Select rating...</option>
+                                                    {[1, 2, 3, 4, 5].map(v => <option key={v} value={v}>{v}</option>)}
+                                                </select>
+                                            )
                                         ) : q.type === 'yesno' ? (
                                             <select className="correction-textbox" style={{ width: '100%', padding: '10px', backgroundColor: 'var(--bg-main)', opacity: 0.7 }} disabled value={surveyModalAnswers[q.id] || ''}>
                                                 <option value="">Select option...</option>

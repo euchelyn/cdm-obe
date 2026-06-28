@@ -84,6 +84,7 @@ export async function POST(req: NextRequest) {
             program,
             birthday,
             status,
+            graduation_year,
         } = body;
 
         if (
@@ -99,6 +100,15 @@ export async function POST(req: NextRequest) {
                 { status: 400 }
             );
         }
+
+        // Default graduation year to entry (batch) + 4 when not provided.
+        const entryYear = parseInt(String(batch), 10);
+        const resolvedGraduationYear =
+            graduation_year != null && graduation_year !== ""
+                ? Number(graduation_year)
+                : Number.isFinite(entryYear)
+                    ? entryYear + 4
+                    : null;
 
         const db = await connectDB();
         const students = db.collection("students");
@@ -119,6 +129,7 @@ export async function POST(req: NextRequest) {
             program,
             birthday,
             status,
+            graduation_year: resolvedGraduationYear,
             date_created: new Date(),
         });
 
