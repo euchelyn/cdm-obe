@@ -50,6 +50,7 @@ const PO_DEFINITIONS = [
 export default function AlumniDashboard() {
     const router = useRouter();
     const [isDarkMode, setIsDarkMode] = useState(true);
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
     const [activeTab, setActiveTab] = useState('dashboard');
     const [surveyTab, setSurveyTab] = useState('peo');
@@ -264,24 +265,6 @@ useEffect(() => {
         loadAttainment();
     }, [userData?.id]);
 
-    const toggleTheme = () => {
-        const newTheme = !isDarkMode;
-        setIsDarkMode(newTheme);
-        if (newTheme) {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            localStorage.setItem('theme', 'dark');
-        } else {
-            document.documentElement.removeAttribute('data-theme');
-            localStorage.setItem('theme', 'light');
-        }
-    };
-
-    const handleLogout = () => {
-        if (confirm("Are you sure you want to log out?")) {
-            localStorage.removeItem('current_user');
-            router.push('/');
-        }
-    };
 
     const showToast = (msg) => {
         setToastMessage(msg);
@@ -460,15 +443,6 @@ useEffect(() => {
 
     const progressPercent = requiredTasks === 0 ? 0 : Math.round((completedTasks / requiredTasks) * 100);
 
-    const activeTabStyle = {
-        padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', fontWeight: 'bold', fontSize: '0.9rem',
-        backgroundColor: 'var(--gold)', color: '#111827', border: 'none', boxShadow: '0 4px 15px rgba(234, 179, 8, 0.3)', display: 'flex', alignItems: 'center', gap: '8px'
-    };
-
-    const inactiveTabStyle = {
-        padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', fontWeight: '500', fontSize: '0.9rem',
-        backgroundColor: 'transparent', color: 'var(--text-sub)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '8px'
-    };
 
     const renderSurveyTabContent = () => {
         if (surveyTab === 'po') {
@@ -595,8 +569,6 @@ useEffect(() => {
                 setActiveTab={setActiveTab}
                 activeModal={activeModal}
                 setActiveModal={setActiveModal}
-                toggleTheme={toggleTheme}
-                handleLogout={handleLogout}
             />
             <main className="main-content" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflowY: 'auto', padding: '40px', position: 'relative' }}>
                 <header className="alumni-header">
@@ -613,7 +585,7 @@ useEffect(() => {
 
                 {activeTab === 'dashboard' && (
                     <div style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        <div style={{ display: 'flex', gap: '15px', flexShrink: 0, overflowX: 'auto', paddingBottom: '5px' }}>
+                        <div style={{ display: 'flex', gap: '15px', flexShrink: 0, overflowX: 'auto', paddingBottom: '20px' }}>
                             {/*
                             <button
                                 onClick={() => setSurveyTab('po')}
@@ -623,22 +595,22 @@ useEffect(() => {
                             </button>
                             */}
                             <button
-                                onClick={() => setSurveyTab('peo')}
-                                style={surveyTab === 'peo' ? activeTabStyle : inactiveTabStyle}
-                            >
+    onClick={() => setSurveyTab('peo')}
+    className={`survey-tab-btn ${surveyTab === 'peo' ? 'survey-tab-btn-active' : 'survey-tab-btn-inactive'}`}
+>
                                 📈 PEO Survey
                                 {!isPEORequired && <span style={{ marginLeft: '4px', fontSize: '0.8rem', opacity: 0.7 }}>🔒</span>}
                             </button>
                             <button
-                                onClick={() => setSurveyTab('yearly')}
-                                style={surveyTab === 'yearly' ? activeTabStyle : inactiveTabStyle}
-                            >
+    onClick={() => setSurveyTab('yearly')}
+    className={`survey-tab-btn ${surveyTab === 'yearly' ? 'survey-tab-btn-active' : 'survey-tab-btn-inactive'}`}
+>
                                 📅 Yearly Update
                             </button>
                             <button
-                                onClick={() => setSurveyTab('gts')}
-                                style={surveyTab === 'gts' ? activeTabStyle : inactiveTabStyle}
-                            >
+    onClick={() => setSurveyTab('gts')}
+    className={`survey-tab-btn ${surveyTab === 'gts' ? 'survey-tab-btn-active' : 'survey-tab-btn-inactive'}`}
+>
                                 🎓 Tracer Study
                                 {!isGTSAvailable && <span style={{ marginLeft: '4px', fontSize: '0.8rem', opacity: 0.7 }}>🔒</span>}
                             </button>
@@ -1019,11 +991,11 @@ useEffect(() => {
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '25px' }}>
                             <select
-                                className="correction-textbox"
-                                style={{ height: '45px', padding: '0 15px', color: 'var(--text-main)', backgroundColor: 'var(--bg-main)' }}
-                                value={employmentStatus}
-                                onChange={(e) => setEmploymentStatus(e.target.value)}
-                            >
+  className="correction-textbox"
+  style={{ height: '45px', padding: '0 15px', color: 'var(--text-main)', backgroundColor: 'var(--bg-main)' }}
+  value={employmentStatus}
+  onChange={(e) => setEmploymentStatus(e.target.value)}
+>
                                 <option value="" disabled>Select Employment Status...</option>
                                 <option value="employed">Employed</option>
                                 <option value="self-employed">Self-Employed / Business Owner</option>
@@ -1056,6 +1028,34 @@ useEffect(() => {
                             <button className="outline-btn cancel-btn" onClick={() => { setActiveModal(null); setEmploymentStatus(''); }} style={{ padding: '10px', borderRadius: '8px', flex: 1, fontWeight: 'bold' }}>Cancel</button>
                             <button className="primary-btn" onClick={handleSaveJobUpdate} style={{ padding: '10px', borderRadius: '8px', flex: 1, border: 'none', fontWeight: 'bold' }}>Save Changes</button>
                         </div>
+
+{showLogoutConfirm && (
+    <div className="modal-overlay">
+        <div className="modal-card">
+            <h2>Log Out</h2>
+            <p>Are you sure you want to end the session?</p>
+
+            <div className="modal-actions">
+                <button 
+                    className="cancel-btn" 
+                    onClick={cancelLogout}
+                >
+                    Cancel
+                </button>
+                <button 
+                    className="logout-confirm-btn" 
+                    onClick={confirmLogout}
+                >
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+)}
+
+
+
+
                     </div>
                 </div>
             )}

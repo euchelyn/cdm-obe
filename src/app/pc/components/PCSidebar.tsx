@@ -3,8 +3,6 @@
 
 export default function PCSidebar({
     activeMenu, setActiveMenu,
-    toggleTheme,
-    isDarkMode,
     router
 }) {
 
@@ -41,9 +39,6 @@ export default function PCSidebar({
                 </nav>
 
                 <div className="sidebar-bottom">
-                    <button className="nav-btn theme-switch" onClick={toggleTheme}>
-                        {isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
-                    </button>
                     <button className="nav-btn logout" onClick={() => router.push('/')}>Log Out</button>
                 </div>
             </aside>

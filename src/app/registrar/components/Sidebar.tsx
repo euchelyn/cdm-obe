@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import '../../globals.css';
 
 export default function Sidebar({
     activeTab,
@@ -10,29 +11,22 @@ export default function Sidebar({
     setIsDarkMode
 }) {
     
-    const router = useRouter();
+  const router = useRouter(); 
 
-    //========================================
-    // LOG OUT
-    //========================================
-    const handleLogout = () => {
+    const handleLogoutClick = () => {
         setShowLogoutConfirm(true);
     };
 
-    //========================================
-    // TOGGLE THEME
-    //========================================
-    const toggleTheme = () => {
-        const newMode = !isDarkMode;
-        setIsDarkMode(newMode);
-        if (newMode) {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            localStorage.setItem('theme', 'dark');
-        } else {
-            document.documentElement.removeAttribute('data-theme');
-            localStorage.setItem('theme', 'light');
-        }
+    const confirmLogout = () => {
+        setShowLogoutConfirm(false);
+        localStorage.removeItem('current_user');
+        router.push('/');
     };
+
+    const cancelLogout = () => {
+        setShowLogoutConfirm(false);
+    };
+
 
     return (
         <>
@@ -53,10 +47,10 @@ export default function Sidebar({
                     </button>
                 </nav>
                 <div className="sidebar-bottom">
-                    <button className="nav-btn theme-switch" onClick={toggleTheme}>
-                        {isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
-                    </button>
-                    <button className="nav-btn logout" onClick={handleLogout}>Log Out</button>
+                    <button className="nav-btn logout sidebar-logout-btn" onClick={handleLogoutClick}>
+    Log Out
+</button>
+
                 </div>
             </aside>
         </>

@@ -258,7 +258,7 @@ export default function Masterlist({
                                 />
                                     
                                 <button className="control-btn outline" onClick={() => fileInputRef.current.click()}>
-                                    <span className="icon">↑</span> Export / Upload
+                                    <span className="icon">↑</span> Import / Upload
                                 </button>
                                 <input type="file" accept=".xlsx" ref={fileInputRef} onChange={handleUpload} style={{ display: 'none' }} />
 

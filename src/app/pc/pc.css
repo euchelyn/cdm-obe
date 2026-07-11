@@ -226,14 +226,21 @@ select.correction-textbox:focus {
     box-shadow: 0 6px 15px rgba(234, 179, 8, 0.3);
     filter: brightness(1.1);
 }
-.outline-btn:hover {
-    transform: translateY(-2px);
-    background-color: rgba(255, 255, 255, 0.08);
+
+/* Class para sa buttons na gusto nating puti ang text kapag naka-hover */
+.text-hover-white:hover {
+    color: #ffffff !important;
+    transition: color 0.3s ease;
 }
+
+/* Class para sa buttons na gusto nating maging yellow ang text (kung ito ang default mo) */
+.text-hover-gold:hover {
+    color: var(--gold) !important;
+    transition: color 0.3s ease;
+}
+
 .cancel-btn:hover {
-    background-color: rgba(239, 68, 68, 0.1) !important;
-    border-color: #ef4444 !important;
-    color: #ef4444 !important;
+    background-color: #ffffff1a;
 }
 
 .data-table tbody tr {
@@ -263,4 +270,12 @@ select.correction-textbox:focus {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     filter: brightness(1.1);
+}
+
+.text-hover-light {
+    transition: color 0.3s ease;
+}
+
+.text-hover-light:hover {
+    color: #ffffff !important;
 }

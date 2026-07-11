@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import '../alumni/alumni-globals.css';
 import './mis.css';
+import '../pc/pc.css';
 
 import { createPrivUser, createStudentAccountFlow } from '@/services/privUserService';
 import { api_register } from '@/services/authService';
@@ -543,7 +544,6 @@ export default function MISPage() {
                     <button className={`nav-btn ${activeTab === 'accounts' ? 'active' : ''}`} onClick={() => setActiveTab('accounts')}>👥 Create Faculty Accounts</button>
                 </nav>
                 <div className="sidebar-bottom">
-                    <button className="nav-btn theme-switch" onClick={toggleTheme}>{isDarkMode ? '☀️ Light' : '🌙 Dark'}</button>
                     <button className="nav-btn logout" onClick={handleLogout}>Log Out</button>
                 </div>
             </aside>
@@ -551,10 +551,16 @@ export default function MISPage() {
             <main className="main-content">
                 {activeTab === 'dashboard' && (
                     <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                        <div className="pc-header" style={{ marginBottom: '30px' }}>
-                            <h1 style={{ fontSize: '2.2rem', marginBottom: '5px' }}>System Administrator Dashboard</h1>
-                            <p style={{ color: 'var(--text-sub)' }}>Manage global programs and system access controls.</p>
-                        </div>
+                        <div className="pc-header">
+    {/* Dito natin sila i-grupo para hindi maghiwalay */}
+    <div>
+        <h1 style={{ fontSize: '2.2rem', marginBottom: '5px' }}>
+            System Administrator Dashboard
+        </h1>
+        <p style={{ color: 'var(--text-sub)' }}>
+            Manage global programs and system access controls.
+        </p>
+    </div> </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '30px' }}>
                             <div className="portal-card stat-widget-new" style={{ borderTopColor: '#3b82f6' }}>
@@ -620,7 +626,9 @@ export default function MISPage() {
                             <button
                                 onClick={() => setOpenModal('addprogram')}
                                 className="primary-btn"
-                                style={{ padding: '10px 20px', borderRadius: '8px' }}
+                                style={{ padding: "10px",
+                                    borderRadius: "8px",
+                                    border: "none" }}
                             >
                                 ➕ Add Program
                             </button>
@@ -709,8 +717,9 @@ export default function MISPage() {
                                 onClick={() => setOpenModal('addaccount')}
                                 className="primary-btn"
                                 style={{
-                                    padding: '10px 20px',
-                                    borderRadius: '8px'
+                                    padding: "10px",
+                                    borderRadius: "8px",
+                                    border: "none"
                                 }}
                             >
                                 ➕ Create Account
@@ -816,9 +825,7 @@ export default function MISPage() {
                     <div className="modal-overlay" onClick={() => setOpenModal(null)}>
                         <div className="modal-box portal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px' }}>
                             <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px' }}>
-                                <h2 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--gold)' }}>Add Academic Program</h2>
-                                <button className="outline-btn" style={{ border: 'none', padding: '5px' }} onClick={() => setOpenModal(null)}>✕</button>
-                            </div>
+                                <h2 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--gold)' }}>Add Academic Program</h2>                            </div>
                             
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '20px' }}>
                                 <div>
@@ -833,36 +840,43 @@ export default function MISPage() {
 
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                                 <button onClick={() => setOpenModal(null)} className="outline-btn" style={{ padding: '10px 20px', borderRadius: '8px' }}>Cancel</button>
-                                <button onClick={handleAddProgram} className="primary-btn" style={{ padding: '10px 20px', borderRadius: '8px' }}>Save Program</button>
+                                <button onClick={handleAddProgram} className="primary-btn" style={{ padding: "10px",
+                                    borderRadius: "8px",
+                                    border: "none" }}>Save Program</button>
                             </div>
                         </div>
                     </div>
                 )}
 
                                 {showLogoutConfirm && (
-                    <div className="edit-modal-overlay">
-                        <div className="edit-modal-content">
-                            <h3>Log Out</h3>
-                            <p>Are you sure you want to log out?</p>
+    <div className="modal-overlay">
+        <div className="modal-card">
+            <h2>Log Out</h2>
+            <p>Are you sure you want to end the session?</p>
 
-                            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-                                <button className="outline-btn" onClick={cancelLogout}>
-                                    Cancel
-                                </button>
-                                <button className="control-btn danger" onClick={confirmLogout}>
-                                    Log Out
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
+            <div className="modal-actions">
+                <button 
+                    className="cancel-btn"            onClick={cancelLogout}
+                >
+                    Cancel
+                </button>
+                <button 
+                    className="logout-confirm-btn" 
+                    onClick={confirmLogout}
+                >
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+)}
+                
 
                 {openModal === 'addaccount' && (
                     <div className="modal-overlay" onClick={() => setOpenModal(null)}>
                         <div className="modal-box portal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
                             <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px' }}>
                                 <h2 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--gold)' }}>Create New Account</h2>
-                                <button className="outline-btn" style={{ border: 'none', padding: '5px' }} onClick={() => setOpenModal(null)}>✕</button>
                             </div>
                             
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '20px' }}>
@@ -913,7 +927,9 @@ export default function MISPage() {
 
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                                 <button onClick={() => setOpenModal(null)} className="outline-btn" style={{ padding: '10px 20px', borderRadius: '8px' }}>Cancel</button>
-                                <button onClick={handleAddAccount} className="primary-btn" style={{ padding: '10px 20px', borderRadius: '8px' }}>Create Account</button>
+                                <button onClick={handleAddAccount} className="primary-btn" style={{ padding: "10px",
+                                    borderRadius: "8px",
+                                    border: "none" }}>Create Account</button>
                             </div>
                         </div>
                     </div>

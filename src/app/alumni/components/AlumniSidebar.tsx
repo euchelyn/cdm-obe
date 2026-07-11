@@ -1,13 +1,33 @@
-
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import '../globals.css';
 
 export default function AlumniSidebar({
     isDarkMode,
     activeTab, setActiveTab,
     activeModal, setActiveModal,
     toggleTheme,
-    handleLogout
-
 }) {
+const router = useRouter(); // (Kung meron na nito sa code mo, huwag mo na i-copy ito)
+    
+    // Ito yung hinahanap ng system na nawawala:
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+    const handleLogoutClick = () => {
+        setShowLogoutConfirm(true);
+    };
+
+    const confirmLogout = () => {
+        setShowLogoutConfirm(false);
+        localStorage.removeItem('current_user');
+        router.push('/');
+    };
+
+    const cancelLogout = () => {
+        setShowLogoutConfirm(false);
+    };
+
+
 
     return(
         <>
@@ -38,10 +58,32 @@ export default function AlumniSidebar({
                 </nav>
 
                 <div className="sidebar-bottom">
-                    <button className="nav-btn theme-switch" onClick={toggleTheme}>
-                        {isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
-                    </button>
-                    <button className="nav-btn logout" onClick={handleLogout}>Log Out</button>
+                    <button className="nav-btn logout" onClick={handleLogoutClick}>
+    Log Out
+</button>
+{showLogoutConfirm && (
+    <div className="modal-overlay">
+        <div className="modal-card">
+            <h2>Log Out</h2>
+            <p>Are you sure you want to exit the dashboard?</p>
+
+            <div className="modal-actions">
+                <button 
+                    className="cancel-btn" 
+                    onClick={cancelLogout} 
+                >
+                    Cancel
+                </button>
+                <button 
+                    className="logout-confirm-btn" 
+                    onClick={confirmLogout}
+                >
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+)}
                 </div>
             </aside> 
         </>

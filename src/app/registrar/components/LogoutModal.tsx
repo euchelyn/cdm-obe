@@ -1,5 +1,5 @@
 import { useRouter } from "next/navigation";
-
+import '../../alumni/globals.css';
 
 export default function LogoutModal({
     showLogoutConfirm,
@@ -37,21 +37,28 @@ export default function LogoutModal({
     return (
         <>
             {showLogoutConfirm && (
-                <div className="edit-modal-overlay">
-                    <div className="edit-modal-content">
-                        <h3>Log Out</h3>
-                        <p>Are you sure you want to log out?</p>
-                        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-                            <button className="outline-btn" onClick={cancelLogout}>
-                                Cancel
-                            </button>
-                            <button className="control-btn danger" onClick={confirmLogout}>
-                                Log Out
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+    <div className="modal-overlay">
+        <div className="modal-card">
+            <h2>Log Out</h2>
+            <p>Are you sure you want to exit the dashboard?</p>
+
+            <div className="modal-actions">
+                <button 
+                    className="cancel-btn" 
+                    onClick={cancelLogout} 
+                >
+                    Cancel
+                </button>
+                <button 
+                    className="logout-confirm-btn" 
+                    onClick={confirmLogout}
+                >
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+)}
         </>
     );
 }
