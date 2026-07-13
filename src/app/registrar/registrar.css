@@ -1,517 +1,68 @@
-#registrar-portal-layout {
-    --bg-card: #ffffff;
-    --bg-main: transparent;
-    --table-header: #ffffff;
-    --text-main: #1e293b;
-    --text-sub: #64748b;
-    --input-bg: #ffffff;
-    --input-border: #e2e8f0;
-    --primary: #ffd700;
-    --primary-hover: #e6c200;
-    --outline-hover: #f1f5f9;
-    --status-active-bg: #dcfce7;
-    --status-active-txt: #166534;
-    --status-pending-bg: #ffedd5;
-    --status-pending-txt: #9a3412;
-    --status-inactive-bg: #fee2e2;
-    --status-inactive-txt: #991b1b;
-    
-    min-height: 100vh;
-    display: flex;
-    position: relative;
-    font-family: 'Inter', -apple-system, sans-serif;
-}
-
-[data-theme="dark"] #registrar-portal-layout {
-    --bg-card: #1e293b;
-    --table-header: #1e293b;
-    --text-main: #f8fafc;
-    --text-sub: #94a3b8;
-    --input-bg: #0f172a;
-    --input-border: #334155;
-    --primary: #ffd700;
-    --primary-hover: #e6c200;
-    --outline-hover: #334155;
-    --status-active-bg: rgba(34, 197, 94, 0.2);
-    --status-active-txt: #4ade80;
-    --status-pending-bg: rgba(245, 158, 11, 0.2);
-    --status-pending-txt: #fbbf24;
-    --status-inactive-bg: rgba(239, 68, 68, 0.2);
-    --status-inactive-txt: #f87171;
-}
-
-#registrar-portal-layout::before {
-    content: "";
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background-image: url('/cdm-bg.jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    filter: blur(8px) var(--body-blur-brightness, brightness(0.8));
-    opacity: 0.85;
-    z-index: -1;
-    transition: filter 0.5s ease;
-}
-
-#registrar-portal-layout .main-content {
-    overflow-y: auto;
-    padding: 30px;
-    background-color: var(--bg-main);
-    position: relative;
-    width: 100%;
-}
-
-#registrar-portal-layout .content-wrapper {
-    width: 100%;
-    max-width: 1600px;
-    margin: 0 auto;
-    animation: fadeIn 0.3s ease;
-}
-
-#registrar-portal-layout .portal-card {
-    background: var(--bg-card);
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-    padding: 30px;
-    width: 100%;
-    border: 1px solid var(--input-border);
-    transition: all 0.3s ease;
-    position: relative;
-    z-index: 1;
-}
-
-#registrar-portal-layout .table-header-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px;
-    flex-wrap: wrap;
-    gap: 15px;
-}
-
-#registrar-portal-layout .controls-left {
-    flex: 1;
-    min-width: 250px;
-}
-
-#registrar-portal-layout .table-title {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: var(--text-main);
-    margin: 0;
-}
-
-#registrar-portal-layout .controls-right {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-#registrar-portal-layout .control-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-#registrar-portal-layout .control-label {
-    color: var(--text-sub);
-    font-size: 0.9rem;
-}
-
-#registrar-portal-layout .control-select {
-    padding: 8px 12px;
-    border-radius: 8px;
-    border: 1px solid var(--input-border);
-    background: var(--bg-card);
-    color: var(--text-main);
-    outline: none;
-    cursor: pointer;
-}
-
-#registrar-portal-layout .control-btn {
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 0.9rem;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s ease;
-    border: none;
-}
-
-#registrar-portal-layout .control-btn.outline {
-    background: transparent;
-    border: 1px solid var(--input-border);
-    color: var(--text-main);
-}
-
-#registrar-portal-layout .control-btn.outline:hover {
-    background: var(--outline-hover);
-}
-
-#registrar-portal-layout .control-btn.primary {
-    background: var(--primary);
-    color: #1e293b;
-}
-
-#registrar-portal-layout .control-btn.primary:hover {
-    background: var(--primary-hover);
-}
-
-/* Custom Select Dropdown Arrow Override */
-#registrar-portal-layout .custom-select-arrow {
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
-    appearance: none !important;
-    padding-right: 35px !important;
-    background-color: transparent !important;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231e293b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
-    background-repeat: no-repeat !important;
-    background-position: right 12px center !important;
-    background-size: 1em !important;
-}
-
-[data-theme="dark"] #registrar-portal-layout .custom-select-arrow {
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f8fafc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
-}
-
-/* Hide arrow for IE/Edge */
-#registrar-portal-layout .custom-select-arrow::-ms-expand {
-    display: none !important;
-}
-
-#registrar-portal-layout .form-input {
-    padding: 10px 12px;
-    border-radius: 8px;
-    border: 1px solid var(--input-border);
-    background: var(--input-bg);
-    color: var(--text-main);
-    font-size: 0.95rem;
-    transition: border 0.2s;
-}
-
-#registrar-portal-layout .form-input:focus {
-    border-color: var(--primary);
-    outline: none;
-}
-
-#registrar-portal-layout .add-form-container {
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 20px;
-    animation: fadeIn 0.3s ease;
-}
-
-#registrar-portal-layout .form-grid {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-#registrar-portal-layout .form-grid .form-input {
-    flex: 1;
-    min-width: 150px;
-}
-
-#registrar-portal-layout .clean-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-#registrar-portal-layout .clean-table th {
-    color: var(--text-sub);
-    font-weight: 600;
-    font-size: 0.85rem;
-    padding: 16px;
-    text-align: left;
-    border-bottom: 2px solid var(--input-border);
-    white-space: nowrap;
-}
-
-#registrar-portal-layout .clean-table td {
-    padding: 16px;
-    color: var(--text-main);
-    font-size: 0.95rem;
-    border-bottom: 1px solid var(--input-border);
-    vertical-align: middle;
-}
-
-#registrar-portal-layout .clean-table tr:hover td {
-    background-color: var(--outline-hover);
-}
-
-#registrar-portal-layout .student-name-cell {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-#registrar-portal-layout .avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background-color: var(--primary);
-    color: #1e293b;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 0.85rem;
-}
-
-#registrar-portal-layout .fw-bold { font-weight: 600; }
-#registrar-portal-layout .text-muted { color: var(--text-sub); }
-#registrar-portal-layout .text-center { text-align: center; }
-
-#registrar-portal-layout .status-pill {
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    display: inline-block;
-}
-
-#registrar-portal-layout .status-active {
-    background: var(--status-active-bg);
-    color: var(--status-active-txt);
-}
-
-#registrar-portal-layout .status-pending {
-    background: var(--status-pending-bg);
-    color: var(--status-pending-txt);
-}
-
-#registrar-portal-layout .status-inactive {
-    background: var(--status-inactive-bg);
-    color: var(--status-inactive-txt);
-}
-
-#registrar-portal-layout .status-default {
-    background: var(--input-border);
-    color: var(--text-sub);
-}
-
-#registrar-portal-layout .action-dots-btn {
-    background: transparent;
-    border: none;
-    color: var(--text-sub);
-    font-size: 1.2rem;
-    cursor: pointer;
-    letter-spacing: 2px;
-    padding: 4px 8px;
-    border-radius: 6px;
-}
-
-#registrar-portal-layout .action-dots-btn:hover {
-    background: var(--input-border);
-    color: var(--text-main);
-}
-
-#registrar-portal-layout .action-dropdown-menu {
-    position: absolute;
-    right: 40px;
-    top: 10px;
-    background: var(--bg-card);
-    border: 1px solid var(--input-border);
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    z-index: 50;
-    display: flex;
-    flex-direction: column;
-    min-width: 120px;
-    overflow: hidden;
-    animation: fadeIn 0.2s ease;
-}
-
-#registrar-portal-layout .action-dropdown-menu button {
-    background: transparent;
-    border: none;
-    padding: 12px 16px;
-    text-align: left;
-    cursor: pointer;
-    color: var(--text-main);
-    font-weight: 600;
-    font-size: 0.9rem;
-    transition: background 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-#registrar-portal-layout .action-dropdown-menu button:hover {
-    background: var(--input-border);
-}
-
-#registrar-portal-layout .action-dropdown-menu button.delete-option {
-    color: #ef4444;
-}
-
-#registrar-portal-layout .action-dropdown-menu button.delete-option:hover {
-    background: #fef2f2;
-}
-
-[data-theme="dark"] #registrar-portal-layout .action-dropdown-menu button.delete-option:hover {
-    background: rgba(239, 68, 68, 0.1);
-}
-
-#registrar-portal-layout .edit-modal-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    backdrop-filter: blur(4px);
-    animation: fadeIn 0.2s ease;
-}
-
-#registrar-portal-layout .edit-modal-content {
-    background: var(--bg-card);
-    padding: 30px;
-    border-radius: 16px;
-    width: 90%;
-    max-width: 450px;
-    border: 1px solid var(--input-border);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-}
-
-#registrar-portal-layout .outline-btn {
-    background: transparent;
-    border: 1px solid var(--input-border);
-    color: var(--text-main);
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-#registrar-portal-layout .outline-btn:hover {
-    background: var(--outline-hover);
-}
-
-#registrar-portal-layout .empty-state {
-    text-align: center;
-    padding: 40px !important;
-    color: var(--text-sub);
-}
-
-#registrar-portal-layout .pagination-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 25px;
-    padding-top: 15px;
-}
-
-#registrar-portal-layout .page-nav {
-    background: transparent;
-    border: none;
-    color: var(--text-sub);
-    font-weight: 600;
-    cursor: pointer;
-    font-size: 0.9rem;
-}
-
-#registrar-portal-layout .page-nav:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-#registrar-portal-layout .page-numbers {
-    display: flex;
-    gap: 8px;
-}
-
-#registrar-portal-layout .page-num {
-    background: transparent;
-    border: none;
-    color: var(--text-sub);
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 600;
-    transition: all 0.2s ease;
-}
-
-#registrar-portal-layout .page-num:hover {
-    background: var(--outline-hover);
-}
-
-#registrar-portal-layout .page-num.active {
-    background: var(--primary);
-    color: #1e293b;
-}
-
-[data-theme="dark"] #registrar-portal-layout .page-num.active {
-    color: #1e293b;
-}
-
-#registrar-portal-layout .toast-notification {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    background-color: var(--status-active-txt);
-    color: white;
-    padding: 15px 25px;
-    border-radius: 8px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    font-weight: bold;
-    z-index: 1000;
-    animation: fadeIn 0.3s ease;
-}
-
-#registrar-portal-layout .nav-btn.active {
-    background: var(--primary);
-    color: #1e293b;
-}
-
-#registrar-portal-layout .nav-btn.logout {
-    color: #ef4444;
-}
-
-#registrar-portal-layout .nav-btn.logout:hover {
-    background: rgba(239, 68, 68, 0.1);
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@media (max-width: 900px) {
-    #registrar-portal-layout .table-header-controls {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    #registrar-portal-layout .controls-right {
-        width: 100%;
-        justify-content: space-between;
-    }
-    #registrar-portal-layout .table-responsive {
-        overflow-x: auto;
-    }
-}
-
-#registrar-portal-layout select option {
-    background-color: var(--bg-card);
-    color: var(--text-main);
-}
-
-#registrar-portal-layout .control-select:focus,
-#registrar-portal-layout .control-btn.outline.custom-select-arrow:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 1px var(--primary);
-    outline: none;
+.registrar-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: stretch;
+  background-color: var(--bg-main);
+}
+
+.registrar-page .sidebar {
+  width: 280px !important;
+  min-width: 280px !important;
+  max-width: 280px !important;
+  flex: 0 0 280px !important;
+  padding: 30px 20px !important;
+  box-sizing: border-box !important;
+  background-color: var(--bg-card) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.registrar-page .main-content {
+  flex: 1;
+  padding: 40px;
+  min-height: 100vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.correction-textbox, .form-input, select.correction-textbox {
+  width: 100%;
+  height: 40px !important;
+  padding: 0 12px !important;
+  font-size: 0.9rem !important;
+  border-radius: 8px !important;
+  background: rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: var(--text-main) !important;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.correction-textbox:focus {
+  border-color: var(--gold) !important;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-box {
+  width: 100%;
+  background: var(--bg-card);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
 }
