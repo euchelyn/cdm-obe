@@ -5,210 +5,30 @@ import { useRouter } from 'next/navigation';
 import './pc.css';
 import '../alumni/alumni-globals.css';
 
-const PO_DEFINITIONS = [
-    { id: 'A', title: 'Engineering Knowledge', desc: 'Apply knowledge of mathematics, natural science, engineering fundamentals and an engineering specialization to the solution of complex engineering problems.' },
-    { id: 'B', title: 'Problem Analysis', desc: 'Conduct investigations of complex engineering problems using research-based knowledge and research methods including design of experiments, analysis and interpretation of data, and synthesis of information to provide valid conclusions.' },
-    { id: 'C', title: 'Design/Development of Solutions', desc: 'Design solutions for complex engineering problems and design systems, components or processes that meet specified needs with appropriate consideration for public health and safety, cultural, societal, and environmental considerations.' },
-    { id: 'D', title: 'Individual and Team Work', desc: 'Function effectively as an individual, and as a member or leader in diverse teams and in multi-disciplinary settings.' },
-    { id: 'E', title: 'Modern Tool Usage', desc: 'Identify, formulate, research literature and analyze complex engineering problems reaching substantiated conclusions using first principles of mathematics, natural sciences and engineering sciences.' },
-    { id: 'F', title: 'The Engineer and Society', desc: 'Apply ethical principles and commit to professional ethics and responsibilities and norms of engineering practice.' },
-    { id: 'G', title: 'Communication', desc: 'Communicate effectively on complex engineering activities with the engineering community and with society at large, such as being able to comprehend and write effective reports and design documentation, make effective presentations, and give and receive clear instructions.' },
-    { id: 'H', title: 'Environment and Sustainability', desc: 'Understand and evaluate the sustainability and impact of professional engineering work in the solution of complex engineering problems in societal and environmental context.' },
-    { id: 'I', title: 'Life-long Learning', desc: 'Recognize the need for, and have the preparation and ability to engage in independent and life-long learning in the broadest context of technological change.' },
-    { id: 'J', title: 'Ethics', desc: 'Apply reasoning informed by contextual knowledge to assess societal, health, safety, legal and cultural issues and the consequent responsibilities relevant to professional engineering practice and solutions to complex engineering problems.' },
-    { id: 'K', title: 'Investigation', desc: 'Create, select and apply appropriate techniques, resources, and modern engineering and IT tools, including prediction and modelling, to complex engineering problems with an understanding of the limitations.' },
-    { id: 'L', title: 'Project Management and Finance', desc: 'Demonstrate knowledge and understanding of engineering management principles and economic decision-making and apply these to one\'s own work, as a member and leader in a team, to manage projects and in multidisciplinary environments.' }
-];
+//==================================================
+// COMPONENTS
+//==================================================
+import PCSidebar from './components/PCSidebar';
+import ProgramOverview from './components/program_overview/ProgramOverview';
+import Masterlist from './components/masterlist/Masterlist';
+import Direct from './components/direct/Direct';
+import Indirect from './components/indirect/Indirect';
+import Determinants from './components/determinants/Determinants';
 
-const CPE_CURRICULUM = [
-    {
-        year: "4th Year",
-        courses: [
-            "COEN 4103 Computer Architecture and Organization (lec)", "COEN 4101 Computer Architecture and Organization (lab)",
-            "COEN 4113 Embedded Systems (lec)", "COEN 4111 Embedded Systems (lab)",
-            "COEN 4202 CPE Practice and Design 2", "COEN 4123 Digital Signal Processing (lec)",
-            "COEN 4121 Digital Signal Processing (lab)", "GECE 2213 GEC Elective 2 (Gender & Society)",
-            "COEN 4203 Computer Networks and Security (lec)", "COEN 4201 Computer Networks and Security (lab)",
-            "COEN 4211 Seminars and Fieldtrips", "COEN 4212 CPE Laws and Professional Practice",
-            "ENSC 4003 Technopreneurship", "GECE 4103 GEC Free Elective 3 (Foreign Language)",
-            "HIST 1023 Life and Works of Rizal", "ENSC 2033 Basic Occupational Health and Safety",
-            "COEN 4223 Cognate Elective 3 (CISCO 3)"
-        ]
-    },
-    {
-        year: "3rd Year",
-        courses: [
-            "COEN 3103 Logic, Circuit and Design (lec)", "COEN 3101 Logic, Circuit and Design (lab)",
-            "COEN 3113 Operating System", "COEN 3123 Intro to Networks, Data and Digital Comm (CISCO 1)",
-            "COEN 3133 Methods of Research", "COEN 3143 Feedback and Control System",
-            "COEN 3153 Fundamentals of Mixed Signals and Sensors", "COEN 3111 Computer Engineering Drafting and Design",
-            "PHIL 1013 Ethics", "COEN 3203 Microprocessors (lec)", "COEN 3201 Microprocessors (lab)",
-            "COEN 3211 Introduction to HDL", "COEN 3221 CPE Project Design 1", "COEN 3213 Emerging Technologies in CPE",
-            "COEN 3212 Programmable Logic Control, Robotics and Mechatronics Applications", "GECE 2203 GEC Elective 1",
-            "COEN 3223 Cognate Elective 2(CISCO 2)", "COEN 3223 On-the-Job Training"
-        ]
-    },
-    {
-        year: "2nd Year",
-        courses: [
-            "ENSC 2021 Computer-Aided Drafting", "ELEN 2123 Fundamentals of Electrical Circuits (lec)",
-            "ELEN 2121 Fundamentals of Electrical Circuits (lab)", "MATH 2123 Differential Equations",
-            "COEN 2102 Data Structures and Algorithms", "NASC 2063 Physics 2 (lec)", "NASC 2061 Physics 2 (lab)",
-            "ENSC 2063 Engineering Economics", "COEN 2112 Fundamentals of Computer Hardware",
-            "PFIT 2102 PATHFit 3(Sports and Dance)", "COEN 2203 Numerical Methods", "COEN 2213 Software Design (lec)",
-            "COEN 2201 Software Design (lab)", "COEN 2223 Discrete Mathematics",
-            "ECEN 2103 Fundamentals of Electronic Engineering (lec)", "ECEN 2101 Fundamentals of Electronic Engineering (lab)",
-            "HIST 1013 Reading in Philippine History", "PFIT 2202 PATHFit 4(Team Sports)", "COEN 2233 Cognate Elective 1"
-        ]
-    },
-    {
-        year: "1st Year",
-        courses: [
-            "SOCI 1103 Contemporary World", "MATH 1013 Mathematics in the Modern World",
-            "MATH 2033 College and Advanced Algebra", "MATH 2044 Plane & Spherical Trig, Analytic & Solid Geo",
-            "COEN 1101 Computer Engineering as Discipline", "COEN 1102 Programming Logic and Design",
-            "ENGL 1103 Purposive Communication", "PSYC 1013 Understanding the Self", "PFIT 1102 PATHFIt 1",
-            "NSTP 1013 National Service Training Program 1", "HUMA 1013 Art Appreciation",
-            "MATH 2074 Differential & Integral Calculus 1", "ENSC 1013 Science, Technology and Society",
-            "COEN 1202 Object Oriented Programming", "ENSC 1203 Engineering Data Analysis",
-            "NASC 2013 Chemistry for Engineers (lec)", "NASC 2011 Chemistry for Engineers (lab)",
-            "PFIT 1202 PATHFit 2", "NSTP 1023 National Service Training Program 2",
-            "NASC 2053 Physics 1(lec)", "NASC 2051 Physics 1(lab)", "MATH 2094 Differential & Integral Calculus 2"
-        ]
-    }
-];
+//==================================================
+// SERVICES
+//==================================================
+import { getObeAttainment } from '@/services/obeAttainmentService';
+import { getAnsweredSurveysByStudent } from '@/services/answeredSurveyService';
+import { getPcReports } from '@/services/pcReportsService';
 
-const DEFAULT_PO_QUESTIONS = [
-    { id: 'qA1', poId: 'A', type: 'likert', text: 'Knowledge on mathematics and scientific concepts', weight: 30, options: ['Knows basic mathematical concepts related to engineering problems', 'Knows basic scientific concepts related to engineering problems', 'Knows how to solve mathematical complex problems related to engineering', 'Knows how to solve scientific complex problems related to engineering'] },
-    { id: 'qA2', poId: 'A', type: 'likert', text: 'Ability to apply knowledge in complex engineering problems', weight: 70, options: ['Able to apply and solve mathematical complex related engineering problems', 'Able to apply and solve scientific complex related engineering problems'] },
-    { id: 'qB1', poId: 'B', type: 'likert', text: 'Ability do design Laboratory experiments', weight: 20, options: ['Able to understand the objectives of the experiment', 'Able to understand the constraints of the experiment'] },
-    { id: 'qB2', poId: 'B', type: 'likert', text: 'Ability to conduct laboratory experiments', weight: 40, options: ['Ability to follow and practice safety precautions', 'Ability to strictly follow procedures correctly', 'Ability to set-up the apparatus and equipment properly'] },
-    { id: 'qB3', poId: 'B', type: 'likert', text: 'Ability to analyze and interpret laboratory experiments', weight: 40, options: ['Ability to collect relevant data during observation', 'Ability to interpret results correctly', 'Ability to formulate appropriate and reliable conclusion'] },
-    { id: 'qC1', poId: 'C', type: 'likert', text: 'Knowledge in designing a system or process', weight: 30, options: ['Able to identify the desired', 'Able to identify different needs constraints', 'Knowledge of Codes in safety and Health Standards'] },
-    { id: 'qC2', poId: 'C', type: 'likert', text: 'Ability to design and doing a system of process', weight: 70, options: ['Apply the appropriate and scientific mathematical and scientific concepts', 'Consider the applicable constraints in reference to standard', 'Ability to follow design guidelines and procedures', 'Validate the design'] },
-    { id: 'qD1', poId: 'D', type: 'likert', text: 'Personality Traits', weight: 30, options: ['Treat people with respect', 'Good communication skills', 'Cooperative and unbiased', 'Good Team Player'] },
-    { id: 'qD2', poId: 'D', type: 'likert', text: 'Working in Multidisciplinary Traits', weight: 70, options: ['Accepts responsibility', 'Contributor', 'Supportive to team mates', 'Achieve Results'] },
-    { id: 'qE1', poId: 'E', type: 'likert', text: 'Identify engineering problems', weight: 30, options: ['Understand the source of the engineering problems', 'Uses literature/journals to identify problem', 'Uses modem tools or equivalent to identify problem'] },
-    { id: 'qE2', poId: 'E', type: 'likert', text: 'Formulate the solutions to solve engineering problems', weight: 70, options: ['Use of modern tools to formulate and solve engineering problem', 'Implement the engineering solution', 'Validate the engineering solution'] },
-    { id: 'qF1', poId: 'F', type: 'likert', text: 'Professional Responsibility', weight: 50, options: ['Knowledge of professional norms and practices', 'Knowledge on engineering laws', 'Understanding of professional norms and practices', 'Understanding of engineering laws'] },
-    { id: 'qF2', poId: 'F', type: 'likert', text: 'Ethical Responsibility', weight: 50, options: ['Knowledge on Code of Ethics', 'Knowledge on Plagiarism', 'Understanding the principles of code of ethics', 'Understanding the plagiarisms'] },
-    { id: 'qG1', poId: 'G', type: 'likert', text: 'Listening', weight: 20, options: ['Good listening skills', 'Good Comprehension'] },
-    { id: 'qG2', poId: 'G', type: 'likert', text: 'Able to deliver good oral communication skills', weight: 40, options: ['Articulate and correct grammar', 'Clear and Organized Delivery', 'Good Gestures'] },
-    { id: 'qG3', poId: 'G', type: 'likert', text: 'Able to deliver good Written communication skills', weight: 40, options: ['Correct grammar', 'Organization and Sentence Fluency'] },
-    { id: 'qH1', poId: 'H', type: 'likert', text: 'Global Economic', weight: 50, options: ['Knowledge of global and economic impact of engineering solutions', 'Knowledge of the solution that will have good impact', 'Understands global & economic impact of engineering solutions', 'Understands the solution that will have good impact'] },
-    { id: 'qH2', poId: 'H', type: 'likert', text: 'Environmental Societal', weight: 50, options: ['Knowledge of Environmental impact of engineering solutions', 'Knowledge of societal impact of engineering solutions', 'Understands Environmental impact of engineering solutions', 'Understands societal impact of engineering solutions'] },
-    { id: 'qI1', poId: 'I', type: 'likert', text: 'Awareness of the need for lifelong learning', weight: 40, options: ['Recognizes the concept of life- long learning', 'Recognizes the need for life- long learning', 'Understands the concept of life- long learning', 'Understands the need for life- long learning'] },
-    { id: 'qI2', poId: 'I', type: 'likert', text: 'Life-long learning activities', weight: 60, options: ['Identifies activities that contribute to life-long learning', 'Pursues activities that contribute to life-long learning', 'Participates in activities', 'Shares life-long learning'] },
-    { id: 'qJ1', poId: 'J', type: 'likert', text: 'Knowledge/awareness of contemporary issues', weight: 40, options: ['Awareness of contemporary issues', 'Concern about contemporary issues', 'Action taken about contemporary issues'] },
-    { id: 'qJ2', poId: 'J', type: 'likert', text: 'Application of contemporary issues in research and/or thesis', weight: 60, options: ['Relevance of the Study', 'Implementation of the Study', 'Understanding the impact of the research to the contemporary issues'] },
-    { id: 'qK1', poId: 'K', type: 'likert', text: 'Knowledge of techniques, skills and engineering tools for engineering practice', weight: 30, options: ['Knowledge on different techniques for engineering practices', 'Skills possess to engineering practices', 'Modern engineering tools (BSCpE)'] },
-    { id: 'qK2', poId: 'K', type: 'likert', text: 'Ability to apply techniques, skills and engineering tools for engineering practice', weight: 70, options: ['Able to apply different techniques for engineering practices', 'Able to apply different skills in engineering practices', 'Modern engineering tools (BSCpE)'] },
-    { id: 'qL1', poId: 'L', type: 'likert', text: 'As a member', weight: 40, options: ['Knowledge and understanding of engineering management principles', 'Apply engineering and management principles', 'Participative/Contributor'] },
-    { id: 'qL2', poId: 'L', type: 'likert', text: 'As a Leader', weight: 60, options: ['Knowledge and understanding of engineering management principles', 'Apply engineering and management principles', 'Achieve project objective'] }
-];
-
-const DEFAULT_PEO_QUESTIONS = [
-    { id: 'q1', type: 'likert', text: 'How effectively are you leading complex engineering projects?' }
-];
-
-const DEFAULT_GTS_QUESTIONS = [
-    { id: 'q1', type: 'text', text: 'Name' },
-    { id: 'q2', type: 'textarea', text: 'Permanent Address' },
-    { id: 'q3', type: 'email', text: 'E-mail Address' },
-    { id: 'q4', type: 'text', text: 'Telephone or Contact Number(s)' },
-    { id: 'q5', type: 'text', text: 'Mobile Number' },
-    { id: 'q6', type: 'radio', text: 'Civil Status', options: ['Single', 'Married', 'Separated', 'Widow/Widower', 'Single Parent'] },
-    { id: 'q7', type: 'radio', text: 'Sex', options: ['Male', 'Female'] },
-    { id: 'q8', type: 'date', text: 'Birthday' },
-    { id: 'q9', type: 'dropdown', text: 'Region of Origin', options: ['Region 1', 'Region 2', 'Region 3', 'Region 4A', 'Region 4B', 'Region 5', 'Region 6', 'Region 7', 'Region 8', 'Region 9', 'Region 10', 'Region 11', 'Region 12', 'NCR', 'CAR', 'ARMM', 'CARAGA'] },
-    { id: 'q10', type: 'text', text: 'Province' },
-    { id: 'q11', type: 'radio', text: 'Location of Residence', options: ['City', 'Municipality'] },
-    { id: 'q12', type: 'text', text: 'Educational Attainment (Degree & Specialization)' },
-    { id: 'q13', type: 'textarea', text: 'Professional examination(s) Passed (with Rating & Date)' },
-    { id: 'q14', type: 'checkbox', text: 'Reason(s) for taking the course(s) or pursuing degree(s)', options: ['High grades in course/subject area', 'Good grades in high school', 'Influence of parents or relatives', 'Peer Influence', 'Inspired by a role model', 'Strong passion for the profession', 'Prospect for immediate employment', 'Status or prestige of the profession', 'Availability of course offering', 'Prospect of career advancement', 'Affordable for the family', 'Prospect of attractive compensation', 'Opportunity for employment abroad', 'No particular choice', 'Other reason(s)'] },
-    { id: 'q15', type: 'textarea', text: 'Training(s) / Advance Studies Attended After College & Reasons' },
-    { id: 'q16', type: 'yesno', text: 'Are you presently employed?' },
-    { id: 'q17', type: 'checkbox', text: 'If not employed, please state reason(s) why.', options: ['Advance or further study', 'Family concern and decided not to find a job', 'Health-related reason(s)', 'Lack of work experience', 'No job opportunity', 'Did not look for a job', 'Other reason(s)'] },
-    { id: 'q18', type: 'dropdown', text: 'Present Employment Status', options: ['Regular', 'Temporary', 'Casual', 'Contractual', 'Self-employed'] },
-    { id: 'q19', type: 'text', text: 'Present occupation / Job Title' },
-    { id: 'q20', type: 'textarea', text: 'Name of Company/Organization and Major line of business' },
-    { id: 'q21', type: 'radio', text: 'Place of Work', options: ['Local', 'Abroad'] },
-    { id: 'q22', type: 'yesno', text: 'Is this your first job after college?' },
-    { id: 'q23', type: 'checkbox', text: 'What are your reason(s) for staying on the job?', options: ['Salaries and benefits', 'Career challenge', 'Related to special skills', 'Related to course or program of study', 'Proximity to residence', 'Peer influence', 'Family influence', 'Other reason(s)'] },
-    { id: 'q24', type: 'checkbox', text: 'What were your reasons for accepting the job?', options: ['Salaries & benefits', 'Career challenge', 'Related to special skills', 'Proximity to residence', 'Other reason(s)'] },
-    { id: 'q25', type: 'checkbox', text: 'What were your reason(s) for changing job?', options: ['Salaries & benefits', 'Career challenge', 'Related to special skills', 'Proximity to residence', 'Other reason(s)'] },
-    { id: 'q26', type: 'textarea', text: 'Additional reasons for changing job (if applicable)' },
-    { id: 'q27', type: 'dropdown', text: 'How long did you stay in your first job?', options: ['Less than a month', '1 to 6 months', '7 to 11 months', '1 year to less than 2 years', '2 years to less than 3 years', '3 years to less than 4 years', 'Others'] },
-    { id: 'q28', type: 'dropdown', text: 'How did you find your first job?', options: ['Response to an advertisement', 'As walk-in applicant', 'Recommended by someone', 'Information from friends', 'Arranged by placement officer', 'Family business', 'Job Fair / PESO', 'Others'] },
-    { id: 'q29', type: 'dropdown', text: 'How long did it take you to land your first job?', options: ['Less than a month', '1 to 6 months', '7 to 11 months', '1 year to less than 2 years', '2 years to less than 3 years', '3 years to less than 4 years', 'Others'] },
-    { id: 'q30', type: 'dropdown', text: 'Job Level Position', options: ['Rank or Clerical', 'Professional, Technical or Supervisory', 'Managerial or Executive', 'Self-employed'] },
-    { id: 'q31', type: 'dropdown', text: 'What is your initial gross monthly earning in your first job after college?', options: ['Below P5,000.00', 'P5,000.00 to less than P10,000.00', 'P10,000.00 to less than P15,000.00', 'P15,000.00 to less than P20,000.00', 'P20,000.00 to less than P25,000.00', 'P25,000.00 and above'] },
-    { id: 'q32', type: 'yesno', text: 'Was the curriculum you had in college relevant to your first job?' },
-    { id: 'q33', type: 'checkbox', text: 'If YES, what competencies learned in college did you find very useful in your first job?', options: ['Communication skills', 'Human Relations skills', 'Entrepreneurial skills', 'Information Technology skills', 'Problem-solving skills', 'Critical Thinking skills', 'Other skills'] },
-    { id: 'q34', type: 'textarea', text: 'List down suggestions to further improve your course curriculum' }
-];
-
-const firstNames = ["Mark", "John", "Maria", "Ana", "Jose", "Paul", "Michelle", "Sarah", "Christian", "Kevin", "Dennis", "Grace", "Mary", "Peter", "Richard", "Erica", "Jason", "Jessica", "Michael", "Rachelle", "Jerome", "Alyssa", "Brian", "Nicole", "Kevin"];
-const lastNames = ["Santos", "Reyes", "Cruz", "Bautista", "Ocampo", "Garcia", "Mendoza", "Torres", "Tomas", "Aquino", "Ramos", "Castro", "Villanueva", "Diaz", "Navarro", "Fernandez", "Mercado", "Perez", "Tolentino", "Gomez", "Gammaru"];
-const cities = ["Muntinlupa City", "Las Pinas City", "Quezon City", "Manila", "Makati City", "Taguig City", "Paranaque City", "Pasig City", "Caloocan City", "Marikina City"];
-const streets = ["Rizal St.", "Mabini St.", "Quezon Ave.", "Bonifacio St.", "Aguinaldo St.", "Marcos Highway", "Taft Ave.", "Ayala Ave.", "Ortigas Ave.", "Shaw Blvd."];
-const companies = ["Accenture", "IBM", "Globe Telecom", "Smart Communications", "BDO", "Maya", "Samsung", "HP", "Oracle", "Microsoft", "Intel", "Cisco", "GCash", "Tencent", "Deloitte"];
-const jobTitles = ["Software Engineer", "Network Engineer", "Systems Analyst", "Web Developer", "IT Consultant", "Data Analyst", "Cybersecurity Analyst", "Quality Assurance Tester", "Backend Developer", "Frontend Developer", "DevOps Engineer", "Cloud Architect"];
-const regions = ["NCR", "Region 4A", "Region 3", "Region 1", "Region 7"];
-
-const MOCK_GTS_RESPONSES = Array(70).fill(null).map(() => {
-    const fName = firstNames[Math.floor(Math.random() * firstNames.length)];
-    const lName = lastNames[Math.floor(Math.random() * lastNames.length)];
-    const gender = ["Maria", "Ana", "Michelle", "Sarah", "Grace", "Mary", "Erica", "Jessica", "Rachelle", "Alyssa", "Nicole"].includes(fName) ? "Female" : "Male";
-    const city = cities[Math.floor(Math.random() * cities.length)];
-    const street = streets[Math.floor(Math.random() * streets.length)];
-    const company = companies[Math.floor(Math.random() * companies.length)];
-    const jobTitle = jobTitles[Math.floor(Math.random() * jobTitles.length)];
-    const region = regions[Math.floor(Math.random() * regions.length)];
-    const isEmployed = Math.random() > 0.15 ? "Yes" : "No";
-    const empStatus = isEmployed === "Yes" ? (Math.random() > 0.4 ? "Regular" : "Contractual") : "N/A";
-    const isFirstJob = Math.random() > 0.5 ? "Yes" : "No";
-
-    return {
-        q1: `${fName} ${lName}`,
-        q2: `${Math.floor(Math.random() * 900) + 100} ${street}, ${city}`,
-        q3: `${fName.toLowerCase()}.${lName.toLowerCase()}${Math.floor(Math.random() * 99)}@gmail.com`,
-        q4: `02-${Math.floor(Math.random() * 800) + 100}-${Math.floor(Math.random() * 8000) + 1000}`,
-        q5: `09${Math.floor(Math.random() * 900000000) + 100000000}`,
-        q6: Math.random() > 0.7 ? "Married" : "Single",
-        q7: gender,
-        q8: `200${Math.floor(Math.random() * 4)}-0${Math.floor(Math.random() * 9) + 1}-1${Math.floor(Math.random() * 9)}`,
-        q9: region,
-        q10: region === "NCR" ? "Metro Manila" : (region === "Region 4A" ? "Laguna" : "Bulacan"),
-        q11: "City",
-        q12: "B.S. Computer Engineering",
-        q13: "None",
-        q14: ["Prospect for immediate employment", "Strong passion for the profession"],
-        q15: Math.random() > 0.8 ? "Cisco Certified Network Associate (CCNA)" : "None",
-        q16: isEmployed,
-        q17: isEmployed === "No" ? ["Advance or further study"] : [],
-        q18: empStatus,
-        q19: isEmployed === "Yes" ? jobTitle : "N/A",
-        q20: isEmployed === "Yes" ? company : "N/A",
-        q21: isEmployed === "Yes" ? (Math.random() > 0.9 ? "Abroad" : "Local") : "N/A",
-        q22: isFirstJob,
-        q23: isEmployed === "Yes" ? ["Salaries and benefits", "Career challenge"] : [],
-        q24: ["Related to special skills"],
-        q25: isFirstJob === "No" ? ["Career challenge"] : [],
-        q26: "N/A",
-        q27: Math.random() > 0.5 ? "1 to 6 months" : "1 year to less than 2 years",
-        q28: Math.random() > 0.5 ? "Response to an advertisement" : "Information from friends",
-        q29: Math.random() > 0.4 ? "1 to 6 months" : "Less than a month",
-        q30: Math.random() > 0.2 ? "Professional, Technical or Supervisory" : "Managerial or Executive",
-        q31: Math.random() > 0.3 ? "P25,000.00 and above" : "P20,000.00 to less than P25,000.00",
-        q32: "Yes",
-        q33: ["Information Technology skills", "Problem-solving skills"],
-        q34: "Incorporate more industry-standard frameworks into the capstone project."
-    };
-});
-const GTS_ANALYTICS_VARIABLES = DEFAULT_GTS_QUESTIONS
-    .filter(q => ['radio', 'dropdown', 'yesno'].includes(q.type))
-    .map(q => ({ label: q.text, value: q.id }));
+//==================================================
+// CONSTANTS
+//==================================================
+import {
+    PO_DEFINITIONS,
+    CPE_CURRICULUM,
+} from '@/shared/constants/constants';
 
 export default function ProgramChairDashboard() {
     const router = useRouter();
@@ -220,9 +40,13 @@ export default function ProgramChairDashboard() {
     const [selectedBatch, setSelectedBatch] = useState('All');
     const [students, setStudents] = useState([]);
     const [selectedStudent, setSelectedStudent] = useState(null);
+    const [evalAttainment, setEvalAttainment] = useState(null);
+    const [evalSurveys, setEvalSurveys] = useState(null);
+    const [evalLoading, setEvalLoading] = useState(false);
+    const [reportData, setReportData] = useState(null);
+    const [reportLoading, setReportLoading] = useState(false);
     const [toastMessage, setToastMessage] = useState(null);
 
-    const [mappingSearchQuery, setMappingSearchQuery] = useState('');
     const [selectedMappingCourse, setSelectedMappingCourse] = useState(null);
     const [courseMappings, setCourseMappings] = useState({}); 
     const [courseWeights, setCourseWeights] = useState({}); 
@@ -327,16 +151,76 @@ export default function ProgramChairDashboard() {
             setActiveQuestionId(null);
             setHoveredQuestionId(null);
         }
-        
-        if (activeMenu === 'analytics') {
-            const existingGts = localStorage.getItem('obe_form_gts');
-            if (existingGts) {
-                setTracerSchema(JSON.parse(existingGts).questions || []);
-            } else {
-                setTracerSchema(DEFAULT_GTS_QUESTIONS);
-            }
-        }
     }, [activeMenu, selectedSurveyView, surveySubTab, formBatchYear]);
+
+    // ─── Load the real evaluation record when a student is opened ────────────
+    useEffect(() => {
+        if (!selectedStudent?._id) {
+            setEvalAttainment(null);
+            setEvalSurveys(null);
+            return;
+        }
+
+        let cancelled = false;
+
+        (async () => {
+            setEvalLoading(true);
+            try {
+                const [att, surveys] = await Promise.all([
+                    getObeAttainment(selectedStudent._id),
+                    getAnsweredSurveysByStudent(selectedStudent._id),
+                ]);
+
+                if (cancelled) return;
+
+                setEvalAttainment(att);
+
+                // Map survey_type -> 'answered' if any record is answered
+                const map = {};
+                (Array.isArray(surveys) ? surveys : []).forEach((s) => {
+                    if (map[s.survey_type] !== 'answered') {
+                        map[s.survey_type] = s.status;
+                    }
+                });
+                setEvalSurveys(map);
+            } catch (e) {
+                console.error('Failed to load evaluation record:', e);
+            } finally {
+                if (!cancelled) setEvalLoading(false);
+            }
+        })();
+
+        return () => { cancelled = true; };
+    }, [selectedStudent?._id]);
+
+    // ─── Load Reports & Analytics data when that tab is opened ───────────────
+    useEffect(() => {
+        if (activeMenu !== 'analytics') return;
+
+        let cancelled = false;
+        (async () => {
+            setReportLoading(true);
+            try {
+                const d = await getPcReports();
+                if (cancelled) return;
+                setReportData(d);
+
+                // Default the analytics variable to the first categorical question
+                const vars = (d?.gts?.schema || []).filter(q =>
+                    ['radio', 'dropdown', 'yesno', 'checkbox'].includes(q.type)
+                );
+                setGtsAnalyticsField(prev =>
+                    vars.find(v => v.id === prev) ? prev : (vars[0]?.id || '')
+                );
+            } catch (e) {
+                console.error('Failed to load reports:', e);
+            } finally {
+                if (!cancelled) setReportLoading(false);
+            }
+        })();
+
+        return () => { cancelled = true; };
+    }, [activeMenu]);
 
     const toggleTheme = () => {
         const newTheme = !isDarkMode;
@@ -421,114 +305,13 @@ export default function ProgramChairDashboard() {
         setSurveyModalStudent(null);
     };
 
-    const addQuestion = () => {
-        const newId = `q_${Date.now()}`;
-        setQuestions([...questions, { id: newId, type: 'likert', text: 'Untitled Question' }]);
-        setActiveQuestionId(newId);
-    };
 
-    const addPOQuestion = (poId) => {
-        const newId = `q_${Date.now()}`;
-        setQuestions([...questions, { id: newId, poId: poId, type: 'likert', text: 'Untitled Question', options: ['New Sub-item'], weight: 0 }]);
-        setActiveQuestionId(newId);
-    };
 
-    const updateQuestion = (id, key, value) => {
-        setQuestions(questions.map(q => {
-            if (q.id === id) {
-                let updatedQ = { ...q, [key]: value };
-                if (key === 'type' && ['radio', 'checkbox', 'dropdown'].includes(value) && (!updatedQ.options || updatedQ.options.length === 0)) {
-                    updatedQ.options = ['Option 1'];
-                }
-                return updatedQ;
-            }
-            return q;
-        }));
-    };
 
-    const handleOptionTextChange = (qId, optIndex, newText) => {
-        setQuestions(questions.map(q => {
-            if (q.id === qId) {
-                const newOptions = [...(q.options || [])];
-                newOptions[optIndex] = newText;
-                return { ...q, options: newOptions };
-            }
-            return q;
-        }));
-    };
 
-    const handleAddOption = (qId) => {
-        setQuestions(questions.map(q => {
-            if (q.id === qId) {
-                return { ...q, options: [...(q.options || []), `Option ${(q.options?.length || 0) + 1}`] };
-            }
-            return q;
-        }));
-    };
 
-    const handleRemoveOption = (qId, optIndex) => {
-        setQuestions(questions.map(q => {
-            if (q.id === qId) {
-                const newOptions = [...(q.options || [])];
-                newOptions.splice(optIndex, 1);
-                return { ...q, options: newOptions };
-            }
-            return q;
-        }));
-    };
 
-    const deleteQuestion = (id) => {
-        setQuestions(questions.filter(q => q.id !== id));
-        if (activeQuestionId === id) setActiveQuestionId(null);
-    };
 
-    const saveFormToDatabase = () => {
-        const sType = selectedSurveyView === '1stYear' ? 'po' :
-                      selectedSurveyView === '3to5Year' ? 'peo' : 'gts';
-        const baseKey = sType === 'po' ? 'obe_form_po' :
-                        sType === 'peo' ? 'obe_form_peo' : 'obe_form_gts';
-        const dbKey = `${baseKey}_${formBatchYear}`;
-        const payload = { title: formTitle, desc: formDesc, questions: questions };
-        localStorage.setItem(dbKey, JSON.stringify(payload));
-        localStorage.setItem(baseKey, JSON.stringify(payload));
-        showToast(`Success! The survey template (Version ${formBatchYear}) has been published.`, 'success');
-    };
-
-    const togglePOMapping = (courseName, poId) => {
-        setCourseMappings(prev => {
-            const courseData = prev[courseName] || {};
-            const newCourseData = { ...courseData, [poId]: !courseData[poId] };
-            const newState = { ...prev, [courseName]: newCourseData };
-            localStorage.setItem('obe_course_mappings', JSON.stringify(newState));
-            return newState;
-        });
-    };
-
-    const saveOverallMapping = () => {
-        localStorage.setItem('obe_course_mappings', JSON.stringify(courseMappings));
-        showToast('Curriculum mapping saved successfully! Changes are now applied system-wide.', 'success');
-    };
-
-    const handleWeightChange = (poId, courseName, value) => {
-        setCourseWeights(prev => {
-            const poData = prev[poId] || {};
-            return {
-                ...prev,
-                [poId]: { ...poData, [courseName]: value }
-            };
-        });
-    };
-
-    const saveAllWeights = () => {
-        localStorage.setItem('obe_course_weights', JSON.stringify(courseWeights));
-        showToast('Direct Assessment weights have been saved successfully!', 'success');
-    };
-
-    const calculateTotalWeight = (poId) => {
-        const weights = courseWeights[poId] || {};
-        const mappedCourses = Object.keys(courseMappings).filter(c => courseMappings[c][poId]);
-        return mappedCourses.reduce((sum, course) => sum + (Number(weights[course]) || 0), 0);
-    };
 
     const handleExportPDF = () => {
         window.print();
@@ -558,960 +341,159 @@ export default function ProgramChairDashboard() {
 
     const surveyDetailStudents = surveyDetailBatch === 'All' ? activeStudents : activeStudents.filter(s => s.batch === surveyDetailBatch);
 
-    const gtsAnalyticsCounts = {};
-    MOCK_GTS_RESPONSES.forEach(res => {
-        const val = res[gtsAnalyticsField] || "No Response";
-        gtsAnalyticsCounts[val] = (gtsAnalyticsCounts[val] || 0) + 1;
-    });
-    const gtsAnalyticsResults = Object.keys(gtsAnalyticsCounts).map(key => ({
-        _id: key,
-        frequency: gtsAnalyticsCounts[key],
-        percent: (gtsAnalyticsCounts[key] / 70) * 100
-    })).sort((a, b) => b.frequency - a.frequency);
+    // ─── Direct Assessment determinant groups (computed from PO attainment) ───
+    const DET_GROUPS = [
+        { label: 'Det 1', range: 'PO A–D', pos: ['A', 'B', 'C', 'D'] },
+        { label: 'Det 2', range: 'PO E–H', pos: ['E', 'F', 'G', 'H'] },
+        { label: 'Det 3', range: 'PO I–L', pos: ['I', 'J', 'K', 'L'] },
+    ];
+    const detAverage = (poIds) => {
+        const pos = evalAttainment?.pos || {};
+        const vals = poIds.map(p => pos[p]?.attainment).filter(v => v != null);
+        if (!vals.length) return null;
+        return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+    };
+    const surveyStatusLabel = (type) => {
+        const s = evalSurveys?.[type];
+        return s === 'answered' ? 'Completed' : 'Pending';
+    };
+
+    // ─── Reports & Analytics derived data (from the DB) ──────────────────────
+    const reportStudents = reportData?.students || [];
+    const reportFiltered = checklistBatch === 'All'
+        ? reportStudents
+        : reportStudents.filter(s => s.batch === checklistBatch);
+
+    const r_total = reportFiltered.length;
+    const r_soCompleted = reportFiltered.filter(s => s.so_answered).length;
+    const r_peoCompleted = reportFiltered.filter(s => s.peo_answered).length;
+    const r_soRate = r_total ? Math.round((r_soCompleted / r_total) * 100) : 0;
+
+    const gtsSchema = reportData?.gts?.schema || [];
+    const gtsResponses = reportData?.gts?.responses || [];
+    const gtsAnalyticsVariables = gtsSchema.filter(q =>
+        ['radio', 'dropdown', 'yesno', 'checkbox'].includes(q.type)
+    );
+
+    const gtsAnalyticsResults = (() => {
+        const counts = {};
+        let total = 0;
+        gtsResponses.forEach(r => {
+            const val = r.answers?.[gtsAnalyticsField];
+            if (val == null || val === '') return;
+            (Array.isArray(val) ? val : [val]).forEach(v => {
+                counts[v] = (counts[v] || 0) + 1;
+                total++;
+            });
+        });
+        return Object.entries(counts).map(([k, v]) => ({
+            _id: k,
+            frequency: v,
+            percent: total ? (v / total) * 100 : 0,
+        }));
+    })();
+    const gtsTotalRespondents = gtsResponses.length;
+    const gtsAnswerTotal = gtsAnalyticsResults.reduce((sum, r) => sum + r.frequency, 0);
+
+    const fmtPct = (v) => (v == null ? 'N/A' : `${v}%`);
 
     return (
         <div className="portal-layout">
-            <aside className="sidebar">
-                <div className="brand">
-                    <img src="/cdm-logo.png" alt="CDM Logo" className="school-logo-side" />
-                    <div className="brand-text">
-                        <h3>CDM-OBE System</h3>
-                        <span style={{ color: '#ef4444', fontWeight: 'bold', letterSpacing: '1px' }}>CHAIR</span>
-                    </div>
-                </div>
 
-                <nav className="nav-menu">
-                <button className={`nav-btn ${activeMenu === 'overview' ? 'active' : ''}`} onClick={() => setActiveMenu('overview')}>
-                        📊 Program Overview
-                    </button>
-                <button className={`nav-btn ${activeMenu === 'masterlist' ? 'active' : ''}`} onClick={() => setActiveMenu('masterlist')}>
-                        👥 Masterlist
-                    </button>
-                    <button className={`nav-btn ${activeMenu === 'direct' ? 'active' : ''}`} onClick={() => setActiveMenu('direct')}>
-                        📝 Direct Assessment
-                    </button>
-                    <button className={`nav-btn ${activeMenu === 'indirect' ? 'active' : ''}`} onClick={() => setActiveMenu('indirect')}>
-                        📋 Indirect Assessment
-                    </button>
-                    <button className={`nav-btn ${activeMenu === 'determinants' ? 'active' : ''}`} onClick={() => setActiveMenu('determinants')}>
-                        ⚙️ Determinants
-                    </button>
-                    <button className={`nav-btn ${activeMenu === 'analytics' ? 'active' : ''}`} onClick={() => setActiveMenu('analytics')}>
-                        📈 Reports & Analytics
-                    </button>
-                </nav>
-
-                <div className="sidebar-bottom">
-                    <button className="nav-btn theme-switch" onClick={toggleTheme}>
-                        {isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
-                    </button>
-                    <button className="nav-btn logout" onClick={() => router.push('/')}>Log Out</button>
-                </div>
-            </aside>
+            <PCSidebar 
+                activeMenu={activeMenu}
+                setActiveMenu={setActiveMenu}
+                toggleTheme={toggleTheme}
+                isDarkMode={isDarkMode}
+                router={router}
+            />
 
             <main className="main-content" style={{ overflowY: 'auto', padding: '40px', backgroundColor: 'var(--bg-main)', position: 'relative' }}>
-                
                 {activeMenu === 'overview' && (
-                    <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                        <div className="pc-header" style={{ marginBottom: '30px' }}>
-                            <div>
-                                <h1 style={{ fontSize: '2.2rem', marginBottom: '5px' }}>Program Overview</h1>
-                                <p style={{ color: 'var(--text-sub)' }}>Welcome back, Program Chair! Here is the status of the B.S. Computer Engineering program.</p>
-                            </div>
-                            <div style={{ textAlign: 'right' }}>
-                                <span style={{ backgroundColor: 'rgba(255, 215, 0, 0.1)', color: 'var(--gold)', padding: '8px 16px', borderRadius: '20px', fontWeight: 'bold' }}>
-                                    A.Y. 2025-2026
-                                </span>
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '30px' }}>
-                            <div className="portal-card" style={{ borderTop: '4px solid #3b82f6', padding: '25px' }}>
-                                <h3 style={{ color: 'var(--text-sub)', fontSize: '0.9rem', marginBottom: '10px' }}>Total Registered Alumni</h3>
-                                <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--text-main)' }}>{totalActive}</div>
-                            </div>
-                            <div className="portal-card" style={{ borderTop: '4px solid #10b981', padding: '25px' }}>
-                                <h3 style={{ color: 'var(--text-sub)', fontSize: '0.9rem', marginBottom: '10px' }}>Tracer Study Completion</h3>
-                                <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--text-main)' }}>{tracerRate}%</div>
-                            </div>
-                            <div className="portal-card" style={{ borderTop: '4px solid #f59e0b', padding: '25px' }}>
-                                <h3 style={{ color: 'var(--text-sub)', fontSize: '0.9rem', marginBottom: '10px' }}>Pending Direct Assessments</h3>
-                                <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--text-main)' }}>{pendingDirectAssessments}</div>
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
-                            <div className="portal-card">
-                                <h2 style={{ fontSize: '1.2rem', color: 'var(--gold)', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>Action Center / To-Do</h2>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                    {pendingDirectAssessments > 0 ? (
-                                        <div style={{ padding: '15px', backgroundColor: 'rgba(245, 158, 11, 0.1)', borderLeft: '4px solid #f59e0b', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <div>
-                                                <h4 style={{ color: '#f59e0b', margin: '0 0 5px 0' }}>Encode Direct Assessments</h4>
-                                                <p style={{ color: 'var(--text-sub)', fontSize: '0.85rem', margin: 0 }}>You have {pendingDirectAssessments} students waiting for their Det 1-3 grades.</p>
-                                            </div>
-                                            <button className="outline-btn" onClick={() => setActiveMenu('masterlist')} style={{ padding: '6px 12px', fontSize: '0.8rem' }}>Go to Masterlist</button>
-                                        </div>
-                                    ) : (
-                                        <div style={{ padding: '15px', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderLeft: '4px solid #10b981', borderRadius: '4px' }}>
-                                            <h4 style={{ color: '#10b981', margin: '0 0 5px 0' }}>All Caught Up!</h4>
-                                            <p style={{ color: 'var(--text-sub)', fontSize: '0.85rem', margin: 0 }}>All direct assessments have been graded.</p>
-                                        </div>
-                                    )}
-                                    <div style={{ padding: '15px', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderLeft: '4px solid #3b82f6', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div>
-                                            <h4 style={{ color: '#3b82f6', margin: '0 0 5px 0' }}>Data Correction Requests</h4>
-                                            <p style={{ color: 'var(--text-sub)', fontSize: '0.85rem', margin: 0 }}>You have 0 pending correction requests from Alumni.</p>
-                                        </div>
-                                        <button className="outline-btn" style={{ padding: '6px 12px', fontSize: '0.8rem', opacity: 0.5, cursor: 'not-allowed' }}>Review</button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="portal-card">
-                                <h2 style={{ fontSize: '1.2rem', color: 'var(--gold)', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>Quick Links</h2>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                    <button className="outline-btn" onClick={() => {setActiveMenu('indirect'); setSelectedSurveyView('gts'); setSurveySubTab('builder');}} style={{ textAlign: 'left', padding: '12px 15px', borderRadius: '8px' }}>
-                                        📝 Edit Tracer Survey
-                                    </button>
-                                    <button className="outline-btn" onClick={() => setActiveMenu('analytics')} style={{ textAlign: 'left', padding: '12px 15px', borderRadius: '8px' }}>
-                                        📊 View Reports & Analytics
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <ProgramOverview 
+                        activeMenu={activeMenu}
+                        setActiveMenu={setActiveMenu}
+                        setSelectedSurveyView={setSelectedSurveyView}
+                        setSurveySubTab={setSurveySubTab}
+                    />
                 )}
 
                 {activeMenu === 'masterlist' && (
-                    <div className="portal-card" style={{ animation: 'fadeIn 0.3s ease' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                                    <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                                        <h3 style={{ margin: 0 }}>Batch Roster</h3>
-                                        <select 
-                                            className="correction-textbox" 
-                                            style={{ width: 'max-content', minWidth: '150px', backgroundColor: 'var(--bg-card)' }}
-                                            value={selectedBatch}
-                                            onChange={(e) => setSelectedBatch(e.target.value)}
-                                        >
-                                            <option value="All">All Batches</option>
-                                            <option value="2024">Batch 2024</option>
-                                            <option value="2025">Batch 2025</option>
-                                            <option value="2026">Batch 2026</option>
-                                            <option value="2027">Batch 2027</option>
-                                            <option value="2028">Batch 2028</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                
-                                <div style={{ overflowX: 'auto' }}>
-                                    <table className="data-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Student ID</th>
-                                                <th>Name</th>
-                                                <th>Batch Year</th>
-                                                <th>OBE Status (Direct)</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {displayStudents.length === 0 ? (
-                                                <tr>
-                                                    <td colSpan="5" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-sub)' }}>
-                                                        No active records found.
-                                                    </td>
-                                                </tr>
-                                            ) : (
-                                                displayStudents.map((student, idx) => (
-                                                    <tr key={idx}>
-                                                        <td style={{ color: 'var(--text-sub)' }}>{student.id}</td>
-                                                        <td style={{ fontWeight: '600' }}>{student.name}</td>
-                                                        <td>{student.batch}</td>
-                                                        <td>
-                                                            <span className={`status-badge ${student.obeStatus === 'Pending' ? 'badge-pending' : 'badge-passed'}`}>
-                                                                {student.obeStatus}
-                                                            </span>
-                                                        </td>
-                                                        <td style={{ display: 'flex', gap: '10px' }}>
-                                                            <button className="outline-btn" style={{ padding: '6px 12px', fontSize: '0.75rem', borderRadius: '6px' }} onClick={() => setSelectedStudent(student)}>
-                                                                View Details
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                    </div>
+                    <Masterlist
+                        selectedBatch={selectedBatch}
+                        setSelectedBatch={setSelectedBatch}
+                        displayStudents={displayStudents}
+                        setSelectedStudent={setSelectedStudent}
+                    />
                 )}
 
                 {activeMenu === 'direct' && (
-                    <div style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        <div className="pc-header" style={{ marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                                <h1 style={{ fontSize: '2.2rem', marginBottom: '5px' }}>Direct Assessment Weights</h1>
-                                <p style={{ color: 'var(--text-sub)' }}>Assign percentage weights to courses mapped per Program Outcome. Total must equal 100%.</p>
-                            </div>
-                            <button className="primary-btn" onClick={saveAllWeights} style={{ padding: '12px 24px', borderRadius: '8px', border: 'none', fontWeight: 'bold', fontSize: '1.05rem', boxShadow: '0 4px 15px rgba(234, 179, 8, 0.3)' }}>
-                                💾 Save All Weights
-                            </button>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '25px', paddingBottom: '40px' }}>
-                            {PO_DEFINITIONS.map((po) => {
-                                const mappedCourses = Object.keys(courseMappings).filter(course => courseMappings[course][po.id]);
-                                const totalWeight = calculateTotalWeight(po.id);
-                                
-                                let barColor = 'var(--gold)'; 
-                                if (totalWeight === 100) barColor = '#10b981'; 
-                                else if (totalWeight > 100) barColor = '#ef4444'; 
-
-                                return (
-                                    <div key={po.id} className="portal-card" style={{ padding: '25px', borderTop: `4px solid ${barColor}`, display: 'flex', flexDirection: 'column' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
-                                            <span style={{ backgroundColor: barColor, color: barColor === 'var(--gold)' ? '#111827' : '#fff', padding: '4px 10px', borderRadius: '6px', fontWeight: 'bold', fontSize: '0.9rem' }}>PO-{po.id}</span>
-                                            <h3 style={{ margin: 0, color: 'var(--text-main)', fontSize: '1.1rem' }}>{po.title}</h3>
-                                        </div>
-                                        
-                                        <div style={{ flex: 1, marginBottom: '20px' }}>
-                                            {mappedCourses.length === 0 ? (
-                                                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-sub)', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.1)' }}>
-                                                    No courses mapped to this PO yet. Map courses in the <b>Determinants</b> tab first.
-                                                </div>
-                                            ) : (
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                                    {mappedCourses.map((course, idx) => (
-                                                        <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(0,0,0,0.2)', padding: '10px 15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                                            <span style={{ color: 'var(--text-main)', fontSize: '0.9rem', lineHeight: '1.3', flex: 1, paddingRight: '15px' }}>{course}</span>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                                                <input 
-                                                                    type="number" 
-                                                                    min="0" 
-                                                                    max="100" 
-                                                                    className="correction-textbox"
-                                                                    value={courseWeights[po.id]?.[course] || ''}
-                                                                    onChange={(e) => handleWeightChange(po.id, course, e.target.value)}
-                                                                    placeholder="0"
-                                                                    style={{ width: '70px', height: '35px', textAlign: 'center', padding: '0', fontSize: '1rem', backgroundColor: 'var(--bg-main)' }}
-                                                                />
-                                                                <span style={{ color: 'var(--text-sub)', fontWeight: 'bold' }}>%</span>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {mappedCourses.length > 0 && (
-                                            <div style={{ marginTop: 'auto', paddingTop: '15px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                                    <span style={{ color: 'var(--text-sub)', fontSize: '0.85rem' }}>Total Weight Computation</span>
-                                                    <span style={{ color: barColor, fontWeight: 'bold', fontSize: '0.95rem' }}>{totalWeight}%</span>
-                                                </div>
-                                                <div style={{ width: '100%', height: '8px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
-                                                    <div style={{ height: '100%', width: `${Math.min(totalWeight, 100)}%`, backgroundColor: barColor, transition: 'width 0.3s ease, background-color 0.3s ease' }}></div>
-                                                </div>
-                                                {totalWeight !== 100 && (
-                                                    <p style={{ color: barColor, fontSize: '0.75rem', marginTop: '8px', textAlign: 'right', margin: '8px 0 0 0' }}>
-                                                        {totalWeight < 100 ? '⚠️ Total must be exactly 100%' : '❌ Exceeds 100% limit'}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
+                    <Direct 
+                        showToast={showToast}
+                        courseWeights={courseWeights}
+                        setCourseWeights={setCourseWeights}
+                        courseMappings={courseMappings}
+                    />
                 )}
 
                 {activeMenu === 'indirect' && (
-                    <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                        
-                        <div className="pc-header" style={{ marginBottom: '20px' }}>
-                            <div>
-                                <h1 style={{ fontSize: '2.2rem', marginBottom: '5px' }}>Indirect Assessment</h1>
-                                <p style={{ color: 'var(--text-sub)' }}>Manage survey deployments and build custom questionnaires.</p>
-                            </div>
-                        </div>
+                    <Indirect 
+                        selectedSurveyView={selectedSurveyView}
+                        setSelectedSurveyView={setSelectedSurveyView}
+                        surveySubTab={surveySubTab}
+                        setSurveySubTab={setSurveySubTab}
+                        surveyDetailBatch={surveyDetailBatch}
+                        setSurveyDetailBatch={setSurveyDetailBatch}
+                        surveyDetailStudents={surveyDetailBatch}
+                        openSurveyModal={openSurveyModal}
+                        tracerRate={tracerRate}
+                        poRate={poRate}
+                        showToast={showToast}
 
-                        {!selectedSurveyView ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '30px', animation: 'fadeIn 0.3s ease' }}>
-                                        <div>
-                                            <h2 style={{ color: 'var(--gold)', fontSize: '1.2rem', marginBottom: '15px', paddingLeft: '5px', borderLeft: '4px solid var(--gold)' }}>Indirect Assessment Surveys</h2>
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
-                                                
-                                                <div className="portal-card hover-card" onClick={() => {setSelectedSurveyView('1stYear'); setSurveySubTab('respondents');}} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer', transition: 'all 0.2s', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                                    <div>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                                            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', margin: 0 }}>SO Survey (Yearly Update)</h3>
-                                                            <span style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>Active 🟢</span>
-                                                        </div>
-                                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '20px' }}>Assesses early career alignment and basic SO attainment. Click to view respondents.</p>
-                                                    </div>
-                                                    <div>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '0.85rem' }}>
-                                                            <span>Completion Rate</span>
-                                                            <span style={{ color: '#3b82f6', fontWeight: 'bold' }}>{poRate}%</span>
-                                                        </div>
-                                                        <div style={{ width: '100%', height: '6px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '3px' }}>
-                                                            <div style={{ width: `${poRate}%`, height: '100%', backgroundColor: '#3b82f6', borderRadius: '3px' }}></div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="portal-card hover-card" onClick={() => {setSelectedSurveyView('3to5Year'); setSurveySubTab('respondents');}} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer', opacity: 0.8, transition: 'all 0.2s', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                                    <div>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                                            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', margin: 0 }}>3-5 Year Graduate Survey</h3>
-                                                            <span style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>Draft 🟡</span>
-                                                        </div>
-                                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '20px' }}>Assesses career progression and advanced PEO attainment. Click to view list.</p>
-                                                    </div>
-                                                    <div>
-                                                        <button className="outline-btn" style={{ width: '100%', padding: '8px', fontSize: '0.85rem', borderRadius: '6px' }} onClick={(e) => { e.stopPropagation(); setSelectedSurveyView('3to5Year'); setSurveySubTab('builder'); }}>
-                                                            Configure Form
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                <div className="portal-card hover-card" onClick={() => {setSelectedSurveyView('gts'); setSurveySubTab('respondents');}} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer', transition: 'all 0.2s', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                                    <div>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                                            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', margin: 0 }}>Graduate Tracer Study</h3>
-                                                            <span style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>Deployed 🟢</span>
-                                                        </div>
-                                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '20px' }}>Institutional tracer questionnaire. Click to view respondent tracker.</p>
-                                                    </div>
-                                                    <div>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '0.85rem' }}>
-                                                            <span>Overall Completion</span>
-                                                            <span style={{ color: 'var(--gold)', fontWeight: 'bold' }}>{tracerRate}%</span>
-                                                        </div>
-                                                        <div style={{ width: '100%', height: '6px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '3px' }}>
-                                                            <div style={{ width: `${tracerRate}%`, height: '100%', backgroundColor: 'var(--gold)', borderRadius: '3px' }}></div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                            </div>
-                                        </div>
-                            </div>
-                        ) : (
-                            <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                                <div style={{ marginBottom: '20px' }}>
-                                    <button 
-                                        onClick={() => setSelectedSurveyView(null)} 
-                                        style={{ background: 'none', border: 'none', color: 'var(--gold)', padding: '6px 0', fontSize: '0.9rem', marginBottom: '10px', cursor: 'pointer', fontWeight: '500', transition: 'opacity 0.2s', display: 'flex', alignItems: 'center', gap: '5px' }}
-                                        onMouseEnter={(e) => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.textDecoration = 'underline'; }}
-                                        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--gold)'; e.currentTarget.style.textDecoration = 'none'; }}
-                                    >
-                                        ← Back to Surveys
-                                    </button>
-                                    <h2 style={{ color: 'var(--text-main)', fontSize: '1.8rem', margin: 0 }}>
-                                        {selectedSurveyView === '1stYear' && 'SO Survey (Yearly Update)'}
-                                        {selectedSurveyView === '3to5Year' && '3-5 Year Graduate Survey'}
-                                        {selectedSurveyView === 'gts' && 'Graduate Tracer Study'}
-                                    </h2>
-                                </div>
-
-                                <div className="tab-container" style={{ marginBottom: '20px' }}>
-                                    <button className={`tab-btn ${surveySubTab === 'respondents' ? 'active' : ''}`} onClick={() => setSurveySubTab('respondents')}>
-                                        👥 Respondents Tracker
-                                    </button>
-                                    <button className={`tab-btn ${surveySubTab === 'builder' ? 'active' : ''}`} onClick={() => setSurveySubTab('builder')}>
-                                        📝 Survey Questions
-                                    </button>
-                                </div>
-
-                                {surveySubTab === 'respondents' && (
-                                    <div className="portal-card" style={{ animation: 'fadeIn 0.3s ease' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px' }}>
-                                            <h3 style={{ color: 'var(--text-main)', fontSize: '1.3rem', margin: 0 }}>Respondents Data</h3>
-                                                <select 
-                                                    className="correction-textbox" 
-                                                    style={{ width: 'max-content', minWidth: '150px', backgroundColor: 'var(--bg-card)' }}
-                                                    value={surveyDetailBatch} 
-                                                    onChange={(e) => setSurveyDetailBatch(e.target.value)}
-                                                >
-                                                    <option value="All">All Batches</option>
-                                                    <option value="2024">Batch 2024</option>
-                                                    <option value="2025">Batch 2025</option>
-                                                    <option value="2026">Batch 2026</option>
-                                                    <option value="2027">Batch 2027</option>
-                                                    <option value="2028">Batch 2028</option>
-                                                </select>
-                                            </div>
-
-                                            <div style={{ overflowX: 'auto' }}>
-                                                <table className="data-table">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Student ID</th>
-                                                            <th>Name</th>
-                                                            <th>Batch</th>
-                                                            <th>Survey Status</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {surveyDetailStudents.map((student, idx) => {
-                                                            let s_status = 'Pending';
-                                                            if (selectedSurveyView === '1stYear') s_status = student.surveyProgress === '100%' ? 'Completed' : 'Pending';
-                                                            else if (selectedSurveyView === 'gts') s_status = student.tracerProgress === '100%' ? 'Completed' : 'Pending';
-                                                            else if (selectedSurveyView === '3to5Year') s_status = student.peoProgress === '100%' ? 'Completed' : 'Pending'; 
-
-                                                            return (
-                                                                <tr key={idx} 
-                                                                    onClick={() => openSurveyModal(student, selectedSurveyView)}
-                                                                    style={{ cursor: 'pointer', transition: 'background-color 0.2s' }}
-                                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
-                                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                                                    title="Click to view/edit responses"
-                                                                >
-                                                                    <td style={{ color: 'var(--text-sub)' }}>{student.id}</td>
-                                                                    <td style={{ fontWeight: '600' }}>{student.name}</td>
-                                                                    <td>{student.batch}</td>
-                                                                    <td>
-                                                                        <span className={`status-badge ${s_status === 'Completed' ? 'badge-passed' : 'badge-pending'}`}>
-                                                                            {s_status}
-                                                                        </span>
-                                                                    </td>
-                                                                </tr>
-                                                            );
-                                                        })}
-                                                        {surveyDetailStudents.length === 0 && (
-                                                            <tr>
-                                                                <td colSpan="4" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-sub)' }}>
-                                                                    No records found.
-                                                                </td>
-                                                            </tr>
-                                                        )}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                )}
-
-                                {surveySubTab === 'builder' && (
-                                    <div style={{ animation: 'fadeIn 0.3s ease', display: 'flex', gap: '30px', alignItems: 'flex-start' }}>
-                                <div style={{ width: '35%', position: 'sticky', top: '0', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                    <div className="portal-card" style={{ borderTop: '8px solid var(--gold)', padding: '30px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
-                                        <h2 style={{ color: 'var(--gold)', marginBottom: '20px', fontSize: '1.4rem' }}>Form Settings</h2>
-                                        
-                                        <label style={{ color: 'var(--text-sub)', fontSize: '0.85rem', marginBottom: '8px', display: 'block' }}>Survey Version Year:</label>
-                                        <select 
-                                            className="correction-textbox" 
-                                            style={{ width: 'max-content', minWidth: '150px', marginBottom: '25px', fontWeight: 'bold' }}
-                                            value={formBatchYear}
-                                            onChange={(e) => setFormBatchYear(e.target.value)}
-                                        >
-                                            <option value="2024">2024 Version</option>
-                                            <option value="2025">2025 Version</option>
-                                            <option value="2026">2026 Version</option>
-                                            <option value="2027">2027 Version</option>
-                                            <option value="2028">2028 Version</option>
-                                        </select>
-
-                                        <label style={{ color: 'var(--text-sub)', fontSize: '0.85rem', marginBottom: '8px', display: 'block' }}>Form Title:</label>
-                                        <input 
-                                            type="text" 
-                                            value={formTitle} 
-                                            onChange={(e) => setFormTitle(e.target.value)} 
-                                            placeholder="Enter title here..." 
-                                            style={{ width: '100%', fontSize: '1.4rem', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'var(--text-main)', marginBottom: '20px', paddingBottom: '10px', outline: 'none', transition: 'border-color 0.3s' }} 
-                                            onFocus={(e) => e.target.style.borderBottom = '1px solid var(--gold)'} 
-                                            onBlur={(e) => e.target.style.borderBottom = '1px solid rgba(255,255,255,0.1)'} 
-                                        />
-                                        
-                                        <label style={{ color: 'var(--text-sub)', fontSize: '0.85rem', marginBottom: '8px', display: 'block' }}>Form Description:</label>
-                                        <textarea 
-                                            value={formDesc} 
-                                            onChange={(e) => setFormDesc(e.target.value)} 
-                                            placeholder="Provide instructions for the alumni..." 
-                                            style={{ width: '100%', fontSize: '0.95rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', color: 'var(--text-main)', resize: 'none', outline: 'none', minHeight: '100px', padding: '15px', lineHeight: '1.5', marginBottom: '25px' }} 
-                                            onFocus={(e) => e.target.style.borderColor = 'var(--gold)'} 
-                                            onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} 
-                                        />
-
-                                        <button className="primary-btn" onClick={saveFormToDatabase} style={{ width: '100%', padding: '15px', borderRadius: '8px', border: 'none', fontWeight: 'bold', fontSize: '1.1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
-                                            💾 Publish Updates
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div style={{ width: '65%', display: 'flex', flexDirection: 'column', gap: '15px', paddingBottom: '100px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                        <h2 style={{ color: 'var(--text-main)', fontSize: '1.4rem', margin: 0 }}>Survey Questions</h2>
-                                        <span style={{ color: 'var(--text-sub)', fontSize: '0.9rem' }}>{questions.length} Items</span>
-                                    </div>
-
-                                    {selectedSurveyView === '1stYear' ? (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
-                                            {PO_DEFINITIONS.map((po) => {
-                                                const poQuestions = questions.filter(q => q.poId === po.id);
-                                                const currentPoWeight = poQuestions.reduce((sum, q) => sum + (Number(q.weight) || 0), 0);
-                                                return (
-                                                    <div key={po.id} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
-                                                            <div style={{ flex: 1, paddingRight: '20px' }}>
-                                                                <h3 style={{ color: 'var(--gold)', margin: '0 0 5px 0', fontSize: '1.1rem' }}>PO-{po.id}: {po.title}</h3>
-                                                                <p style={{ color: 'var(--text-sub)', margin: 0, fontSize: '0.85rem', lineHeight: '1.4' }}>{po.desc}</p>
-                                                            </div>
-                                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px' }}>
-                                                                <span style={{ fontSize: '0.9rem', color: currentPoWeight === 100 ? '#10b981' : '#ef4444', fontWeight: 'bold' }}>
-                                                                    Total Weight: {currentPoWeight}%
-                                                                </span>
-                                                                {currentPoWeight !== 100 && poQuestions.length > 0 && (
-                                                                    <span style={{ color: '#ef4444', fontSize: '0.75rem', fontWeight: 'bold' }}>⚠️ Must equal exactly 100%</span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-
-                                                        {poQuestions.length === 0 ? (
-                                                            <div style={{ border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '12px', padding: '30px', textAlign: 'center' }}>
-                                                                <p style={{ color: 'var(--text-sub)', marginBottom: '15px' }}>No questions added for PO-{po.id} yet.</p>
-                                                                <button 
-                                                                    onClick={() => addPOQuestion(po.id)} 
-                                                                    style={{ background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.3)', color: 'var(--gold)', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s' }}
-                                                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(234, 179, 8, 0.2)'}
-                                                                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(234, 179, 8, 0.1)'}
-                                                                >
-                                                                    + Add First Question
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <>
-                                                                {poQuestions.map((q, index) => {
-                                                                    const isActive = activeQuestionId === q.id;
-                                                                    const isHovered = hoveredQuestionId === q.id;
-                                                                    return (
-                                                                        <div key={q.id} 
-                                                                            className="portal-card" 
-                                                                            onMouseEnter={() => setHoveredQuestionId(q.id)}
-                                                                            onMouseLeave={() => setHoveredQuestionId(null)}
-                                                                            onClick={() => setActiveQuestionId(q.id)} 
-                                                                            style={{ 
-                                                                                padding: '25px', 
-                                                                                borderRadius: '12px', 
-                                                                                cursor: 'pointer', 
-                                                                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', 
-                                                                                borderLeft: isActive ? '4px solid #3b82f6' : (isHovered ? '4px solid #eab308' : '4px solid transparent'), 
-                                                                                boxShadow: isActive ? '0 8px 16px rgba(0,0,0,0.2)' : (isHovered ? '0 4px 8px rgba(0,0,0,0.1)' : '0 2px 4px rgba(0,0,0,0.05)'), 
-                                                                                border: isActive ? 'none' : '1px solid rgba(255,255,255,0.05)', 
-                                                                                backgroundColor: isActive ? 'var(--bg-card)' : (isHovered ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0,0,0,0.2)'),
-                                                                                transform: isHovered && !isActive ? 'translateY(-2px)' : 'none'
-                                                                            }}
-                                                                        >
-                                                                            <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-start', marginBottom: '15px' }}>
-                                                                                <div style={{ color: 'var(--gold)', fontWeight: 'bold', fontSize: '1.2rem', marginTop: '8px' }}>{index + 1}.</div>
-                                                                                <div style={{ flex: 1 }}>
-                                                                                    <input 
-                                                                                        type="text" 
-                                                                                        value={q.text} 
-                                                                                        onChange={(e) => updateQuestion(q.id, 'text', e.target.value)} 
-                                                                                        placeholder="Type question title here..." 
-                                                                                        style={{ width: '100%', fontSize: '1.1rem', background: 'transparent', color: 'var(--text-main)', border: 'none', outline: 'none', padding: '10px 0', borderBottom: isActive || isHovered ? '1px solid rgba(255,255,255,0.2)' : '1px solid transparent', transition: 'border-color 0.3s' }} 
-                                                                                    />
-                                                                                </div>
-                                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: 'rgba(0,0,0,0.2)', padding: '5px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)', opacity: isActive || isHovered ? 1 : 0.5, transition: 'opacity 0.2s' }}>
-                                                                                    <input
-                                                                                        type="number"
-                                                                                        className="correction-textbox"
-                                                                                        value={q.weight || ''}
-                                                                                        onChange={(e) => updateQuestion(q.id, 'weight', e.target.value)}
-                                                                                        placeholder="0"
-                                                                                        style={{ width: '40px', height: '30px', textAlign: 'center', padding: 0, backgroundColor: 'var(--bg-main)' }}
-                                                                                    />
-                                                                                    <span style={{ color: 'var(--text-sub)', fontWeight: 'bold', fontSize: '0.85rem' }}>%</span>
-                                                                                </div>
-                                                                                <button 
-                                                                                    onClick={(e) => { e.stopPropagation(); deleteQuestion(q.id); }} 
-                                                                                    style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', cursor: 'pointer', fontSize: '1rem', padding: '8px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s', opacity: isActive || isHovered ? 1 : 0 }}
-                                                                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'}
-                                                                                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
-                                                                                >
-                                                                                    🗑️
-                                                                                </button>
-                                                                            </div>
-
-                                                                            <div style={{ marginLeft: '30px', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '8px', padding: '15px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                                                                <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px', marginBottom: '10px' }}>
-                                                                                    <div style={{ flex: 1 }}></div>
-                                                                                    <div style={{ display: 'flex', width: '220px', justifyContent: 'space-between', color: 'var(--text-sub)', fontSize: '0.85rem', fontWeight: 'bold', paddingRight: '40px' }}>
-                                                                                        <span>5</span><span>4</span><span>3</span><span>2</span><span>1</span>
-                                                                                    </div>
-                                                                                </div>
-                                                                                
-                                                                                {q.options?.map((opt, optIndex) => (
-                                                                                    <div key={optIndex} style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-                                                                                        <div style={{ flex: 1, paddingRight: '15px' }}>
-                                                                                            <input 
-                                                                                                type="text" 
-                                                                                                value={opt} 
-                                                                                                onChange={(e) => handleOptionTextChange(q.id, optIndex, e.target.value)} 
-                                                                                                style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-main)', padding: '5px', fontSize: '0.9rem', outline: 'none' }} 
-                                                                                                placeholder={`Sub-item ${optIndex + 1}`} 
-                                                                                            />
-                                                                                        </div>
-                                                                                        <div style={{ display: 'flex', width: '220px', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                                            <input type="radio" disabled style={{ opacity: 0.5 }}/>
-                                                                                            <input type="radio" disabled style={{ opacity: 0.5 }}/>
-                                                                                            <input type="radio" disabled style={{ opacity: 0.5 }}/>
-                                                                                            <input type="radio" disabled style={{ opacity: 0.5 }}/>
-                                                                                            <input type="radio" disabled style={{ opacity: 0.5 }}/>
-                                                                                            <button onClick={(e) => { e.stopPropagation(); handleRemoveOption(q.id, optIndex); }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '1.2rem', padding: '0 0 0 15px', opacity: isActive ? 1 : 0 }}>×</button>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                ))}
-
-                                                                                {isActive && (
-                                                                                    <button 
-                                                                                        onClick={(e) => { e.stopPropagation(); handleAddOption(q.id); }} 
-                                                                                        style={{ background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.3)', color: 'var(--gold)', cursor: 'pointer', fontSize: '0.85rem', padding: '6px 12px', borderRadius: '6px', marginTop: '10px' }}
-                                                                                    >
-                                                                                        + Add Sub-item
-                                                                                    </button>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                })}
-                                                                <button 
-                                                                    onClick={() => addPOQuestion(po.id)} 
-                                                                    style={{ 
-                                                                        border: '2px dashed rgba(234, 179, 8, 0.3)', background: 'transparent', color: 'var(--gold)', padding: '15px', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.3s ease', fontSize: '1rem', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' 
-                                                                    }} 
-                                                                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(234, 179, 8, 0.1)'; e.currentTarget.style.borderColor = 'var(--gold)'; }} 
-                                                                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(234, 179, 8, 0.3)'; }}
-                                                                >
-                                                                    <span style={{ fontSize: '1.2rem' }}>➕</span> Add New Question to PO-{po.id}
-                                                                </button>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    ) : (
-                                        <>
-                                            {questions.map((q, index) => {
-                                                const isActive = activeQuestionId === q.id;
-                                                const isHovered = hoveredQuestionId === q.id;
-                                                
-                                                return (
-                                                    <div 
-                                                        key={q.id} 
-                                                        className="portal-card" 
-                                                        onMouseEnter={() => setHoveredQuestionId(q.id)}
-                                                        onMouseLeave={() => setHoveredQuestionId(null)}
-                                                        onClick={() => setActiveQuestionId(q.id)} 
-                                                        style={{ 
-                                                            padding: '25px', 
-                                                            borderRadius: '12px', 
-                                                            cursor: 'pointer', 
-                                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', 
-                                                            borderLeft: isActive ? '4px solid #3b82f6' : (isHovered ? '4px solid #eab308' : '4px solid transparent'), 
-                                                            boxShadow: isActive ? '0 8px 16px rgba(0,0,0,0.2)' : (isHovered ? '0 4px 8px rgba(0,0,0,0.1)' : '0 2px 4px rgba(0,0,0,0.05)'), 
-                                                            border: isActive ? 'none' : '1px solid rgba(255,255,255,0.05)', 
-                                                            backgroundColor: isActive ? 'var(--bg-card)' : (isHovered ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0,0,0,0.2)'),
-                                                            transform: isHovered && !isActive ? 'translateY(-2px)' : 'none'
-                                                        }}
-                                                    >
-                                                        <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-start' }}>
-                                                            <div style={{ color: 'var(--gold)', fontWeight: 'bold', fontSize: '1.2rem', marginTop: '8px' }}>{index + 1}.</div>
-                                                            <div style={{ flex: 1 }}>
-                                                                <input 
-                                                                    type="text" 
-                                                                    value={q.text} 
-                                                                    onChange={(e) => updateQuestion(q.id, 'text', e.target.value)} 
-                                                                    placeholder="Type question here..." 
-                                                                    style={{ width: '100%', fontSize: '1.1rem', background: 'transparent', color: 'var(--text-main)', border: 'none', outline: 'none', padding: '10px 0', borderBottom: isActive || isHovered ? '1px solid rgba(255,255,255,0.2)' : '1px solid transparent', transition: 'border-color 0.3s' }} 
-                                                                />
-                                                                
-                                                                <div style={{ marginTop: '15px', transition: 'opacity 0.3s' }}>
-                                                                    {q.type === 'likert' && (
-                                                                        <div style={{ display: 'flex', gap: '20px', color: 'var(--text-sub)', fontSize: '0.9rem', alignItems: 'center', opacity: 0.5, pointerEvents: 'none' }}><span>1</span><input type="radio" disabled /><input type="radio" disabled /><input type="radio" disabled /><input type="radio" disabled /><input type="radio" disabled /><span>5</span></div>
-                                                                    )}
-                                                                    {q.type === 'yesno' && (
-                                                                        <div style={{ display: 'flex', gap: '20px', color: 'var(--text-sub)', opacity: 0.5, pointerEvents: 'none' }}><label><input type="radio" disabled /> Yes</label><label><input type="radio" disabled /> No</label></div>
-                                                                    )}
-                                                                    {q.type === 'text' && (
-                                                                        <div style={{ borderBottom: '1px dashed var(--text-sub)', width: '100%', height: '20px', opacity: 0.5, pointerEvents: 'none' }}></div>
-                                                                    )}
-                                                                    {q.type === 'textarea' && (
-                                                                        <div style={{ border: '1px dashed var(--text-sub)', width: '100%', height: '60px', borderRadius: '4px', opacity: 0.5, pointerEvents: 'none' }}></div>
-                                                                    )}
-                                                                    {q.type === 'email' && (
-                                                                        <div style={{ borderBottom: '1px dashed var(--text-sub)', width: '60%', height: '20px', opacity: 0.5, pointerEvents: 'none' }}></div>
-                                                                    )}
-                                                                    {q.type === 'date' && (
-                                                                        <input type="date" disabled style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--text-sub)', padding: '8px', borderRadius: '6px', cursor: 'not-allowed', opacity: 0.5 }} />
-                                                                    )}
-                                                                    
-                                                                    {['radio', 'checkbox', 'dropdown'].includes(q.type) && isActive && (
-                                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
-                                                                            {(q.options || ['Option 1']).map((opt, optIndex) => (
-                                                                                <div key={optIndex} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                                                    {q.type === 'radio' && <div style={{ width: '16px', height: '16px', borderRadius: '50%', border: '2px solid var(--text-sub)' }}></div>}
-                                                                                    {q.type === 'checkbox' && <div style={{ width: '16px', height: '16px', borderRadius: '4px', border: '2px solid var(--text-sub)' }}></div>}
-                                                                                    {q.type === 'dropdown' && <span style={{ color: 'var(--text-sub)', fontSize: '0.9rem' }}>{optIndex + 1}.</span>}
-                                                                                    
-                                                                                    <input 
-                                                                                        type="text" 
-                                                                                        value={opt} 
-                                                                                        onChange={(e) => handleOptionTextChange(q.id, optIndex, e.target.value)} 
-                                                                                        style={{ flex: 1, background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.2)', color: 'var(--text-main)', padding: '5px', outline: 'none' }}
-                                                                                        placeholder={`Option ${optIndex + 1}`}
-                                                                                    />
-                                                                                    <button onClick={(e) => { e.stopPropagation(); handleRemoveOption(q.id, optIndex); }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '1.2rem', padding: '0 5px' }} title="Remove Option">×</button>
-                                                                                </div>
-                                                                            ))}
-                                                                            <button onClick={(e) => { e.stopPropagation(); handleAddOption(q.id); }} style={{ alignSelf: 'flex-start', background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.3)', color: 'var(--gold)', cursor: 'pointer', fontSize: '0.85rem', padding: '6px 12px', borderRadius: '6px', marginTop: '8px' }}>+ Add Option</button>
-                                                                        </div>
-                                                                    )}
-
-                                                                    {['radio', 'checkbox', 'dropdown'].includes(q.type) && !isActive && (
-                                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', color: 'var(--text-sub)', opacity: 0.5, pointerEvents: 'none' }}>
-                                                                            {(q.options || ['Option 1']).slice(0, 2).map((opt, i) => (
-                                                                                <label key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                                    {q.type === 'radio' && <input type="radio" disabled />}
-                                                                                    {q.type === 'checkbox' && <input type="checkbox" disabled />}
-                                                                                    {q.type === 'dropdown' && <span>{i + 1}.</span>}
-                                                                                    {opt}
-                                                                                </label>
-                                                                            ))}
-                                                                            {(q.options?.length || 0) > 2 && <span style={{ fontSize: '0.85rem', marginLeft: '25px' }}>...and {(q.options.length) - 2} more</span>}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        <div style={{ 
-                                                            marginTop: isActive || isHovered ? '20px' : '0', 
-                                                            paddingTop: isActive || isHovered ? '20px' : '0', 
-                                                            borderTop: isActive || isHovered ? '1px solid rgba(255,255,255,0.1)' : 'none', 
-                                                            display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '15px',
-                                                            maxHeight: isActive || isHovered ? '100px' : '0',
-                                                            opacity: isActive || isHovered ? 1 : 0,
-                                                            overflow: 'hidden',
-                                                            transition: 'all 0.3s ease'
-                                                        }}>
-                                                            <select 
-                                                                className="correction-textbox" 
-                                                                value={q.type} 
-                                                                onChange={(e) => updateQuestion(q.id, 'type', e.target.value)} 
-                                                                style={{ width: 'max-content', minWidth: '220px', margin: 0 }}
-                                                            >
-                                                                <option value="text">📝 Short answer</option>
-                                                                <option value="textarea">📄 Paragraph</option>
-                                                                <option value="email">📧 Email</option>
-                                                                <option value="date">📅 Date</option>
-                                                                <option value="yesno">✔️ Yes / No Option</option>
-                                                                <option value="radio">🔘 Multiple Choice</option>
-                                                                <option value="checkbox">☑️ Checkboxes (Multiple)</option>
-                                                                <option value="dropdown">🔽 Dropdown</option>
-                                                                <option value="likert">📊 Linear scale (1-5)</option>
-                                                            </select>
-                                                            
-                                                            <button 
-                                                                onClick={(e) => { e.stopPropagation(); deleteQuestion(q.id); }} 
-                                                                style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', cursor: 'pointer', fontSize: '1rem', padding: '10px 15px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s' }}
-                                                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'}
-                                                                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
-                                                            >
-                                                                🗑️ Delete
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-
-                                            <button 
-                                                onClick={addQuestion} 
-                                                style={{ 
-                                                    border: '2px dashed rgba(234, 179, 8, 0.5)', 
-                                                    background: 'transparent', 
-                                                    color: 'var(--gold)', 
-                                                    padding: '25px', 
-                                                    borderRadius: '12px', 
-                                                    cursor: 'pointer', 
-                                                    transition: 'all 0.3s ease', 
-                                                    fontSize: '1.1rem', 
-                                                    fontWeight: 'bold',
-                                                    display: 'flex',
-                                                    justifyContent: 'center',
-                                                    alignItems: 'center',
-                                                    gap: '10px'
-                                                }} 
-                                                onMouseEnter={(e) => {
-                                                    e.currentTarget.style.background = 'rgba(234, 179, 8, 0.1)';
-                                                    e.currentTarget.style.borderColor = 'var(--gold)';
-                                                    e.currentTarget.style.transform = 'translateY(-2px)';
-                                                }} 
-                                                onMouseLeave={(e) => {
-                                                    e.currentTarget.style.background = 'transparent';
-                                                    e.currentTarget.style.borderColor = 'rgba(234, 179, 8, 0.5)';
-                                                    e.currentTarget.style.transform = 'none';
-                                                }}
-                                            >
-                                                <span style={{ fontSize: '1.5rem' }}>➕</span> Add New Question
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
-                                    </div>
-                )}
-
-                        </div>
-                        )}
-
-                    </div>
+                    />
 
                 )}
 
                 {activeMenu === 'determinants' && (
-                    <div style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', height: '100%' }}>
-                        <div className="pc-header" style={{ marginBottom: '20px' }}>
-                            <div>
-                                <h1 style={{ fontSize: '2.2rem', marginBottom: '5px' }}>Dynamic Curriculum Mapping</h1>
-                                <p style={{ color: 'var(--text-sub)' }}>Map your entire CpE curriculum to specific Program Outcomes (PO-A to PO-L).</p>
-                            </div>
-                        </div>
+                    <Determinants 
+                        courseMappings={courseMappings}
+                        setCourseMappings={setCourseMappings}
+                        showToast={showToast}
+                    />
 
-                        <div style={{ display: 'flex', gap: '30px', alignItems: 'flex-start' }}>
-                            
-                            <div style={{ width: '40%', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                <div style={{ position: 'sticky', top: 0, backgroundColor: 'var(--bg-main)', zIndex: 10, paddingBottom: '15px', paddingTop: '5px' }}>
-                                    <input 
-                                        type="text" 
-                                        placeholder="🔍 Search for a course..." 
-                                        className="correction-textbox"
-                                        value={mappingSearchQuery}
-                                        onChange={(e) => setMappingSearchQuery(e.target.value)}
-                                        style={{ width: '100%', padding: '10px 15px', height: '45px', fontSize: '0.95rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}
-                                    />
-                                </div>
-                                
-                                <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: '10px' }}>
-                                    {CPE_CURRICULUM.map((yearLevel, yIdx) => {
-                                        const filteredCourses = yearLevel.courses.filter(c => c.toLowerCase().includes(mappingSearchQuery.toLowerCase()));
-                                        if (filteredCourses.length === 0) return null;
-                                        
-                                        return (
-                                            <div key={yIdx} style={{ marginBottom: '20px' }}>
-                                                <h3 style={{ color: 'var(--gold)', fontSize: '1rem', borderBottom: '1px solid rgba(234, 179, 8, 0.3)', paddingBottom: '5px', marginBottom: '10px' }}>
-                                                    {yearLevel.year}
-                                                </h3>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                    {filteredCourses.map((course, cIdx) => {
-                                                        const isSelected = selectedMappingCourse === course;
-                                                        const mappedCount = Object.keys(courseMappings[course] || {}).filter(k => courseMappings[course][k]).length;
-                                                        return (
-                                                            <div 
-                                                                className="mapping-card"
-                                                                key={cIdx} 
-                                                                onClick={() => setSelectedMappingCourse(course)}
-                                                                style={{ 
-                                                                    padding: '15px', 
-                                                                    borderRadius: '8px', 
-                                                                    backgroundColor: isSelected ? 'rgba(234, 179, 8, 0.1)' : 'var(--bg-card)', 
-                                                                    border: isSelected ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.05)',
-                                                                    cursor: 'pointer',
-                                                                    transition: 'all 0.2s ease',
-                                                                    display: 'flex',
-                                                                    justifyContent: 'space-between',
-                                                                    alignItems: 'center'
-                                                                }}
-                                                            >
-                                                                <span style={{ fontSize: '0.85rem', fontWeight: isSelected ? 'bold' : 'normal', color: isSelected ? 'var(--gold)' : 'var(--text-main)', lineHeight: '1.4' }}>
-                                                                    {course}
-                                                                </span>
-                                                                {mappedCount > 0 && (
-                                                                    <span style={{ backgroundColor: 'var(--gold)', color: '#000', fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 8px', borderRadius: '12px' }}>
-                                                                        {mappedCount} POs
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
-                                    {CPE_CURRICULUM.every(yl => yl.courses.filter(c => c.toLowerCase().includes(mappingSearchQuery.toLowerCase())).length === 0) && (
-                                        <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-sub)' }}>No courses found.</div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div style={{ width: '60%' }}>
-                                {!selectedMappingCourse ? (
-                                    <div className="portal-card" style={{ textAlign: 'center', padding: '80px', color: 'var(--text-sub)' }}>
-                                        <div style={{ fontSize: '3rem', marginBottom: '15px' }}>👈</div>
-                                        <h3 style={{ color: 'var(--text-main)', marginBottom: '5px' }}>Select a Course</h3>
-                                        <p>Click on a subject from the list to map its Program Outcomes.</p>
-                                    </div>
-                                ) : (
-                                    <div className="portal-card" style={{ borderTop: '6px solid var(--gold)', animation: 'fadeIn 0.3s ease' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px' }}>
-                                            <div>
-                                                <p style={{ color: 'var(--text-sub)', fontSize: '0.85rem', margin: '0 0 5px 0' }}>Currently Mapping:</p>
-                                                <h2 style={{ color: 'var(--text-main)', fontSize: '1.2rem', margin: 0, lineHeight: '1.4' }}>{selectedMappingCourse}</h2>
-                                            </div>
-                                            <button className="primary-btn" onClick={saveOverallMapping} style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', fontWeight: 'bold' }}>
-                                                💾 Save Mapping
-                                            </button>
-                                        </div>
-                                        
-                                        <div style={{ maxHeight: '55vh', overflowY: 'auto', paddingRight: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                            {PO_DEFINITIONS.map((po) => {
-                                                const isChecked = courseMappings[selectedMappingCourse]?.[po.id] || false;
-                                                return (
-                                                    <div 
-                                                        className="po-mapping-card"
-                                                        key={po.id} 
-                                                        onClick={() => togglePOMapping(selectedMappingCourse, po.id)}
-                                                        style={{ 
-                                                            display: 'flex', 
-                                                            gap: '15px', 
-                                                            padding: '15px', 
-                                                            backgroundColor: isChecked ? 'rgba(16, 185, 129, 0.1)' : 'rgba(0,0,0,0.2)', 
-                                                            border: isChecked ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.05)',
-                                                            borderRadius: '8px',
-                                                            cursor: 'pointer',
-                                                            transition: 'all 0.2s ease',
-                                                            alignItems: 'flex-start'
-                                                        }}
-                                                    >
-                                                        <div style={{ marginTop: '2px' }}>
-                                                            <div style={{ width: '20px', height: '20px', borderRadius: '4px', border: isChecked ? 'none' : '2px solid var(--text-sub)', backgroundColor: isChecked ? '#10b981' : 'transparent', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                                                                {isChecked && <span style={{ color: 'white', fontSize: '0.85rem', fontWeight: 'bold' }}>✓</span>}
-                                                            </div>
-                                                        </div>
-                                                        <div>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px' }}>
-                                                                <span style={{ backgroundColor: isChecked ? '#10b981' : 'var(--bg-main)', color: isChecked ? '#fff' : 'var(--text-sub)', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '0.8rem' }}>PO-{po.id}</span>
-                                                                <h4 style={{ margin: 0, color: isChecked ? '#10b981' : 'var(--text-main)', fontSize: '0.95rem' }}>{po.title}</h4>
-                                                            </div>
-                                                            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-sub)', lineHeight: '1.4' }}>{po.desc}</p>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
                 )}
-
+        
                 {activeMenu === 'analytics' && (
                     <div id="printable-report" style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        
-                        <div className="pc-header" style={{ marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+
+                        {/* Print-only letterhead (hidden on screen) */}
+                        <div className="print-only report-letterhead">
+                            <div className="letterhead-top">
+                                <img src="/cdm-logo.png" alt="CDM Logo" className="letterhead-logo" />
+                                <div className="letterhead-titles">
+                                    <p className="lh-republic">Republic of the Philippines</p>
+                                    <h2 className="lh-school">COLEGIO DE MUNTINLUPA</h2>
+                                    <p className="lh-dept">Department of Computer Engineering</p>
+                                    <p className="lh-system">Outcomes-Based Education Management System</p>
+                                </div>
+                                <img src="/cpe-logo.png" alt="CpE Logo" className="letterhead-logo" />
+                            </div>
+                            <div className="letterhead-divider" />
+                            <div className="letterhead-meta">
+                                <h1 className="lh-report-title">
+                                    {reportType === 'direct' ? 'Direct Assessment Report'
+                                        : reportType === 'indirect' ? 'Indirect Assessment Report'
+                                        : 'Graduate Tracer Study Report'}
+                                </h1>
+                                <div className="lh-report-sub">
+                                    <span>B.S. Computer Engineering</span>
+                                    <span>A.Y. 2025–2026</span>
+                                    <span>Generated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pc-header screen-only" style={{ marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
                                 <h1 style={{ fontSize: '2.2rem', marginBottom: '5px' }}>Reports & Analytics</h1>
                                 <p style={{ color: 'var(--text-sub)' }}>Select a report module to view collected data and export to PDF.</p>
@@ -1521,7 +503,7 @@ export default function ProgramChairDashboard() {
                             </button>
                         </div>
 
-                        <div className="tab-container" style={{ marginBottom: '20px' }}>
+                        <div className="tab-container screen-only" style={{ marginBottom: '20px' }}>
                             <button className={`tab-btn ${reportType === 'direct' ? 'active' : ''}`} onClick={() => setReportType('direct')}>
                                 📝 Direct Assessment
                             </button>
@@ -1565,25 +547,32 @@ export default function ProgramChairDashboard() {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {filteredChecklist.map((student, idx) => (
+                                                {reportFiltered.map((student, idx) => (
                                                     <tr key={idx}>
                                                         <td style={{ color: 'var(--text-sub)' }}>{student.id}</td>
                                                         <td style={{ fontWeight: '600' }}>{student.name}</td>
                                                         <td>{student.batch}</td>
-                                                        <td style={{ color: 'var(--gold)', fontWeight: 'bold' }}>{student.det1Grade || 'N/A'}</td>
-                                                        <td style={{ color: 'var(--gold)', fontWeight: 'bold' }}>{student.det2Grade || 'N/A'}</td>
-                                                        <td style={{ color: 'var(--gold)', fontWeight: 'bold' }}>{student.det3Grade || 'N/A'}</td>
+                                                        <td style={{ color: 'var(--gold)', fontWeight: 'bold' }}>{fmtPct(student.det1)}</td>
+                                                        <td style={{ color: 'var(--gold)', fontWeight: 'bold' }}>{fmtPct(student.det2)}</td>
+                                                        <td style={{ color: 'var(--gold)', fontWeight: 'bold' }}>{fmtPct(student.det3)}</td>
                                                         <td>
-                                                            <span className={`status-badge ${student.obeStatus === 'Pending' ? 'badge-pending' : 'badge-passed'}`}>
-                                                                {student.obeStatus}
+                                                            <span className={`status-badge ${student.directStatus === 'Pending' ? 'badge-pending' : 'badge-passed'}`}>
+                                                                {student.directStatus}
                                                             </span>
                                                         </td>
                                                     </tr>
                                                 ))}
-                                                {filteredChecklist.length === 0 && (
+                                                {!reportLoading && reportFiltered.length === 0 && (
                                                     <tr>
                                                         <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-sub)' }}>
                                                             No records found for this batch.
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                                {reportLoading && (
+                                                    <tr>
+                                                        <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-sub)' }}>
+                                                            Loading…
                                                         </td>
                                                     </tr>
                                                 )}
@@ -1642,11 +631,11 @@ export default function ProgramChairDashboard() {
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px', marginBottom: '20px' }}>
                                                 <div style={{ backgroundColor: 'rgba(0,0,0,0.2)', padding: '20px', borderRadius: '8px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
                                                     <h4 style={{ color: 'var(--text-sub)', fontSize: '0.85rem', marginBottom: '10px' }}>Total Target Respondents</h4>
-                                                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--text-main)' }}>{totalChecklist}</div>
+                                                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--text-main)' }}>{r_total}</div>
                                                 </div>
                                                 <div style={{ backgroundColor: 'rgba(0,0,0,0.2)', padding: '20px', borderRadius: '8px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
                                                     <h4 style={{ color: 'var(--text-sub)', fontSize: '0.85rem', marginBottom: '10px' }}>SO Survey Completion Rate</h4>
-                                                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#3b82f6' }}>{c_poRate}%</div>
+                                                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#3b82f6' }}>{r_soRate}%</div>
                                                 </div>
                                             </div>
 
@@ -1661,19 +650,19 @@ export default function ProgramChairDashboard() {
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {filteredChecklist.map((student, idx) => (
+                                                        {reportFiltered.map((student, idx) => (
                                                             <tr key={idx}>
                                                                 <td style={{ color: 'var(--text-sub)' }}>{student.id}</td>
                                                                 <td style={{ fontWeight: '600' }}>{student.name}</td>
                                                                 <td>{student.batch}</td>
                                                                 <td>
-                                                                    <span className={`status-badge ${student.surveyProgress === '100%' ? 'badge-passed' : 'badge-pending'}`}>
-                                                                        {student.surveyProgress === '100%' ? 'Completed' : 'Pending'}
+                                                                    <span className={`status-badge ${student.so_answered ? 'badge-passed' : 'badge-pending'}`}>
+                                                                        {student.so_answered ? 'Completed' : 'Pending'}
                                                                     </span>
                                                                 </td>
                                                             </tr>
                                                         ))}
-                                                        {filteredChecklist.length === 0 && (
+                                                        {!reportLoading && reportFiltered.length === 0 && (
                                                             <tr>
                                                                 <td colSpan="4" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-sub)' }}>
                                                                     No records found for this batch.
@@ -1713,16 +702,25 @@ export default function ProgramChairDashboard() {
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {filteredChecklist.map((student, idx) => (
+                                                        {reportFiltered.map((student, idx) => (
                                                             <tr key={idx}>
                                                                 <td style={{ color: 'var(--text-sub)' }}>{student.id}</td>
                                                                 <td style={{ fontWeight: '600' }}>{student.name}</td>
                                                                 <td>{student.batch}</td>
                                                                 <td>
-                                                                    <span className="status-badge badge-pending">Pending</span>
+                                                                    <span className={`status-badge ${student.peo_answered ? 'badge-passed' : 'badge-pending'}`}>
+                                                                        {student.peo_answered ? 'Completed' : 'Pending'}
+                                                                    </span>
                                                                 </td>
                                                             </tr>
                                                         ))}
+                                                        {!reportLoading && reportFiltered.length === 0 && (
+                                                            <tr>
+                                                                <td colSpan="4" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-sub)' }}>
+                                                                    No records found for this batch.
+                                                                </td>
+                                                            </tr>
+                                                        )}
                                                     </tbody>
                                                 </table>
                                             </div>
@@ -1740,9 +738,9 @@ export default function ProgramChairDashboard() {
                                             <p style={{ color: 'var(--text-sub)', fontSize: '0.9rem', marginTop: '5px' }}>Individual answers mapped from the dynamic questionnaire.</p>
                                         </div>
                                         <div style={{ display: 'flex', gap: '10px' }}>
-                                            <button className={`outline-btn ${gtsReportTab === 'raw' ? 'active' : ''}`} onClick={() => setGtsReportTab('raw')} style={{ padding: '8px 16px', backgroundColor: gtsReportTab === 'raw' ? 'rgba(255,255,255,0.1)' : 'transparent', borderColor: gtsReportTab === 'raw' ? 'var(--gold)' : '' }}>Full Data</button>
-                                            <button className={`outline-btn ${gtsReportTab === 'custom' ? 'active' : ''}`} onClick={() => setGtsReportTab('custom')} style={{ padding: '8px 16px', backgroundColor: gtsReportTab === 'custom' ? 'rgba(255,255,255,0.1)' : 'transparent', borderColor: gtsReportTab === 'custom' ? 'var(--gold)' : '' }}>Custom Builder</button>
-                                            <button className={`outline-btn ${gtsReportTab === 'analytics' ? 'active' : ''}`} onClick={() => setGtsReportTab('analytics')} style={{ padding: '8px 16px', backgroundColor: gtsReportTab === 'analytics' ? 'rgba(255,255,255,0.1)' : 'transparent', borderColor: gtsReportTab === 'analytics' ? 'var(--gold)' : '' }}>Analytics</button>
+                                            <button className={`outline-btn text-hover-white ${gtsReportTab === 'raw' ? 'active' : ''}`} onClick={() => setGtsReportTab('raw')} style={{ padding: '8px 16px', backgroundColor: gtsReportTab === 'raw' ? 'rgba(255,255,255,0.1)' : 'transparent', borderColor: gtsReportTab === 'raw' ? 'var(--gold)' : '' }}>Full Data</button>
+                                            <button className={`outline-btn text-hover-white ${gtsReportTab === 'custom' ? 'active' : ''}`} onClick={() => setGtsReportTab('custom')} style={{ padding: '8px 16px', backgroundColor: gtsReportTab === 'custom' ? 'rgba(255,255,255,0.1)' : 'transparent', borderColor: gtsReportTab === 'custom' ? 'var(--gold)' : '' }}>Custom Builder</button>
+                                            <button className={`outline-btn text-hover-white${gtsReportTab === 'analytics' ? 'active' : ''}`} onClick={() => setGtsReportTab('analytics')} style={{ padding: '8px 16px', backgroundColor: gtsReportTab === 'analytics' ? 'rgba(255,255,255,0.1)' : 'transparent', borderColor: gtsReportTab === 'analytics' ? 'var(--gold)' : '' }}>Analytics</button>
                                         </div>
                                     </div>
 
@@ -1750,7 +748,7 @@ export default function ProgramChairDashboard() {
                                         <div style={{ marginBottom: '20px', backgroundColor: 'rgba(0,0,0,0.2)', padding: '20px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', animation: 'fadeIn 0.3s ease' }}>
                                             <h4 style={{ margin: '0 0 15px 0', color: 'var(--gold)', fontSize: '1.1rem' }}>Select Columns to Display</h4>
                                             <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', maxHeight: '200px', overflowY: 'auto', paddingRight: '10px' }}>
-                                                {tracerSchema.map(q => (
+                                                {gtsSchema.map(q => (
                                                     <label key={q.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text-main)', cursor: 'pointer', backgroundColor: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: '6px', border: selectedGtsCols.includes(q.id) ? '1px solid var(--gold)' : '1px solid transparent' }}>
                                                         <input 
                                                             type="checkbox" 
@@ -1777,8 +775,9 @@ export default function ProgramChairDashboard() {
                                                     value={gtsAnalyticsField}
                                                     onChange={(e) => setGtsAnalyticsField(e.target.value)}
                                                 >
-                                                    {GTS_ANALYTICS_VARIABLES.map(v => (
-                                                        <option key={v.value} value={v.value}>{v.label}</option>
+                                                    {gtsAnalyticsVariables.length === 0 && <option value="">No categorical questions</option>}
+                                                    {gtsAnalyticsVariables.map(v => (
+                                                        <option key={v.id} value={v.id}>{v.text}</option>
                                                     ))}
                                                 </select>
                                             </div>
@@ -1799,12 +798,19 @@ export default function ProgramChairDashboard() {
                                                                 <td style={{ padding: '12px 20px', textAlign: 'center' }}>{item.percent.toFixed(2)}%</td>
                                                             </tr>
                                                         ))}
+                                                        {gtsAnalyticsResults.length === 0 && (
+                                                            <tr>
+                                                                <td colSpan={3} style={{ padding: '20px', textAlign: 'center', color: 'var(--text-sub)' }}>
+                                                                    No responses for this question yet.
+                                                                </td>
+                                                            </tr>
+                                                        )}
                                                     </tbody>
                                                     <tfoot>
                                                         <tr style={{ backgroundColor: 'rgba(0,0,0,0.2)' }}>
-                                                            <td style={{ padding: '15px 20px', fontWeight: 'bold' }}>Total Respondents (N)</td>
-                                                            <td style={{ padding: '15px 20px', textAlign: 'center', fontWeight: 'bold' }}>70</td>
-                                                            <td style={{ padding: '15px 20px', textAlign: 'center', fontWeight: 'bold' }}>100.00%</td>
+                                                            <td style={{ padding: '15px 20px', fontWeight: 'bold' }}>Total Responses (N)</td>
+                                                            <td style={{ padding: '15px 20px', textAlign: 'center', fontWeight: 'bold' }}>{gtsAnswerTotal}</td>
+                                                            <td style={{ padding: '15px 20px', textAlign: 'center', fontWeight: 'bold' }}>{gtsAnswerTotal ? '100.00%' : '0.00%'}</td>
                                                         </tr>
                                                     </tfoot>
                                                 </table>
@@ -1819,23 +825,23 @@ export default function ProgramChairDashboard() {
                                                     <tr>
                                                         <th style={{ padding: '15px 20px', minWidth: '200px', borderBottom: '2px solid rgba(255,255,255,0.1)', color: 'var(--gold)', whiteSpace: 'nowrap' }}>Alumni Name</th>
                                                         <th style={{ padding: '15px 20px', minWidth: '120px', borderBottom: '2px solid rgba(255,255,255,0.1)', color: 'var(--gold)', whiteSpace: 'nowrap' }}>Batch</th>
-                                                        {(gtsReportTab === 'custom' ? tracerSchema.filter(q => selectedGtsCols.includes(q.id)) : tracerSchema).map(q => (
+                                                        {(gtsReportTab === 'custom' ? gtsSchema.filter(q => selectedGtsCols.includes(q.id)) : gtsSchema).map(q => (
                                                             <th key={q.id} style={{ padding: '15px 20px', minWidth: '220px', borderBottom: '2px solid rgba(255,255,255,0.1)', color: 'var(--gold)', whiteSpace: 'nowrap' }}>{q.text}</th>
                                                         ))}
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {MOCK_GTS_RESPONSES.map((response, idx) => (
-                                                        <tr 
-                                                            key={idx} 
+                                                    {gtsResponses.map((response, idx) => (
+                                                        <tr
+                                                            key={idx}
                                                             style={{ backgroundColor: idx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent', transition: 'background-color 0.2s' }}
                                                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)'}
                                                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = idx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent'}
                                                         >
-                                                            <td style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 'bold', color: 'var(--text-main)' }}>{response.q1}</td>
-                                                            <td style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-sub)' }}>Batch 2026</td>
-                                                            {(gtsReportTab === 'custom' ? tracerSchema.filter(q => selectedGtsCols.includes(q.id)) : tracerSchema).map(q => {
-                                                                const ans = response[q.id];
+                                                            <td style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 'bold', color: 'var(--text-main)' }}>{response.name}</td>
+                                                            <td style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-sub)' }}>Batch {response.batch}</td>
+                                                            {(gtsReportTab === 'custom' ? gtsSchema.filter(q => selectedGtsCols.includes(q.id)) : gtsSchema).map(q => {
+                                                                const ans = response.answers?.[q.id];
                                                                 const displayAns = Array.isArray(ans) ? ans.join(', ') : (ans || '-');
                                                                 return (
                                                                     <td key={q.id} style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-sub)' }}>
@@ -1845,12 +851,38 @@ export default function ProgramChairDashboard() {
                                                             })}
                                                         </tr>
                                                     ))}
+                                                    {!reportLoading && gtsResponses.length === 0 && (
+                                                        <tr>
+                                                            <td colSpan={2 + (gtsReportTab === 'custom' ? gtsSchema.filter(q => selectedGtsCols.includes(q.id)).length : gtsSchema.length)} style={{ padding: '25px', textAlign: 'center', color: 'var(--text-sub)' }}>
+                                                                No tracer study responses submitted yet.
+                                                            </td>
+                                                        </tr>
+                                                    )}
                                                 </tbody>
                                             </table>
                                         </div>
                                     )}
                                 </>
                             )}
+                        </div>
+
+                        {/* Print-only footer / signatories */}
+                        <div className="print-only report-footer">
+                            <div className="footer-signatories">
+                                <div className="sign-block">
+                                    <div className="sign-line" />
+                                    <p className="sign-name">Program Chair</p>
+                                    <p className="sign-role">Department of Computer Engineering</p>
+                                </div>
+                                <div className="sign-block">
+                                    <div className="sign-line" />
+                                    <p className="sign-name">Dean</p>
+                                    <p className="sign-role">College of Engineering</p>
+                                </div>
+                            </div>
+                            <p className="footer-note">
+                                This report was generated by the CDM-OBE Centralized Management System. Figures are computed from official records as of the generation date.
+                            </p>
                         </div>
                     </div>
                 )}
@@ -1890,27 +922,31 @@ export default function ProgramChairDashboard() {
                             <div style={{ flex: '1 1 200px', backgroundColor: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '8px' }}>
                                 <h4 style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '10px' }}>Employment Profile</h4>
                                 <p style={{ fontSize: '1rem', fontWeight: '500', textTransform: 'capitalize' }}>
-                                    {selectedStudent.employmentStatus}
+                                    {selectedStudent.employment_status || 'Not Updated'}
                                 </p>
-                                {selectedStudent.employmentStatus === 'employed' && (
+                                {selectedStudent.employment_status === 'employed' && (
                                     <p style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginTop: '5px' }}>
-                                        {selectedStudent.jobTitle || 'No title'} @ {selectedStudent.companyName || 'No company'}
+                                        {selectedStudent.job_title || 'No title'} @ {selectedStudent.company_name || 'No company'}
                                     </p>
                                 )}
                             </div>
                             <div style={{ flex: '1 1 200px', backgroundColor: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '8px' }}>
-                                <h4 style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '10px' }}>Indirect Assessment</h4>
+                                <h4 style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '10px' }}>Indirect Assessment {evalLoading && <span style={{ fontWeight: 'normal', fontStyle: 'italic' }}>· loading…</span>}</h4>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                                    <span style={{ fontSize: '0.9rem' }}>Alumni Survey:</span>
-                                    <span style={{ fontSize: '0.9rem', color: 'var(--gold)', fontWeight: 'bold' }}>{selectedStudent.surveyProgress}</span>
+                                    <span style={{ fontSize: '0.9rem' }}>Yearly (SO) Survey:</span>
+                                    <span style={{ fontSize: '0.9rem', color: surveyStatusLabel('so_survey') === 'Completed' ? '#10b981' : '#f59e0b', fontWeight: 'bold' }}>{surveyStatusLabel('so_survey')}</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
                                     <span style={{ fontSize: '0.9rem' }}>Tracer Study:</span>
-                                    <span style={{ fontSize: '0.9rem', color: '#10b981', fontWeight: 'bold' }}>{selectedStudent.tracerProgress}</span>
+                                    <span style={{ fontSize: '0.9rem', color: surveyStatusLabel('tracer_study') === 'Completed' ? '#10b981' : '#f59e0b', fontWeight: 'bold' }}>{surveyStatusLabel('tracer_study')}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                    <span style={{ fontSize: '0.9rem' }}>PEO Survey:</span>
+                                    <span style={{ fontSize: '0.9rem', color: surveyStatusLabel('graduate_survey') === 'Completed' ? '#10b981' : '#f59e0b', fontWeight: 'bold' }}>{surveyStatusLabel('graduate_survey')}</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <span style={{ fontSize: '0.9rem' }}>Employer Form:</span>
-                                    <span style={{ fontSize: '0.9rem', color: '#3b82f6', fontWeight: 'bold', textTransform: 'capitalize' }}>{selectedStudent.employerStatus}</span>
+                                    <span style={{ fontSize: '0.9rem', color: '#3b82f6', fontWeight: 'bold', textTransform: 'capitalize' }}>{selectedStudent.employer_status || 'Pending'}</span>
                                 </div>
                             </div>
                         </div>
@@ -1918,55 +954,41 @@ export default function ProgramChairDashboard() {
                         <div style={{ backgroundColor: 'rgba(255,215,0,0.05)', padding: '20px', borderRadius: '8px', border: '1px solid rgba(255,215,0,0.2)', marginBottom: '25px' }}>
                             <h4 style={{ fontSize: '1rem', color: 'var(--gold)', marginBottom: '10px' }}>Direct Assessment (OBE Grading)</h4>
                             <p style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '15px', lineHeight: '1.4' }}>
-                                Encode the student's evaluated outcome grade for all 3 determinant sets.
+                                Outcome attainment computed from the student's graded determinant courses (weighted per Program Outcome).
                             </p>
-                            
+
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <label style={{ fontSize: '0.9rem', fontWeight: '500' }}>Det. 1 (a-d) Grade:</label>
-                                    <input 
-                                        type="text" className="correction-textbox" placeholder="e.g., 1.25"
-                                        style={{ width: '150px', height: '35px', padding: '0 10px', backgroundColor: 'var(--bg-main)' }}
-                                        value={selectedStudent.det1Grade || ''}
-                                        onChange={e => setSelectedStudent({...selectedStudent, det1Grade: e.target.value})}
-                                    />
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <label style={{ fontSize: '0.9rem', fontWeight: '500' }}>Det. 2 (e-h) Grade:</label>
-                                    <input 
-                                        type="text" className="correction-textbox" placeholder="e.g., 1.50"
-                                        style={{ width: '150px', height: '35px', padding: '0 10px', backgroundColor: 'var(--bg-main)' }}
-                                        value={selectedStudent.det2Grade || ''}
-                                        onChange={e => setSelectedStudent({...selectedStudent, det2Grade: e.target.value})}
-                                    />
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <label style={{ fontSize: '0.9rem', fontWeight: '500' }}>Det. 3 (i-l) Grade:</label>
-                                    <input 
-                                        type="text" className="correction-textbox" placeholder="e.g., 1.00"
-                                        style={{ width: '150px', height: '35px', padding: '0 10px', backgroundColor: 'var(--bg-main)' }}
-                                        value={selectedStudent.det3Grade || ''}
-                                        onChange={e => setSelectedStudent({...selectedStudent, det3Grade: e.target.value})}
-                                    />
-                                </div>
+                                {DET_GROUPS.map(group => {
+                                    const avg = detAverage(group.pos);
+                                    const color = avg == null ? 'var(--text-sub)' : avg >= 75 ? '#10b981' : avg >= 50 ? '#f59e0b' : '#ef4444';
+                                    return (
+                                        <div key={group.label}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                                <label style={{ fontSize: '0.9rem', fontWeight: '500' }}>{group.label} <span style={{ color: 'var(--text-sub)', fontWeight: 'normal' }}>({group.range})</span></label>
+                                                <span style={{ fontSize: '1rem', fontWeight: 'bold', color }}>{avg == null ? 'Pending' : `${avg}%`}</span>
+                                            </div>
+                                            <div style={{ width: '100%', height: '8px', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: '4px', overflow: 'hidden' }}>
+                                                <div style={{ height: '100%', width: `${avg == null ? 0 : Math.min(avg, 100)}%`, backgroundColor: color, transition: 'width 0.4s ease' }} />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                {!evalLoading && !evalAttainment?.hasGrades && (
+                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-sub)', fontStyle: 'italic', margin: '4px 0 0 0' }}>
+                                        No graded determinant courses yet for this student.
+                                    </p>
+                                )}
                             </div>
                         </div>
 
                         <div style={{ display: 'flex', gap: '15px' }}>
-                            <button 
-                                className="cancel-btn outline-btn" 
-                                onClick={() => setSelectedStudent(null)} 
+                            <button
+                                className="cancel-btn outline-btn"
+                                onClick={() => setSelectedStudent(null)}
                                 style={{ padding: '10px 24px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', flex: 1 }}
                             >
-                                Cancel
+                                Close
                             </button>
-                            <button 
-                                className="primary-btn" 
-                                onClick={saveEvaluation} 
-                                style={{ padding: '10px 24px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', flex: 1, border: 'none' }}
-                            >
-                                Save Evaluated Grades
-                            </button>  
                         </div>
                     </div>
                 </div>
@@ -2108,6 +1130,9 @@ export default function ProgramChairDashboard() {
                     background: var(--gold);
                 }
 
+                /* Print-only elements are hidden on screen */
+                .print-only { display: none; }
+
                 @media print {
                     @page {
                         margin: 20mm;
@@ -2130,8 +1155,53 @@ export default function ProgramChairDashboard() {
                         margin: 0;
                         padding: 0;
                     }
-                    .sidebar, .primary-btn, .outline-btn, .tab-btn {
+                    .sidebar, .primary-btn, .outline-btn, .tab-btn, .screen-only {
                         display: none !important;
+                    }
+
+                    /* ── Print-only branded letterhead ───────────────────── */
+                    .print-only { display: block !important; }
+
+                    .report-letterhead { text-align: center; margin-bottom: 8px; }
+                    .letterhead-top {
+                        display: flex; align-items: center; justify-content: center; gap: 24px;
+                    }
+                    .letterhead-logo {
+                        width: 80px; height: 80px; object-fit: contain;
+                        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+                    }
+                    .letterhead-titles { text-align: center; }
+                    .lh-republic { margin: 0; font-size: 11px; color: #000 !important; }
+                    .lh-school {
+                        margin: 2px 0; font-size: 22px; font-weight: 800;
+                        color: #000 !important; letter-spacing: 1px;
+                    }
+                    .lh-dept { margin: 2px 0; font-size: 13px; color: #000 !important; }
+                    .lh-system { margin: 2px 0; font-size: 11px; font-style: italic; color: #333 !important; }
+                    .letterhead-divider { border-bottom: 3px double #000; margin: 10px 0 12px; }
+                    .letterhead-meta { text-align: center; margin-bottom: 6px; }
+                    .lh-report-title {
+                        margin: 0; font-size: 18px; font-weight: 700;
+                        color: #000 !important; text-transform: uppercase; letter-spacing: 0.5px;
+                    }
+                    .lh-report-sub {
+                        display: flex; justify-content: center; gap: 20px;
+                        font-size: 11px; color: #333 !important; margin-top: 5px;
+                    }
+
+                    /* ── Print-only footer / signatories ─────────────────── */
+                    .report-footer { margin-top: 28px; page-break-inside: avoid; }
+                    .footer-signatories {
+                        display: flex; justify-content: space-around; gap: 50px; margin-top: 45px;
+                    }
+                    .sign-block { text-align: center; flex: 1; }
+                    .sign-line { border-top: 1px solid #000; margin: 0 auto 6px; width: 85%; }
+                    .sign-name { margin: 0; font-weight: bold; font-size: 12px; color: #000 !important; }
+                    .sign-role { margin: 2px 0 0; font-size: 10px; color: #333 !important; }
+                    .footer-note {
+                        margin-top: 24px; font-size: 9px; color: #555 !important;
+                        text-align: center; font-style: italic;
+                        border-top: 1px solid #ccc; padding-top: 8px;
                     }
                     .portal-card, div[style*="overflow"], div[style*="maxHeight"] {
                         box-shadow: none !important;

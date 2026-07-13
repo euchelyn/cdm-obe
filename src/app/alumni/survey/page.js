@@ -5,8 +5,15 @@ import { useRouter } from 'next/navigation';
 import './survey.css';
 import '../alumni-globals.css';
 
+
+import { getSurveysByVersionAndType } from '@/services/surveyServices';
+import { createAnsweredSurvey } from '@/services/answeredSurveyService';
+
 const PO_DEFINITIONS = [
-    { id: 'A', title: 'Engineering Knowledge', desc: 'Apply knowledge of mathematics, natural science, engineering fundamentals and an engineering specialization to the solution of complex engineering problems.' },
+    {   id: 'A', 
+        title: 'Engineering Knowledge', 
+        desc: 'Apply knowledge of mathematics, natural science, engineering fundamentals and an engineering specialization to the solution of complex engineering problems.' 
+    },
     { id: 'B', title: 'Problem Analysis', desc: 'Conduct investigations of complex engineering problems using research-based knowledge and research methods including design of experiments, analysis and interpretation of data, and synthesis of information to provide valid conclusions.' },
     { id: 'C', title: 'Design/Development of Solutions', desc: 'Design solutions for complex engineering problems and design systems, components or processes that meet specified needs with appropriate consideration for public health and safety, cultural, societal, and environmental considerations.' },
     { id: 'D', title: 'Individual and Team Work', desc: 'Function effectively as an individual, and as a member or leader in diverse teams and in multi-disciplinary settings.' },
@@ -29,25 +36,49 @@ export default function DynamicPOSurvey() {
     const [surveyQuestions, setSurveyQuestions] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    const [survey, setSurvey] = useState(null);
+
     useEffect(() => {
-        const existingSchema = localStorage.getItem('obe_form_po');
-        
-        if (existingSchema) {
-            const parsed = JSON.parse(existingSchema);
-            setSurveyTitle(parsed.title || 'Program Outcomes Survey');
-            setSurveyDesc(parsed.desc || 'Evaluate your proficiency.');
-            setSurveyQuestions(parsed.questions || []);
-        } else {
-            setSurveyTitle('Program Outcomes Survey (PO)');
-            setSurveyDesc('Evaluate your proficiency based on the scale: 1 (Lowest) to 5 (Highest).');
-            setSurveyQuestions([
-                { id: 'q1', type: 'likert', text: '1. How well can you apply mathematics to engineering problems?' },
-                { id: 'q2', type: 'yesno', text: '2. Did the curriculum prepare you for industrial standards?' },
-                { id: 'q3', type: 'text', text: '3. What specific skills learned were most useful in your first job?' }
-            ]);
+        async function fetchSurvey() {
+            try {
+                const currentYear = new Date().getFullYear().toString();
+
+                const response = await getSurveysByVersionAndType(
+                    currentYear,
+                    "so_survey"
+                );
+
+                setSurvey(response[0]);
+            } catch (error) {
+                console.error("Failed to fetch SO Survey:", error);
+            }
         }
-        setIsLoading(false);
+
+        fetchSurvey();
     }, []);
+
+    useEffect(() => {
+    console.log("Current Answers:", answers);
+}, [answers]);
+
+useEffect(() => {
+    if (!survey) return;
+
+    setSurveyTitle(
+        survey.title || 'Program Outcomes Survey (PO)'
+    );
+
+    setSurveyDesc(
+        survey.description || 
+        'Evaluate your proficiency based on the scale: 1 (Lowest) to 5 (Highest).'
+    );
+
+    setSurveyQuestions(
+        Object.values(survey.questions || {})
+    );
+
+    setIsLoading(false);
+}, [survey]);
 
     let totalSubItems = 0;
     surveyQuestions.forEach(q => {
@@ -65,33 +96,50 @@ export default function DynamicPOSurvey() {
         setAnswers(prev => ({ ...prev, [questionId]: value }));
     };
 
-    const handleSubmit = () => {
-        if (answeredSubItems < totalSubItems) {
-            alert('Please complete all questions before submitting.');
+const handleSubmit = async () => {
+    if (answeredSubItems < totalSubItems) {
+        alert('Please complete all questions before submitting.');
+        return;
+    }
+
+    try {
+        const session = JSON.parse(
+            localStorage.getItem('current_user') || '{}'
+        );
+
+        if (!session.id) {
+            alert('Session expired. Please log in again.');
+            router.push('/');
             return;
         }
 
-        const session = JSON.parse(localStorage.getItem('current_user') || '{}');
-        const db = JSON.parse(localStorage.getItem('obe_masterlist') || '[]');
+        const currentYear = new Date().getFullYear().toString();
 
-        if (session && session.id) {
-            const updatedDb = db.map(student => {
-                if (student.id === session.id) {
-                    const currentAnswers = student.surveyAnswers || {};
-                    return { ...student, surveyAnswers: { ...currentAnswers, po: answers }, surveyProgress: '100%' };
-                }
-                return student;
-            });
+        const payload = {
+            student_id: session.id,
+            batch: session.batch,
+            program: session.program,
+            name: session.name,
 
-            localStorage.setItem('obe_masterlist', JSON.stringify(updatedDb));
-            alert('Survey Submitted Successfully! Your progress is now 100%.');
-            router.push('/alumni');
-        } else {
-            alert('Session expired. Please log in again.');
-            router.push('/');
-        }
-    };
+            survey_type: "so_survey",
+            survey_version: currentYear,
+            survey_id: survey._id,
+            answers: answers, 
+            status: "answered"
+        };
 
+        console.log("Submitting Survey:", payload);
+
+        await createAnsweredSurvey(payload);
+
+        alert("Survey submitted successfully!");
+        router.push('/alumni');
+
+    } catch (error) {
+        console.error("Failed to submit survey:", error);
+        alert("Failed to submit survey. Please try again.");
+    }
+};
     const groupedQuestions = {};
     surveyQuestions.forEach(q => {
         const key = q.poId || 'General';
@@ -129,6 +177,8 @@ export default function DynamicPOSurvey() {
     });
 
     if (isLoading) return <div style={{ color: 'white', padding: '50px', textAlign: 'center' }}>Loading Survey Configuration...</div>;
+
+    console.log(survey?._id);
 
     return (
         <div className="portal-layout">

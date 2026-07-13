@@ -4,6 +4,15 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import '../alumni/alumni-globals.css';
 import './mis.css';
+import '../pc/pc.css';
+
+import { createPrivUser, createStudentAccountFlow } from '@/services/privUserService';
+import { api_register } from '@/services/authService';
+import { createAccountLink, deleteAccountLink } from '@/services/accountLinkService';
+import { getAccountLinkStats } from '@/services/accountLinkService';
+import { createProgram, deleteProgram, getPrograms } from '@/services/programService';
+import { getAllPrivUsersResolved } from '@/services/privUserService';
+import { api_deleteUser } from '@/services/authService';
 
 export default function MISPage() {
     const router = useRouter();
@@ -13,32 +22,83 @@ export default function MISPage() {
     const [accounts, setAccounts] = useState([]);
     const [toastMessage, setToastMessage] = useState(null);
     const [openModal, setOpenModal] = useState(null);
-
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [programInput, setProgramInput] = useState({ code: '', name: '' });
-    const [accountInput, setAccountInput] = useState({ name: '', role: 'faculty', programId: '', codename: '', password: '' });
+    const [accountInput, setAccountInput] = useState({ name: '', id: '', role: 'faculty', programId: '', codename: '', password: '' });
+
+    const [listAccount, setListAccount] = useState([])
 
     useEffect(() => {
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'light') {
-            setIsDarkMode(false);
-            document.documentElement.removeAttribute('data-theme');
-        } else {
-            setIsDarkMode(true);
-            document.documentElement.setAttribute('data-theme', 'dark');
-        }
-
-        const savedPrograms = localStorage.getItem('obe_programs');
-        if (savedPrograms) {
-            setPrograms(JSON.parse(savedPrograms));
-        } else {
-            const defaultProgram = [{ id: 'prog_' + Date.now(), code: 'CPE', name: 'B.S. Computer Engineering' }];
-            setPrograms(defaultProgram);
-            localStorage.setItem('obe_programs', JSON.stringify(defaultProgram));
-        }
-
-        const savedAccounts = localStorage.getItem('obe_accounts') || '[]';
-        setAccounts(JSON.parse(savedAccounts));
+        loadDashboardData();
     }, []);
+
+    const loadDashboardData = async () => {
+            try {
+                const [statsRes, programsRes, privUsersRes] = await Promise.all([
+                    getAccountLinkStats(),
+                    getPrograms(),
+                    getAllPrivUsersResolved(),
+                ]);
+
+                /* =========================
+                STATS
+                ========================= */
+                const academic = statsRes.academic ?? {};
+
+                const accountsData = [
+                    { role: 'student', count: academic.students ?? 0 },
+                    { role: 'faculty', count: academic.faculty ?? 0 },
+                    { role: 'pc', count: academic.pc ?? academic.program_chair ?? 0 },
+                    { role: 'registrar', count: statsRes.registrar ?? 0 },
+                    { role: 'total_academic', count: statsRes.totalAcademic ?? 0 },
+                    {
+                        role: 'overall_total',
+                        count: (statsRes.totalAcademic ?? 0) + (statsRes.registrar ?? 0),
+                    },
+                ];
+
+                setAccounts(accountsData);
+
+                /* =========================
+                PROGRAMS
+                ========================= */
+                setPrograms(programsRes.data ?? []);
+
+                /* =========================
+                PRIV USERS → FLATTEN + ADD USERNAME
+                ========================= */
+
+                const listAccount = (privUsersRes.data ?? [])
+                    .map((item) => {
+                        const roleData = item.roleData;
+                        const userAuth = item.userAuthData;
+                        const link = item.link;
+
+                        if (!roleData) return null;
+
+                        const base = Array.isArray(roleData)
+                            ? roleData[0]
+                            : roleData;
+
+                        return {
+                            ...base,
+
+                            user_account_id: link?.user_account_id,
+                            role_account_id: link?.role_account_id,
+                            link_id: link?._id,
+
+                            username: userAuth?.username ?? null,
+                        };
+                    })
+                    .filter(Boolean);
+
+                setListAccount(listAccount);
+                console.log(listAccount);
+
+            } catch (err) {
+                console.error(err?.message || err);
+            }
+        };
 
     const showToast = (msg) => {
         setToastMessage(msg);
@@ -57,13 +117,213 @@ export default function MISPage() {
         }
     };
 
+    /*
     const handleLogout = () => {
         if (window.confirm("Are you sure you want to log out?")) {
             localStorage.removeItem('current_user');
             router.push('/');
         }
     };
+    */
 
+    const handleLogout = () => {
+        setShowLogoutConfirm(true);
+    };
+
+    const confirmLogout = async () => {
+        try {
+            await fetch("/api/auth/logout", {
+                method: "POST",
+            });
+
+            localStorage.removeItem("current_user");
+
+            setShowLogoutConfirm(false);
+            router.push("/");
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const cancelLogout = () => {
+        setShowLogoutConfirm(false);
+    };
+
+    const handleAddAccount = async () => {
+        try {
+            if (!accountInput.name || !accountInput.role) {
+                showToast('Please fill in all required fields.');
+                return;
+            }
+
+            if (
+                (accountInput.role === 'pc' ||
+                    accountInput.role === 'faculty') &&
+                !accountInput.programId
+            ) {
+                showToast('Please assign a program to this academic account.');
+                return;
+            }
+
+            const selectedProgram = programs.find(
+                p => p.id === accountInput.programId
+            );
+
+            let roleAccountId = null;
+            let userAccountId = null;
+
+            /* =========================
+            STUDENT FLOW
+            ========================= */
+            if (accountInput.role === 'student') {
+                await createStudentAccountFlow(
+                    accountInput.id,
+                    accountInput.codename,
+                    accountInput.password,
+                    accountInput.role
+                );
+
+                showToast('Account created successfully!');
+                return;
+            }
+
+            /* =========================
+            ROLE ACCOUNT CREATION
+            ========================= */
+            let roleRes;
+
+            switch (accountInput.role) {
+
+                /* =========================
+                FACULTY
+                ========================= */
+                case 'faculty':
+                    roleRes = await createPrivUser('faculty', {
+                        faculty_id: accountInput.id || null,
+                        name: accountInput.name,
+                        email: accountInput.codename || null,
+                        contact_number: null,
+                        department: selectedProgram?.department || null,
+                        program: selectedProgram?.code || null,
+                    });
+                    break;
+
+                /* =========================
+                PROGRAM CHAIR
+                ========================= */
+                case 'pc':
+                    roleRes = await createPrivUser('pc', {
+                        program_chair_id: accountInput.id || null,
+                        name: accountInput.name,
+                        email: accountInput.codename || null,
+                        contact_number: null,
+                        department: selectedProgram?.department || null,
+                        program: selectedProgram?.code || null,
+                    });
+                    break;
+
+                /* =========================
+                REGISTRAR
+                ========================= */
+                case 'registrar':
+                    roleRes = await createPrivUser('registrar', {
+                        registrar_id: accountInput.id || null,
+                        name: accountInput.name,
+                        email: accountInput.codename || null,
+                        contact_number: null,
+                    });
+                    break;
+
+                /* =========================
+                MIS
+                ========================= */
+                case 'mis':
+                    roleRes = await createPrivUser('mis', {
+                        mis_id: accountInput.id || null,
+                        name: accountInput.name,
+                        email: accountInput.codename || null,
+                        contact_number: null,
+                    });
+                    break;
+
+                default:
+                    showToast('Invalid role selected.');
+                    return;
+            }
+
+            /* =========================
+            STOP IF ROLE CREATION FAILED
+            ========================= */
+            if (!roleRes || roleRes.error || !roleRes.id) {
+                throw new Error(
+                    roleRes?.error || 'Failed to create role account.'
+                );
+            }
+
+            console.log('Role ID:', roleRes.id);
+
+            roleAccountId = roleRes.id;
+
+            /* =========================
+            CREATE AUTH ACCOUNT
+            ========================= */
+            const authRes = await api_register(
+                accountInput.codename,
+                accountInput.password,
+                accountInput.role
+            );
+
+            /* =========================
+            STOP IF AUTH CREATION FAILED
+            ========================= */
+            if (!authRes || authRes.error || !authRes.id) {
+                throw new Error(
+                    authRes?.error || 'Failed to create auth account.'
+                );
+            }
+
+            console.log('Auth ID:', authRes.id);
+
+            userAccountId = authRes.id;
+
+            /* =========================
+            CREATE ACCOUNT LINK
+            ========================= */
+            await createAccountLink({
+                user_account_id: userAccountId,
+                role: accountInput.role,
+                role_account_id: roleAccountId,
+            });
+
+            /* =========================
+            RESET FORM
+            ========================= */
+
+            await loadDashboardData();
+
+            setAccountInput({
+                name: '',
+                id: '',
+                role: 'faculty',
+                programId: '',
+                codename: '',
+                password: '',
+            });
+
+            setOpenModal(null);
+
+            showToast('Account created successfully!');
+
+        } catch (error) {
+            console.error(error);
+
+            showToast(
+                error?.message || 'Failed to create account.'
+            );
+        }
+    };
+
+    /*
     const handleAddProgram = () => {
         if (!programInput.code || !programInput.name) {
             showToast('Please fill in all program fields.');
@@ -81,7 +341,34 @@ export default function MISPage() {
         setOpenModal(null);
         showToast('Program added successfully!');
     };
+    */
 
+    const handleAddProgram = async () => {
+        try {
+            if (!programInput.code || !programInput.name) {
+                showToast('Please fill in all program fields.');
+                return;
+            }
+
+            const res = await createProgram({
+                code: programInput.code.toUpperCase(),
+                program: programInput.name,
+            });
+
+            // optional: refresh programs from DB (best practice)
+            const updated = await getPrograms();
+            setPrograms(updated.data);
+
+            setProgramInput({ code: '', name: '' });
+            setOpenModal(null);
+
+            showToast('Program added successfully!');
+        } catch (error) {
+            showToast(error.message || 'Failed to create program.');
+        }
+    };
+
+    /*
     const handleDeleteProgram = (id) => {
         if (!window.confirm('Delete this program? This may affect linked accounts.')) return;
         const updated = programs.filter(p => p.id !== id);
@@ -89,7 +376,92 @@ export default function MISPage() {
         localStorage.setItem('obe_programs', JSON.stringify(updated));
         showToast('Program deleted.');
     };
+    */
 
+    const handleDeleteProgram = async (id) => {
+        try {
+            if (!window.confirm('Delete this program? This may affect linked accounts.')) return;
+
+            await deleteProgram(id);
+
+            // refresh from database (keeps UI consistent with backend)
+            const updated = await getPrograms();
+            setPrograms(updated.data);
+
+            showToast('Program deleted successfully.');
+        } catch (error) {
+            showToast(error.message || 'Failed to delete program.');
+        }
+    };
+
+    const generateCodename = () => {
+        if (!accountInput.name) {
+            showToast('Please enter a name first.');
+            return;
+        }
+
+        /* =========================
+        USERNAME GENERATION
+        ========================= */
+        const cleanName = accountInput.name
+            .trim()
+            .split(' ')
+            .pop()
+            ?.toLowerCase()
+            .replace(/[^a-z0-9]/g, '');
+
+        const randomNum = Math.floor(100 + Math.random() * 900);
+
+        const generatedCodename = `${
+            accountInput.role === 'pc'
+                ? 'pc'
+                : accountInput.role === 'faculty'
+                ? 'fac'
+                : accountInput.role
+        }_${cleanName}${randomNum}`;
+
+        /* =========================
+        SECURE PASSWORD GENERATION
+        ========================= */
+        const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const lower = 'abcdefghijklmnopqrstuvwxyz';
+        const numbers = '0123456789';
+        const symbols = '!@#$%^&*';
+
+        const all = upper + lower + numbers + symbols;
+
+        const getRandomChar = (str) =>
+            str[Math.floor(Math.random() * str.length)];
+
+        // Ensure complexity requirements
+        let generatedPassword =
+            getRandomChar(upper) +
+            getRandomChar(lower) +
+            getRandomChar(numbers) +
+            getRandomChar(symbols);
+
+        // Add remaining random chars
+        for (let i = 0; i < 8; i++) {
+            generatedPassword += getRandomChar(all);
+        }
+
+        // Shuffle password
+        generatedPassword = generatedPassword
+            .split('')
+            .sort(() => Math.random() - 0.5)
+            .join('');
+
+        /* =========================
+        UPDATE STATE
+        ========================= */
+        setAccountInput((prev) => ({
+            ...prev,
+            codename: generatedCodename,
+            password: generatedPassword,
+        }));
+    };
+
+    /*
     const generateCodename = () => {
         if (!accountInput.name) {
             showToast('Please enter a name first.');
@@ -100,7 +472,9 @@ export default function MISPage() {
         const generated = `${accountInput.role === 'pc' ? 'pc_' : 'fac_'}${cleanName}${randomNum}`;
         setAccountInput(prev => ({ ...prev, codename: generated, password: 'password123' }));
     };
+    */
 
+    /*
     const handleAddAccount = () => {
         if (!accountInput.name || !accountInput.role || !accountInput.codename || !accountInput.password) {
             showToast('Please fill in all required fields.');
@@ -123,13 +497,35 @@ export default function MISPage() {
         setOpenModal(null);
         showToast('Account Created successfully!');
     };
+    */
 
-    const handleDeleteAccount = (id) => {
+
+
+    const handleDeleteAccount = async (account) => {
         if (!window.confirm('Delete this account?')) return;
-        const updated = accounts.filter(a => a.id !== id);
-        setAccounts(updated);
-        localStorage.setItem('obe_accounts', JSON.stringify(updated));
-        showToast('Account removed.');
+
+        try {
+            // 1. delete auth user
+            await api_deleteUser({
+                user_account_id: account.user_account_id,
+            });
+
+            // 2. delete account link
+            await deleteAccountLink(account.user_account_id);
+
+            // 3. remove from UI
+            setListAccount((prev) =>
+                prev.filter((a) => a._id !== account._id)
+            );
+
+            showToast('Account revoked successfully.');
+
+            await loadDashboardData();
+
+        } catch (err) {
+            console.error(err);
+            showToast(err.message || 'Failed to revoke account.');
+        }
     };
 
     return (
@@ -148,7 +544,6 @@ export default function MISPage() {
                     <button className={`nav-btn ${activeTab === 'accounts' ? 'active' : ''}`} onClick={() => setActiveTab('accounts')}>👥 Create Faculty Accounts</button>
                 </nav>
                 <div className="sidebar-bottom">
-                    <button className="nav-btn theme-switch" onClick={toggleTheme}>{isDarkMode ? '☀️ Light' : '🌙 Dark'}</button>
                     <button className="nav-btn logout" onClick={handleLogout}>Log Out</button>
                 </div>
             </aside>
@@ -156,10 +551,16 @@ export default function MISPage() {
             <main className="main-content">
                 {activeTab === 'dashboard' && (
                     <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                        <div className="pc-header" style={{ marginBottom: '30px' }}>
-                            <h1 style={{ fontSize: '2.2rem', marginBottom: '5px' }}>System Administrator Dashboard</h1>
-                            <p style={{ color: 'var(--text-sub)' }}>Manage global programs and system access controls.</p>
-                        </div>
+                        <div className="pc-header">
+    {/* Dito natin sila i-grupo para hindi maghiwalay */}
+    <div>
+        <h1 style={{ fontSize: '2.2rem', marginBottom: '5px' }}>
+            System Administrator Dashboard
+        </h1>
+        <p style={{ color: 'var(--text-sub)' }}>
+            Manage global programs and system access controls.
+        </p>
+    </div> </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '30px' }}>
                             <div className="portal-card stat-widget-new" style={{ borderTopColor: '#3b82f6' }}>
@@ -168,11 +569,15 @@ export default function MISPage() {
                             </div>
                             <div className="portal-card stat-widget-new" style={{ borderTopColor: '#10b981' }}>
                                 <span style={{ fontSize: '0.8rem', color: 'var(--text-sub)', fontWeight: 'bold' }}>SYSTEM ACCOUNTS</span>
-                                <div className="stat-number">{accounts.length}</div>
+                                <div className="stat-number">
+                                    {accounts.find(a => a.role === 'overall_total')?.count ?? 0}
+                                </div>
                             </div>
                             <div className="portal-card stat-widget-new" style={{ borderTopColor: '#f59e0b' }}>
                                 <span style={{ fontSize: '0.8rem', color: 'var(--text-sub)', fontWeight: 'bold' }}>REGISTRAR PORTALS</span>
-                                <div className="stat-number">{accounts.filter(a => a.role === 'registrar').length}</div>
+                                <div className="stat-number">
+                                    {accounts.find(a => a.role === 'registrar')?.count ?? 0}
+                                </div>
                             </div>
                         </div>
 
@@ -202,12 +607,31 @@ export default function MISPage() {
 
                 {activeTab === 'programs' && (
                     <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                        <div className="pc-header" style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                        <div
+                            className="pc-header"
+                            style={{
+                                marginBottom: '20px',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'flex-end'
+                            }}
+                        >
                             <div>
                                 <h1 style={{ fontSize: '2.2rem' }}>Manage Programs</h1>
-                                <p style={{ color: 'var(--text-sub)' }}>Configure the global academic programs for the institution.</p>
+                                <p style={{ color: 'var(--text-sub)' }}>
+                                    Configure the global academic programs for the institution.
+                                </p>
                             </div>
-                            <button onClick={() => setOpenModal('addprogram')} className="primary-btn" style={{ padding: '10px 20px', borderRadius: '8px' }}>➕ Add Program</button>
+
+                            <button
+                                onClick={() => setOpenModal('addprogram')}
+                                className="primary-btn"
+                                style={{ padding: "10px",
+                                    borderRadius: "8px",
+                                    border: "none" }}
+                            >
+                                ➕ Add Program
+                            </button>
                         </div>
 
                         <div className="portal-card" style={{ padding: '20px' }}>
@@ -219,17 +643,48 @@ export default function MISPage() {
                                         <th style={{ width: '20%', textAlign: 'right' }}>Actions</th>
                                     </tr>
                                 </thead>
+
                                 <tbody>
-                                    {programs.length > 0 ? programs.map(p => (
-                                        <tr key={p.id}>
-                                            <td style={{ fontWeight: 'bold', color: 'var(--gold)' }}>{p.code}</td>
-                                            <td style={{ color: 'var(--text-main)' }}>{p.name}</td>
-                                            <td style={{ textAlign: 'right' }}>
-                                                <button onClick={() => handleDeleteProgram(p.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 'bold' }}>Delete</button>
+                                    {programs.length > 0 ? (
+                                        programs.map((p) => (
+                                            <tr key={p._id}>
+                                                <td style={{ fontWeight: 'bold', color: 'var(--gold)' }}>
+                                                    {p.code}
+                                                </td>
+
+                                                <td style={{ color: 'var(--text-main)' }}>
+                                                    {p.program}
+                                                </td>
+
+                                                <td style={{ textAlign: 'right' }}>
+                                                    <button
+                                                        onClick={() => handleDeleteProgram(p._id)}
+                                                        style={{
+                                                            background: 'none',
+                                                            border: 'none',
+                                                            color: '#ef4444',
+                                                            cursor: 'pointer',
+                                                            fontWeight: 'bold'
+                                                        }}
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td
+                                                colSpan={3}
+                                                style={{
+                                                    textAlign: 'center',
+                                                    padding: '30px',
+                                                    color: 'var(--text-sub)'
+                                                }}
+                                            >
+                                                No programs configured.
                                             </td>
                                         </tr>
-                                    )) : (
-                                        <tr><td colSpan="3" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-sub)' }}>No programs configured.</td></tr>
                                     )}
                                 </tbody>
                             </table>
@@ -239,49 +694,130 @@ export default function MISPage() {
 
                 {activeTab === 'accounts' && (
                     <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                        <div className="pc-header" style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                        <div
+                            className="pc-header"
+                            style={{
+                                marginBottom: '20px',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'flex-end'
+                            }}
+                        >
                             <div>
-                                <h1 style={{ fontSize: '2.2rem' }}>Create Accounts</h1>
-                                <p style={{ color: 'var(--text-sub)' }}>Manage system access for Faculty, Chairs, and Registrars.</p>
+                                <h1 style={{ fontSize: '2.2rem' }}>
+                                    Create Accounts
+                                </h1>
+
+                                <p style={{ color: 'var(--text-sub)' }}>
+                                    Manage system access for Faculty, Chairs, and Registrars.
+                                </p>
                             </div>
-                            <button onClick={() => setOpenModal('addaccount')} className="primary-btn" style={{ padding: '10px 20px', borderRadius: '8px' }}>➕ Create Account</button>
+
+                            <button
+                                onClick={() => setOpenModal('addaccount')}
+                                className="primary-btn"
+                                style={{
+                                    padding: "10px",
+                                    borderRadius: "8px",
+                                    border: "none"
+                                }}
+                            >
+                                ➕ Create Account
+                            </button>
                         </div>
 
                         <div className="portal-card" style={{ padding: '20px' }}>
-                            <table className="data-table" style={{ width: '100%' }}>
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Role</th>
-                                        <th>Department</th>
-                                        <th>Codename / Login</th>
-                                        <th style={{ textAlign: 'right' }}>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {accounts.length > 0 ? accounts.map(a => {
-                                        const prog = programs.find(p => p.id === a.programId);
-                                        return (
-                                            <tr key={a.id}>
-                                                <td style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{a.name}</td>
-                                                <td>
-                                                    <span style={{ padding: '4px 10px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '4px', fontSize: '0.8rem', textTransform: 'uppercase', color: a.role === 'pc' ? 'var(--gold)' : (a.role === 'registrar' ? '#10b981' : 'var(--text-main)') }}>
-                                                        {a.role === 'pc' ? 'Program Chair' : a.role}
-                                                    </span>
-                                                </td>
-                                                <td style={{ color: 'var(--text-sub)' }}>{prog ? prog.code : 'Global'}</td>
-                                                <td style={{ fontFamily: 'monospace', color: '#3b82f6' }}>{a.codename}</td>
-                                                <td style={{ textAlign: 'right' }}>
-                                                    <button onClick={() => handleDeleteAccount(a.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 'bold' }}>Revoke</button>
-                                                </td>
-                                            </tr>
-                                        );
-                                    }) : (
-                                        <tr><td colSpan="5" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-sub)' }}>No accounts created..</td></tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+    <table className="data-table" style={{ width: '100%' }}>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Department</th>
+                <th>Codename / Login</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {listAccount.length > 0 ? (
+                listAccount.map((a) => {
+                    return (
+                        <tr key={a._id}>
+                            {/* NAME */}
+                            <td style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>
+                                {a.name}
+                            </td>
+
+                            {/* ROLE */}
+                            <td>
+                                <span
+                                    style={{
+                                        padding: '4px 10px',
+                                        backgroundColor: 'rgba(255,255,255,0.05)',
+                                        borderRadius: '4px',
+                                        fontSize: '0.8rem',
+                                        textTransform: 'uppercase',
+                                        color:
+                                            a.role === 'pc'
+                                                ? 'var(--gold)'
+                                                : a.role === 'registrar'
+                                                ? '#10b981'
+                                                : 'var(--text-main)',
+                                    }}
+                                >
+                                    {a.role === 'pc'
+                                        ? 'Program Chair'
+                                        : a.role}
+                                </span>
+                            </td>
+
+                            {/* PROGRAM / DEPARTMENT */}
+                            <td style={{ color: 'var(--text-sub)' }}>
+                                {a.program || a.department || 'Global'}
+                            </td>
+
+                            {/* LOGIN (FROM AUTH) */}
+                            <td style={{ fontFamily: 'monospace', color: '#3b82f6' }}>
+                                {a.username ?? 'N/A'}
+                            </td>
+
+                            {/* ACTIONS */}
+                            <td style={{ textAlign: 'right' }}>
+                                <button
+                                    onClick={() =>
+                                        handleDeleteAccount(a)
+                                    }
+                                    style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        color: '#ef4444',
+                                        cursor: 'pointer',
+                                        fontWeight: 'bold',
+                                    }}
+                                >
+                                    Delete
+                                </button>
+                            </td>
+                        </tr>
+                    );
+                })
+            ) : (
+                <tr>
+                    <td
+                        colSpan="5"
+                        style={{
+                            textAlign: 'center',
+                            padding: '30px',
+                            color: 'var(--text-sub)',
+                        }}
+                    >
+                        No accounts created.
+                    </td>
+                </tr>
+            )}
+        </tbody>
+    </table>
+</div>
                     </div>
                 )}
 
@@ -289,9 +825,7 @@ export default function MISPage() {
                     <div className="modal-overlay" onClick={() => setOpenModal(null)}>
                         <div className="modal-box portal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px' }}>
                             <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px' }}>
-                                <h2 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--gold)' }}>Add Academic Program</h2>
-                                <button className="outline-btn" style={{ border: 'none', padding: '5px' }} onClick={() => setOpenModal(null)}>✕</button>
-                            </div>
+                                <h2 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--gold)' }}>Add Academic Program</h2>                            </div>
                             
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '20px' }}>
                                 <div>
@@ -306,18 +840,43 @@ export default function MISPage() {
 
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                                 <button onClick={() => setOpenModal(null)} className="outline-btn" style={{ padding: '10px 20px', borderRadius: '8px' }}>Cancel</button>
-                                <button onClick={handleAddProgram} className="primary-btn" style={{ padding: '10px 20px', borderRadius: '8px' }}>Save Program</button>
+                                <button onClick={handleAddProgram} className="primary-btn" style={{ padding: "10px",
+                                    borderRadius: "8px",
+                                    border: "none" }}>Save Program</button>
                             </div>
                         </div>
                     </div>
                 )}
+
+                                {showLogoutConfirm && (
+    <div className="modal-overlay">
+        <div className="modal-card">
+            <h2>Log Out</h2>
+            <p>Are you sure you want to end the session?</p>
+
+            <div className="modal-actions">
+                <button 
+                    className="cancel-btn"            onClick={cancelLogout}
+                >
+                    Cancel
+                </button>
+                <button 
+                    className="logout-confirm-btn" 
+                    onClick={confirmLogout}
+                >
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+)}
+                
 
                 {openModal === 'addaccount' && (
                     <div className="modal-overlay" onClick={() => setOpenModal(null)}>
                         <div className="modal-box portal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
                             <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px' }}>
                                 <h2 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--gold)' }}>Create New Account</h2>
-                                <button className="outline-btn" style={{ border: 'none', padding: '5px' }} onClick={() => setOpenModal(null)}>✕</button>
                             </div>
                             
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '20px' }}>
@@ -325,6 +884,10 @@ export default function MISPage() {
                                     <label style={{ fontSize: '0.8rem', color: 'var(--text-sub)', fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>FULL NAME</label>
                                     <input type="text" placeholder="e.g., Juan Dela Cruz" value={accountInput.name} onChange={e => setAccountInput({...accountInput, name: e.target.value})} className="correction-textbox" />
                                 </div>
+                                <div>
+                                    <label style={{ fontSize: '0.8rem', color: 'var(--text-sub)', fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>ID</label>
+                                    <input type="text" placeholder="e.g., 20220123456" value={accountInput.id} onChange={e => setAccountInput({...accountInput, id: e.target.value})} className="correction-textbox" />
+                                </div>                        
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                                     <div>
                                         <label style={{ fontSize: '0.8rem', color: 'var(--text-sub)', fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>SYSTEM ROLE</label>
@@ -332,13 +895,20 @@ export default function MISPage() {
                                             <option value="faculty">Faculty Member</option>
                                             <option value="pc">Program Chair</option>
                                             <option value="registrar">Registrar</option>
+                                            <option value="student">Student</option>
                                         </select>
                                     </div>
                                     <div>
                                         <label style={{ fontSize: '0.8rem', color: 'var(--text-sub)', fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>DEPARTMENT / PROGRAM</label>
                                         <select value={accountInput.programId} onChange={e => setAccountInput({...accountInput, programId: e.target.value})} className="correction-textbox" disabled={accountInput.role === 'registrar'} style={{ opacity: accountInput.role === 'registrar' ? 0.5 : 1 }}>
                                             <option value="">Select Program...</option>
-                                            {programs.map(p => <option key={p.id} value={p.id}>{p.code}</option>)}
+                                                <option value="CPE">CPE</option>
+                                                <option value="EE">EE</option>
+                                                <option value="ME">ME</option>
+                                                <option value="CE">CE</option>
+                                                <option value="ECE">ECE</option>
+                                                <option value="ENSE">ENSE</option>
+                                                <option value="ARCHI">ARCHI</option>
                                         </select>
                                     </div>
                                 </div>
@@ -357,13 +927,17 @@ export default function MISPage() {
 
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                                 <button onClick={() => setOpenModal(null)} className="outline-btn" style={{ padding: '10px 20px', borderRadius: '8px' }}>Cancel</button>
-                                <button onClick={handleAddAccount} className="primary-btn" style={{ padding: '10px 20px', borderRadius: '8px' }}>Create Account</button>
+                                <button onClick={handleAddAccount} className="primary-btn" style={{ padding: "10px",
+                                    borderRadius: "8px",
+                                    border: "none" }}>Create Account</button>
                             </div>
                         </div>
                     </div>
                 )}
+                
+                
 
-                {toastMessage && <div style={{ position: 'fixed', bottom: '30px', right: '30px', backgroundColor: '#10b981', color: 'white', padding: '15px 25px', borderRadius: '8px', zIndex: 1000, fontWeight: 'bold' }}>✅ {toastMessage}</div>}
+                {toastMessage && <div style={{ position: 'fixed', bottom: '30px', right: '30px', backgroundColor: '#10b981', color: 'white', padding: '15px 25px', borderRadius: '8px', zIndex: 1000, fontWeight: 'bold' }}> {toastMessage}</div>}
             </main>
         </div>
     );

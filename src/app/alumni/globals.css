@@ -41,7 +41,7 @@ body.portal-layout {
 
 body.portal-layout::before {
     content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background-image: url('cdm-bg.jpg'); background-size: cover; background-position: center;
+    background-image: url('/cdm-bg.jpg'); background-size: cover; background-position: center;
     filter: blur(8px) var(--bg-brightness); opacity: 0.9; z-index: -1; transition: filter 0.5s ease;
 }
 
@@ -67,7 +67,18 @@ body.portal-layout::before {
 
 .sidebar-bottom { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 20px; }
 .theme-switch { border: 1px solid var(--border-color); font-weight: bold; }
-.logout { color: #ef4444; }
+.logout { color: #ef4444;
+    transition: all .3s;
+    transition-behavior: normal;
+    transition-duration: 0.3s;
+    transition-timing-function: ease;
+    transition-delay: 0s;
+    transition-property: all;}
+.logout:not(.active):hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    padding-left: 20px;
+}
+
 .logout:hover { background-color: rgba(239, 68, 68, 0.1) !important; color: #dc2626; }
 
 .main-content { flex: 1; padding: 40px 50px; overflow-y: auto; display: flex; flex-direction: column; gap: 30px; }
@@ -112,4 +123,109 @@ body.portal-layout::before {
 .sub-text { font-size: 0.85rem; color: var(--text-sub); }
 
 .activity-container h3 { font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 15px; }
-.activity-feed { list-style: none; font-size: 0.95rem; color
+.activity-feed { list-style: none; font-size: 0.95rem;}
+
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-card {
+    background-color: #111827;
+    padding: 32px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.2s ease-out;
+}
+
+.modal-card h2 {
+    font-size: 1.5rem;
+    color: #ffffff;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.modal-card p {
+    color: #9ca3af;
+    margin-bottom: 24px;
+    font-size: 0.95rem;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.cancel-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background-color: transparent;
+    color: #ffffff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.logout-confirm-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    background-color: #ef4444;
+    border: none;
+    color: #ffffff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.logout-confirm-btn:hover {
+    background-color: #dc2626;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.sidebar-logout-btn {
+    width: 100%;
+    padding: 12px 16px;
+    background-color: transparent;
+    color: #ef4444;
+    border: none;
+    text-align: left;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.sidebar-logout-btn:hover {
+    background-color: rgba(239, 68, 68, 0.1);
+}

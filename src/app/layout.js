@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,15 +14,18 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: "CDM-OBE | Centralized Management System",
-  description: "Centralized Outcome-Based Education Management System for Colegio de Muntinlupa",
-
+  description:
+    "Centralized Outcome-Based Education Management System for Colegio de Muntinlupa",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="dark" className="dark" style={{ colorScheme: 'dark' }}>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         {children}
+
+        {/* 🔥 Global Toast Container */}
+        <Toaster position="top-right" richColors />
       </body>
     </html>
   );
